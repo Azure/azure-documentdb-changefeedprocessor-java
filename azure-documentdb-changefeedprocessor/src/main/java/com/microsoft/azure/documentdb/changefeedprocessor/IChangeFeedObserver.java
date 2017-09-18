@@ -1,4 +1,5 @@
-/**
+/*
+ *
  * The MIT License (MIT)
  * Copyright (c) 2016 Microsoft Corporation
  * 
@@ -18,21 +19,23 @@
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ *   SOFTWARE.
+ *  
  */
-package com.microsoft.azure.documentdb.changefeedprocessor;
 
-import java.lang.*;
+package java.com.microsoft.azure.documentdb.changefeedprocessor;
 
-/*
- *
- * @author moderakh
- *
- */
-public class Main {
+import com.microsoft.azure.documentdb.Document;
 
-    public static void main(String[] args) throws Exception{
-        System.out.println("hello!!");
-    }
+import java.util.List;
+import java.util.concurrent.Future;
+
+public interface IChangeFeedObserver {
+
+    public Future OpenTaskAsync(ChangeFeedObserverContext context);
+
+    public Future CloseAsync(ChangeFeedObserverContext context, ChangeFeedObserverCloseReason reason);
+
+    public Future ProcessChangesAsync(ChangeFeedObserverContext context, List<Document> docs);
 
 }

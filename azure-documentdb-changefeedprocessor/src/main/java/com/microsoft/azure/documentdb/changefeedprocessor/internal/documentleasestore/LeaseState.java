@@ -1,4 +1,5 @@
-/**
+/*
+ * *
  * The MIT License (MIT)
  * Copyright (c) 2016 Microsoft Corporation
  * 
@@ -19,20 +20,26 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *  
  */
-package com.microsoft.azure.documentdb.changefeedprocessor;
 
-import java.lang.*;
+package java.com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore;
 
-/*
- *
- * @author moderakh
- *
- */
-public class Main {
+public enum LeaseState {
 
-    public static void main(String[] args) throws Exception{
-        System.out.println("hello!!");
-    }
+    /**
+     * The lease is in unknown state.
+     */
+    Unspecified,
+
+    /**
+     * The lease is available in the sense that it is not own, or leased, by any host.
+     */
+    Available,
+
+    /**
+     * The lease is leased to, or owned by some host.
+     */
+    Leased,
 
 }

@@ -1,4 +1,5 @@
-/**
+/*
+ *
  * The MIT License (MIT)
  * Copyright (c) 2016 Microsoft Corporation
  * 
@@ -19,20 +20,39 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *  
  */
-package com.microsoft.azure.documentdb.changefeedprocessor;
 
-import java.lang.*;
+package java.com.microsoft.azure.documentdb.changefeedprocessor;
 
-/*
- *
- * @author moderakh
- *
+import java.time.Instant;
+
+/**
+ * Specifies the frequency of lease event. The event will trigger when either of conditions is satisfied.
  */
-public class Main {
+public class CheckpointFrequency {
 
-    public static void main(String[] args) throws Exception{
-        System.out.println("hello!!");
+    private int _processedDocumentCount;
+
+    private Instant _timeInterval;
+
+    public CheckpointFrequency(){
+
     }
 
+    public int getProcessedDocumentCount() {
+        return _processedDocumentCount;
+    }
+
+    public void setProcessedDocumentCount(int _processedDocumentCount) {
+        this._processedDocumentCount = _processedDocumentCount;
+    }
+
+    public Instant getTimeInterval() {
+        return _timeInterval;
+    }
+
+    public void setTimeInterval(Instant _timeInterval) {
+        this._timeInterval = _timeInterval;
+    }
 }
