@@ -22,10 +22,17 @@
  */
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
-/**
+import java.lang.*;
+
+/*
+ *
  * @author moderakh
  *
  */
 public class Main {
+
+    public static void main(String[] args) throws Exception{
+        System.out.println("hello!!");
+    }
 
 }
