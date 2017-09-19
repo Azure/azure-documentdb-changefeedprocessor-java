@@ -25,8 +25,14 @@
 
 package java.com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
+import java.com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverCloseReason;
+import java.util.concurrent.Future;
+
 public interface IPartitionObserver<Lease> {
 
 
+    public Future OnPartitionAcquiredAsync(Lease lease);
+
+    public Future OnPartitionReleasedAsync(Lease lease, ChangeFeedObserverCloseReason reason);
 
 }

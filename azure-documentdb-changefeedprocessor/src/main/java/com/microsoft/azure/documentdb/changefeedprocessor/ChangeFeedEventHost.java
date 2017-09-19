@@ -27,9 +27,19 @@ package java.com.microsoft.azure.documentdb.changefeedprocessor;
 
 import java.com.microsoft.azure.documentdb.changefeedprocessor.internal.IPartitionObserver;
 import java.com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
+import java.util.concurrent.Future;
 
 public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLease> {
 
 
+    @Override
+    public Future OnPartitionAcquiredAsync(DocumentServiceLease documentServiceLease) {
+        return null;
+    }
+
+    @Override
+    public Future OnPartitionReleasedAsync(DocumentServiceLease documentServiceLease, ChangeFeedObserverCloseReason reason) {
+        return null;
+    }
 
 }
