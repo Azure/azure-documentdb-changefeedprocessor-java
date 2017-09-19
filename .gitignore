@@ -31,3 +31,6 @@ hs_err_pid*
 *.iws
 *.ipr
 .idea/
+
+/azure-documentdb-changefeedprocessor/bin/
+
