@@ -9,6 +9,8 @@ package com.microsoft.azure.documentdb.changefeedprocessor.internal;
  *
  * @author yoterada
  */
-public interface IPartitionManager {
-    
+public interface IPartitionManager<T> {
+    void start();
+    void stop();
+    IObservableDisposable subscribe(IPartitionObserver<T> observer);
 }
