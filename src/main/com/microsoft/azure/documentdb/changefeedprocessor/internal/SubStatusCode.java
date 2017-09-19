@@ -9,6 +9,23 @@ package com.microsoft.azure.documentdb.changefeedprocessor.internal;
  *
  * @author yoterada
  */
-public class SubStatusCode {
-    
+public enum SubStatusCode {
+    /**
+     * 410: partition key range is gone
+     */
+
+    PartitionKeyRangeGone(1002),
+    /**
+     * 410: partition splitting
+     */
+    Splitting (1007),
+    /**
+     * 404: LSN in session token is higher
+     */
+    ReadSessionNotAvailable(1002);
+    private int value;
+
+    private SubStatusCode(int value) {
+        this.value = value;
+    }
 }
