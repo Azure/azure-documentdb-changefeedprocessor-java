@@ -23,7 +23,7 @@
  *  
  */
 
-package java.com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore;
+package com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore;
 
 public enum LeaseState {
 
