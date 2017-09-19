@@ -3,11 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore;
+package com.microsoft.azure.documentdb.changefeedprocessor.internal.documentLeaseStore;
 
-//import com.microsoft.azure.documentdb.changefeedprocessor.DocumentCollectionInfo;
-//import com.microsoft.azure.documentdb.changefeedprocessor.internal.ICheckpointManager;
-//import com.microsoft.azure.documentdb.changefeedprocessor.internal.ILeaseManager;
+import java.util.concurrent.Future;
+
 
 /**
  *
