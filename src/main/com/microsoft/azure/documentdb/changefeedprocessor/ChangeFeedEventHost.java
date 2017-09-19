@@ -7,10 +7,7 @@ package com.microsoft.azure.documentdb.changefeedprocessor;
 
 
 import com.microsoft.azure.documentdb.ChangeFeedOptions;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.CancellationTokenSource;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.ChangeFeedObserverFactory;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.IPartitionObserver;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.WorkerData;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.*;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,6 +26,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     private String _hostName;
     DocumentCollectionInfo _auxCollectionLocation;
     ConcurrentMap<String, WorkerData> _partitionKeyRangeIdToWorkerMap;
+    //PartitionManager<DocumentServiceLease> partitionManager;
 
     private IChangeFeedObserverFactory _observerFactory;
 
@@ -78,17 +76,25 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     public void RegisterObserver()
     {
         this._observerFactory = new ChangeFeedObserverFactory<>();
-        //this.StartAsync();
+        this.StartAsync();
     }
 
 
+    public void StartAsync(){
+        this.InitializeAsync();
+        //this._partitionManager.StartAsync();
+    }
+
+    public void InitializeAsync(){}
+
+
     @Override
-    public void OnPartitionAcquiredAsync(DocumentServiceLease documentServiceLease) {
+    public void onPartitionAcquired(DocumentServiceLease documentServiceLease) {
 
     }
 
     @Override
-    public void OnPartitionReleasedAsync(DocumentServiceLease documentServiceLease, ChangeFeedObserverCloseReason reason) {
+    public void onPartitionReleasedAsync(DocumentServiceLease documentServiceLease, ChangeFeedObserverCloseReason reason) {
 
     }
 }
