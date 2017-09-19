@@ -1,4 +1,5 @@
-/**
+/*
+ * *
  * The MIT License (MIT)
  * Copyright (c) 2016 Microsoft Corporation
  * 
@@ -19,20 +20,40 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *  
  */
-package com.microsoft.azure.documentdb.changefeedprocessor;
 
-import java.lang.*;
+package java.com.microsoft.azure.documentdb.changefeedprocessor;
 
-/*
- *
- * @author moderakh
- *
- */
-public class Main {
+public enum ChangeFeedObserverCloseReason
+{
 
-    public static void main(String[] args) throws Exception{
-        System.out.println("hello!!");
-    }
+    /**
+     * Unknown failure. This should never be sent to observers.
+     */
+    Unknown,
+    /**
+     * The ChangeFeedEventHost is shutting down.
+     */
+    Shutdown,
 
+    /**
+     * The resource, such as database or collection was removed.
+     */
+    ResourceGone,
+
+    /**
+     * Lease was lost due to expiration or load-balancing.
+     */
+    LeaseLost,
+
+    /**
+     * IChangeFeedObserver threw an exception.
+     */
+    ObserverError,
+
+    /**
+     * The lease is gone. This can be due to partition split.
+     */
+    LeaseGone,
 }
