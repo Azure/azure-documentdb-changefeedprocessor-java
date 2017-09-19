@@ -5,10 +5,12 @@
  */
 package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
+import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserver;
+
 /**
  *
  * @author yoterada
  */
 public interface IDocumentFeedObserverFactory {
-    
+    IChangeFeedObserver createObserver();
 }
