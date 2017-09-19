@@ -24,28 +24,8 @@
  */
 
 package com.microsoft.azure.documentdb.changefeedprocessor.internal;
-<<<<<<< HEAD
 
 import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverCloseReason;
-=======
-
-import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverCloseReason;
-
-public interface IPartitionObserver<Lease> {
-
-    /**
-     * It is a async method in .net
-     * @param lease
-     */
-    public void OnPartitionAcquiredAsync(Lease lease);
-
-    /**
-     *
-     * @param lease
-     * @param reason
-     */
-    public void OnPartitionReleasedAsync(Lease lease, ChangeFeedObserverCloseReason reason);
->>>>>>> Event_Host
 
 public interface IPartitionObserver<T> {
         void onPartitionAcquired(T lease);

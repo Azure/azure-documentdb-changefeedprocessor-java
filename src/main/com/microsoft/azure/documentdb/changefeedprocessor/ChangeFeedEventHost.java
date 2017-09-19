@@ -5,15 +5,6 @@
  */
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
-<<<<<<< HEAD
-/**
- *
- * @author yoterada
- */
-public class ChangeFeedEventHost {
-    public ChangeFeedEventHost(String hostName, DocumentCollectionInfo documentCollectionLocation, DocumentCollectionInfo auxCollectionLocation){
-//        this(hostName, documentCollectionLocation, auxCollectionLocation, new ChangeFeedOptions(), new ChangeFeedHostOptions());
-=======
 
 import com.microsoft.azure.documentdb.ChangeFeedOptions;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.CancellationTokenSource;
@@ -99,6 +90,5 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     @Override
     public void OnPartitionReleasedAsync(DocumentServiceLease documentServiceLease, ChangeFeedObserverCloseReason reason) {
 
->>>>>>> Event_Host
     }
 }
