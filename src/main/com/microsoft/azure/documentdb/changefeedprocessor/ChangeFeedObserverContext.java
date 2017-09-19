@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package java.com.microsoft.azure.documentdb.changefeedprocessor;
+package com.microsoft.azure.documentdb.changefeedprocessor;
 
 import com.microsoft.azure.documentdb.Document;
 import com.microsoft.azure.documentdb.FeedResponse;
