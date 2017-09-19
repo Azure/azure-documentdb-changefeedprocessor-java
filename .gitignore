@@ -30,7 +30,7 @@ hs_err_pid*
 *.iml
 *.iws
 *.ipr
-.idea/
+/.idea/
 
 /azure-documentdb-changefeedprocessor/bin/
 
