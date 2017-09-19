@@ -23,7 +23,7 @@
  *  
  */
 
-package java.com.microsoft.azure.documentdb.changefeedprocessor;
+package com.microsoft.azure.documentdb.changefeedprocessor;
 
 public enum ChangeFeedObserverCloseReason
 {
