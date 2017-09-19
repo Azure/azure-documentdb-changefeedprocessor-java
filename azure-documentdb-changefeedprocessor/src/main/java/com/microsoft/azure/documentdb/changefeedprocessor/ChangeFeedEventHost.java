@@ -10,7 +10,7 @@ package com.microsoft.azure.documentdb.changefeedprocessor;
  * @author yoterada
  */
 public class ChangeFeedEventHost {
-    public ChangeFeedEventHost(string hostName, DocumentCollectionInfo documentCollectionLocation, DocumentCollectionInfo auxCollectionLocation){
-        this(hostName, documentCollectionLocation, auxCollectionLocation, new ChangeFeedOptions(), new ChangeFeedHostOptions());
+    public ChangeFeedEventHost(String hostName, DocumentCollectionInfo documentCollectionLocation, DocumentCollectionInfo auxCollectionLocation){
+//        this(hostName, documentCollectionLocation, auxCollectionLocation, new ChangeFeedOptions(), new ChangeFeedHostOptions());
     }
 }
