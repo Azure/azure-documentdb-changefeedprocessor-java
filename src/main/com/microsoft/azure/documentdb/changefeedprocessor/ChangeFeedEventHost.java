@@ -7,21 +7,27 @@ package com.microsoft.azure.documentdb.changefeedprocessor;
 
 
 import com.microsoft.azure.documentdb.ChangeFeedOptions;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.CancellationTokenSource;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.IPartitionObserver;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.WorkerData;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 
 public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLease> {
 
+    final String DefaultUserAgentSuffix = "changefeed-0.2";
+    final String LeaseContainerName = "docdb-changefeed";
+    final String LSNPropertyName = "_lsn";
 
     private DocumentCollectionInfo _collectionLocation;
     private ChangeFeedOptions _changeFeedOptions;
     private ChangeFeedHostOptions _options;
     private String _hostName;
     DocumentCollectionInfo _auxCollectionLocation;
-    ConcurrentMap<String, WorkerData> partitionKeyRangeIdToWorkerMap;
+    ConcurrentMap<String, WorkerData> _partitionKeyRangeIdToWorkerMap;
 
 
 
@@ -42,38 +48,30 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         if (documentCollectionLocation.getCollectionName() == null || documentCollectionLocation.getCollectionName().isEmpty()) throw new IllegalArgumentException("documentCollectionLocation.getCollectionName() is null or empty");
         if (hostOptions.getMinPartitionCount() > hostOptions.getMaxPartitionCount()) throw new IllegalArgumentException("hostOptions.MinPartitionCount cannot be greater than hostOptions.MaxPartitionCount");
 
-        this.collectionLocation = CanoninicalizeCollectionInfo(documentCollectionLocation);
-        this.changeFeedOptions = changeFeedOptions;
-        this.options = hostOptions;
-        this.HostName = hostName;
-        this.auxCollectionLocation = CanoninicalizeCollectionInfo(auxCollectionLocation);
-        this.partitionKeyRangeIdToWorkerMap = new ConcurrentDictionary<string, WorkerData>();
+        this._collectionLocation = CanoninicalizeCollectionInfo(documentCollectionLocation);
+        this._changeFeedOptions = changeFeedOptions;
+        this._options = hostOptions;
+        this._hostName = hostName;
+        this._auxCollectionLocation = CanoninicalizeCollectionInfo(auxCollectionLocation);
+        this._partitionKeyRangeIdToWorkerMap = new ConcurrentHashMap<String, WorkerData>();
 
 
     }
 
-    private class WorkerData
+    private DocumentCollectionInfo CanoninicalizeCollectionInfo(DocumentCollectionInfo collectionInfo)
     {
-
-        private Future _task;
-
-        public WorkerData(Future task, IChangeFeedObserver observer, ChangeFeedObserverContext context, CancellationTokenSource cancellation)
+        DocumentCollectionInfo result = collectionInfo;
+        if (result.getConnectionPolicy().getUserAgentSuffix() == null ||
+                result.getConnectionPolicy().getUserAgentSuffix().isEmpty())
         {
-            this.Task = task;
-            this.Observer = observer;
-            this.Context = context;
-            this.Cancellation = cancellation;
+            result = new DocumentCollectionInfo(collectionInfo);
+            result.getConnectionPolicy().setUserAgentSuffix(DefaultUserAgentSuffix);
         }
 
-
-        public Future Task { get; private set; }
-
-        public IChangeFeedObserver Observer { get; private set; }
-
-        public ChangeFeedObserverContext Context { get; private set; }
-
-        public CancellationTokenSource Cancellation { get; private set; }
+        return result;
     }
+
+
 
 
 }
