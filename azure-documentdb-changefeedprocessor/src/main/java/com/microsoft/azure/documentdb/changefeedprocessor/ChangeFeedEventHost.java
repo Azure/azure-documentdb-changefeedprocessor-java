@@ -1,5 +1,5 @@
 /*
- *
+ * *
  * The MIT License (MIT)
  * Copyright (c) 2016 Microsoft Corporation
  * 
@@ -19,32 +19,17 @@
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *   SOFTWARE.
+ * SOFTWARE.
  *  
  */
 
 package java.com.microsoft.azure.documentdb.changefeedprocessor;
 
-import com.microsoft.azure.documentdb.Document;
+import java.com.microsoft.azure.documentdb.changefeedprocessor.internal.IPartitionObserver;
+import java.com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
 
-import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
-
-public interface IChangeFeedObserver {
-
-    public Future OpenTaskAsync(ChangeFeedObserverContext context);
-
-    public Future CloseAsync(ChangeFeedObserverContext context, ChangeFeedObserverCloseReason reason);
-
-    public Future ProcessChangesAsync(ChangeFeedObserverContext context, List<Document> docs);
+public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLease> {
 
 
-    //As suggestioned by Yoshio Terada
-    public Future OpenTaskAsync(ChangeFeedObserverContext context, Executor exec);
-
-    public Future CloseAsync(ChangeFeedObserverContext context, ChangeFeedObserverCloseReason reason, Executor exec);
-
-    public Future ProcessChangesAsync(ChangeFeedObserverContext context, List<Document> docs , Executor exec);
 
 }
