@@ -23,10 +23,12 @@
  *  
  */
 
-package java.com.microsoft.azure.documentdb.changefeedprocessor.internal;
+package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
-public interface IPartitionObserver<Lease> {
+import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverCloseReason;
 
-
-
+public interface IPartitionObserver<T> {
+        void onPartitionAcquired(T lease);
+        void onPartitionReleasedAsync(T lease, ChangeFeedObserverCloseReason reason);
 }
+

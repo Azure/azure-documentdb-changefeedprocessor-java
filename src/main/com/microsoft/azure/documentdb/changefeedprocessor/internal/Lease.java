@@ -23,7 +23,7 @@
  *
  */
 
-package java.com.microsoft.azure.documentdb.changefeedprocessor.internal;
+package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
 public abstract class Lease {
 

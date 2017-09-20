@@ -3,12 +3,14 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.microsoft.azure.documentdb.changefeedprocessor.internal.documentLeaseStore;
+package com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore;
+
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.Lease;
 
 /**
  *
  * @author yoterada
  */
-public class DocumentServiceLease {
+public class DocumentServiceLease extends Lease {
     
 }
