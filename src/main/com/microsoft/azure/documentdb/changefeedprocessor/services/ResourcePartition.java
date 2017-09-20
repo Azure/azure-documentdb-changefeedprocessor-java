@@ -4,4 +4,7 @@ public class ResourcePartition {
     String partitionId;
     String checkpointData;
     Job job;
+
+    public ResourcePartition(String partitionId) {
+    }
 }

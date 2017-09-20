@@ -9,7 +9,9 @@ package com.microsoft.azure.documentdb.changefeedprocessor;
 import com.microsoft.azure.documentdb.ChangeFeedOptions;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.*;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartition;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
@@ -81,21 +83,32 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     }
 
 
-    public void StartAsync(){
-        this.InitializeAsync();
-        this._partitionManager.start();
+    void start(){
+        initialize();
+        // this._partitionManager.start();
     }
 
-    public void InitializeAsync(){}
+    void initialize(){
+        // list partitions
+        // create resourcePartition
+        List<String> partitionIds = null;
 
+        for(String id : partitionIds) {
+            ResourcePartition resourcePartition = new ResourcePartition(id);
+        }
+    }
 
     @Override
     public void onPartitionAcquired(DocumentServiceLease documentServiceLease) {
+        String partitionId = documentServiceLease.id;
 
+        System.out.println("Partition started");
     }
 
     @Override
     public void onPartitionReleasedAsync(DocumentServiceLease documentServiceLease, ChangeFeedObserverCloseReason reason) {
+        String partitionId = documentServiceLease.id;
 
+        System.out.println("Partition finished");
     }
 }
