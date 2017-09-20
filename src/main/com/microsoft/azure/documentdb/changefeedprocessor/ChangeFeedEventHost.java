@@ -12,9 +12,8 @@ import com.microsoft.azure.documentdb.changefeedprocessor.internal.IPartitionObs
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.PartitionManager;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.WorkerData;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
-import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices;
-import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartition;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartitionServices;
 
 import java.util.List;
@@ -68,7 +67,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         this._documentServices = new DocumentServices(documentCollectionLocation);
         this._checkpointSvcs = new CheckpointServices();
 
-        this._resourcePartitionSvcs = new ResourcePartitionServices(_documentServices, _checkpointSvcs);
+        this._resourcePartitionSvcs = null;
     }
 
     private DocumentCollectionInfo CanoninicalizeCollectionInfo(DocumentCollectionInfo collectionInfo)
@@ -99,6 +98,11 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     }
 
     void start(){
+
+        //TODO: This is not the right place to have this code..
+        this._resourcePartitionSvcs = new ResourcePartitionServices(_documentServices, _checkpointSvcs, _observerFactory);
+
+
         initializePartitions();
         initializeLeaseManager();
     }
