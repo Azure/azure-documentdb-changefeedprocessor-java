@@ -112,16 +112,23 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
     void initializeLeaseManager() {
         // simulate a callback from partitionManager
+        hackStartSinglePartition();
+    }
 
+    void hackStartSinglePartition() {
         // onPartitionAcquired(null);
-        _resourcePartitionSvcs.start("singleInstanceTest");
+        ResourcePartition rp =  _resourcePartitionSvcs.get("singleInstanceTest");
+        Object data = null; // getdata from checkpoint
+        rp.start(data );
     }
 
     @Override
     public void onPartitionAcquired(DocumentServiceLease documentServiceLease) {
         String partitionId = documentServiceLease.id;
 
-        _resourcePartitionSvcs.start(partitionId);
+        ResourcePartition rp =  _resourcePartitionSvcs.get(partitionId);
+        Object data = null; // getdata from checkpoint
+        rp.start(data);
     }
 
     @Override
@@ -130,6 +137,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         System.out.println("Partition finished");
 
-        _resourcePartitionSvcs.stop(partitionId);
+        ResourcePartition rp =  _resourcePartitionSvcs.get(partitionId);
+        rp.stop();
     }
 }

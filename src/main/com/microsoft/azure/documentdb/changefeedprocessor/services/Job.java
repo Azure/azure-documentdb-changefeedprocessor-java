@@ -1,4 +1,6 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
-public class Job {
+public interface Job {
+    void start(Object initialData);
+    void stop();
 }

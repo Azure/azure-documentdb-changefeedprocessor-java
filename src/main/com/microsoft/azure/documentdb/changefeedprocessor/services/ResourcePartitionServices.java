@@ -4,7 +4,6 @@ import java.util.Dictionary;
 import java.util.Hashtable;
 
 public class ResourcePartitionServices {
-
     Dictionary<String, ResourcePartition> _resourcePartitions;
 
     public ResourcePartitionServices() {
@@ -19,11 +18,7 @@ public class ResourcePartitionServices {
         return resourcePartition;
     }
 
-    public void start(String partitionId) {
-        System.out.println("Partition started");
-    }
-
-    public void stop(String partitionId) {
-        System.out.println("Partition stop");
+    public ResourcePartition get(String partitionId) {
+        return _resourcePartitions.get(partitionId);
     }
 }
