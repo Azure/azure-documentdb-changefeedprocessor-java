@@ -10,6 +10,7 @@ import com.microsoft.azure.documentdb.ChangeFeedOptions;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.*;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartition;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartitionServices;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,6 +31,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     ConcurrentMap<String, WorkerData> _partitionKeyRangeIdToWorkerMap;
     PartitionManager<DocumentServiceLease> _partitionManager;
 
+    ResourcePartitionServices _resourcePartitionSvcs;
 
     private IChangeFeedObserverFactory _observerFactory;
 
@@ -57,7 +59,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         this._auxCollectionLocation = CanoninicalizeCollectionInfo(auxCollectionLocation);
         this._partitionKeyRangeIdToWorkerMap = new ConcurrentHashMap<String, WorkerData>();
 
-
+        this._resourcePartitionSvcs = new ResourcePartitionServices();
     }
 
     private DocumentCollectionInfo CanoninicalizeCollectionInfo(DocumentCollectionInfo collectionInfo)
@@ -78,38 +80,48 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
      */
     public void registerObserver(Class type)
     {
-        this._observerFactory = new ChangeFeedObserverFactory(type);
-        //this.StartAsync();
-    }
+        ChangeFeedObserverFactory factory = new ChangeFeedObserverFactory(type);
 
+        registerObserverFactory(factory);
+        start();
+    }
+    void registerObserverFactory(ChangeFeedObserverFactory factory) {
+        this._observerFactory = factory;
+    }
 
     void start(){
-        initialize();
-        // this._partitionManager.start();
+        initializePartitions();
+        initializeLeaseManager();
     }
 
-    void initialize(){
+    void initializePartitions(){
         // list partitions
         // create resourcePartition
         List<String> partitionIds = null;
 
-        // HACK: single partition
-        if( partitionIds != null ) {
-            ResourcePartition resourcePartition = new ResourcePartition("singleInstance");
+        // TEST: single partition
+        if( partitionIds == null ) {
+            _resourcePartitionSvcs.create("singleInstanceTest");
             return;
         }
 
         for(String id : partitionIds) {
-            ResourcePartition resourcePartition = new ResourcePartition(id);
+            _resourcePartitionSvcs.create(id);
         }
+    }
 
+    void initializeLeaseManager() {
+        // simulate a callback from partitionManager
+
+        // onPartitionAcquired(null);
+        _resourcePartitionSvcs.start("singleInstanceTest");
     }
 
     @Override
     public void onPartitionAcquired(DocumentServiceLease documentServiceLease) {
         String partitionId = documentServiceLease.id;
 
-        System.out.println("Partition started");
+        _resourcePartitionSvcs.start(partitionId);
     }
 
     @Override
@@ -117,5 +129,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         String partitionId = documentServiceLease.id;
 
         System.out.println("Partition finished");
+
+        _resourcePartitionSvcs.stop(partitionId);
     }
 }
