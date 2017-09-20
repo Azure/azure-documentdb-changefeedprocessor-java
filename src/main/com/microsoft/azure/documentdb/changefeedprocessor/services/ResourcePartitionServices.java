@@ -4,6 +4,7 @@ import java.util.Dictionary;
 import java.util.Hashtable;
 
 public class ResourcePartitionServices {
+    JobServices _jobServices;
     CheckpointServices _checkpointSvcs;
     Dictionary<String, ResourcePartition> _resourcePartitions;
     DocumentServices _client;
@@ -13,6 +14,7 @@ public class ResourcePartitionServices {
         _resourcePartitions = new Hashtable<>();
         _client = client;
         _checkpointSvcs = checkpointSvcs;
+        _jobServices = new JobServices();
     }
 
     public ResourcePartition create(String partitionId) {
@@ -30,11 +32,14 @@ public class ResourcePartitionServices {
 
     public void start(String partitionId) {
         ResourcePartition resourcePartition = this.get(partitionId);
+        Job job = resourcePartition.getJob();
         Object initialData = _checkpointSvcs.getCheckpointData(partitionId);
-        resourcePartition.start(initialData);
+
+        _jobServices.runAsync(job, initialData);
     }
 
     public void stop(String partitionId) {
+        // TODO: improve it
         ResourcePartition resourcePartition = this.get(partitionId);
         resourcePartition.stop();
     }
