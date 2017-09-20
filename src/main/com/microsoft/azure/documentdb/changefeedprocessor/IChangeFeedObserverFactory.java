@@ -15,6 +15,6 @@ public interface IChangeFeedObserverFactory {
     /// Creates a new instance of <see cref="DocumentDB.ChangeFeedProcessor.IChangeFeedObserver"/>.
     /// </summary>
     /// <returns>Created instance of <see cref="DocumentDB.ChangeFeedProcessor.IChangeFeedObserver"/>.</returns>
-    IChangeFeedObserver CreateObserver();
+    IChangeFeedObserver createObserver();
     
 }

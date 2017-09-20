@@ -93,9 +93,16 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         // create resourcePartition
         List<String> partitionIds = null;
 
+        // HACK: single partition
+        if( partitionIds != null ) {
+            ResourcePartition resourcePartition = new ResourcePartition("singleInstance");
+            return;
+        }
+
         for(String id : partitionIds) {
             ResourcePartition resourcePartition = new ResourcePartition(id);
         }
+
     }
 
     @Override

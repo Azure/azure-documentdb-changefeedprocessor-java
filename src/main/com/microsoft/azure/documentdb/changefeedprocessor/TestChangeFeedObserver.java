@@ -6,18 +6,17 @@ import java.util.List;
 import java.util.concurrent.Future;
 
 public class TestChangeFeedObserver implements IChangeFeedObserver {
-    @Override
-    public Future OpenTaskAsync(ChangeFeedObserverContext context) {
-        return null;
+    public void open(ChangeFeedObserverContext context) {
     }
 
-    @Override
-    public Future CloseAsync(ChangeFeedObserverContext context, ChangeFeedObserverCloseReason reason) {
-        return null;
+    public void close(ChangeFeedObserverContext context, ChangeFeedObserverCloseReason reason) {
     }
 
-    @Override
-    public Future ProcessChangesAsync(ChangeFeedObserverContext context, List<Document> docs) {
-        return null;
+    public void processChanges(ChangeFeedObserverContext context, List<Document> docs) {
+        for(Document d : docs) {
+            String content = d.toJson();
+
+            System.out.println("Received: " + content);
+        }
     }
 }
