@@ -74,10 +74,10 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     /**
      * This code used to be async
      */
-    public void RegisterObserver()
+    public void registerObserver(Class type)
     {
-        this._observerFactory = new ChangeFeedObserverFactory<>();
-        this.StartAsync();
+        this._observerFactory = new ChangeFeedObserverFactory(type);
+        //this.StartAsync();
     }
 
 

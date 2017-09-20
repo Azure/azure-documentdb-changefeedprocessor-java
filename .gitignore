@@ -35,4 +35,6 @@ hs_err_pid*
 /azure-documentdb-changefeedprocessor/bin/
 
 /target/
-/app.secrets
+app.secrets
+
+/*.dll
