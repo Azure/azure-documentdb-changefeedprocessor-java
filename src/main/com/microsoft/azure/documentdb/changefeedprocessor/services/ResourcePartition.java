@@ -4,7 +4,7 @@ public class ResourcePartition {
     String _partitionId;
     Job _resourceJob;
 
-    public ResourcePartition(String partitionId, ChangeFeedJob resourceJob) {
+    public ResourcePartition(String partitionId, Job resourceJob) {
         _partitionId = partitionId;
         _resourceJob = resourceJob;
     }

@@ -66,9 +66,9 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         this._partitionKeyRangeIdToWorkerMap = new ConcurrentHashMap<String, WorkerData>();
 
         this._documentServices = new DocumentServices(documentCollectionLocation);
-
-        this._resourcePartitionSvcs = new ResourcePartitionServices(_documentServices);
         this._checkpointSvcs = new CheckpointServices();
+
+        this._resourcePartitionSvcs = new ResourcePartitionServices(_documentServices, _checkpointSvcs);
     }
 
     private DocumentCollectionInfo CanoninicalizeCollectionInfo(DocumentCollectionInfo collectionInfo)
@@ -119,10 +119,8 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
     void hackStartSinglePartition() {
         // onPartitionAcquired(null);
-        ResourcePartition resourcePartition = _resourcePartitionSvcs.get("singleInstanceTest");
 
-        Object initialData = _checkpointSvcs.getCheckpointData("singleInstanceTest");
-        resourcePartition.start(initialData);
+        _resourcePartitionSvcs.start("singleInstanceTest");
     }
 
     private List listPartition(){
@@ -137,11 +135,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     public void onPartitionAcquired(DocumentServiceLease documentServiceLease) {
         String partitionId = documentServiceLease.id;
 
-        ResourcePartition resourcePartition = _resourcePartitionSvcs.get(partitionId);
-        Object initialData = _checkpointSvcs.getCheckpointData(partitionId);
-
-        resourcePartition.start(initialData);
-    }
+        _resourcePartitionSvcs.start(partitionId);    }
 
     @Override
     public void onPartitionReleasedAsync(DocumentServiceLease documentServiceLease, ChangeFeedObserverCloseReason reason) {
@@ -149,7 +143,6 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         System.out.println("Partition finished");
 
-        ResourcePartition resourcePartition = _resourcePartitionSvcs.get(partitionId);
-        resourcePartition.stop();
+        _resourcePartitionSvcs.stop(partitionId);
     }
 }
