@@ -5,6 +5,8 @@
  */
 package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
+import com.microsoft.azure.documentdb.DocumentClientException;
+
 /**
  *
  * @author yoterada
@@ -17,7 +19,7 @@ public interface ILeaseManager<T extends Lease> {
 	/// Checks whether lease store exists and creates if does not exist.
 	/// </summary>
 	/// <returns>true if created, false otherwise.</returns>
-	boolean createLeaseStoreIfNotExists();
+	boolean createLeaseStoreIfNotExists() throws DocumentClientException;
 
 	Iterable<T> listLeases();
 
@@ -25,7 +27,7 @@ public interface ILeaseManager<T extends Lease> {
 	/// Checks whether lease exists and creates if does not exist.
 	/// </summary>
 	/// <returns>true if created, false otherwise.</returns>
-	boolean createLeaseIfNotExist(String partitionId, String continuationToken);
+	boolean createLeaseIfNotExist(String partitionId, String continuationToken) throws DocumentClientException;
 
 	T getLease(String partitionId);
 
