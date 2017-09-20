@@ -22,7 +22,10 @@
  */
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
+import com.microsoft.azure.documentdb.*;
+
 import java.lang.*;
+import java.net.URI;
 
 /*
  *
@@ -33,6 +36,25 @@ public class Main {
 
     public static void main(String[] args) throws Exception{
         System.out.println("hello!!");
+
+        testChangeFeed();
+    }
+
+    public static void testChangeFeed() throws Exception{
+        System.out.println("Test: ChangeFeed");
+
+        String hostname = "localhost";
+
+        DocumentCollectionInfo docColInfo = new DocumentCollectionInfo();
+        docColInfo.setUri(new URI("http://cosmos"));
+        docColInfo.setDatabaseName("db1");
+        docColInfo.setCollectionName("col1");
+        docColInfo.setMasterKey("SECRET");
+
+        ChangeFeedOptions defaultFeedOptions = new ChangeFeedOptions();
+        ChangeFeedHostOptions defaultHostOptions = new ChangeFeedHostOptions();
+
+        ChangeFeedEventHost host = new ChangeFeedEventHost(hostname, docColInfo, null, defaultFeedOptions, defaultHostOptions);
     }
 
 }
