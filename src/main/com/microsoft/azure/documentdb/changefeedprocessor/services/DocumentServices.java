@@ -20,8 +20,4 @@ public class DocumentServices {
     public DocumentServicesClient createClient() {
         return new DocumentServicesClient(_url, _database, _collection, _masterKey);
     }
-
-    public DocumentServices createClient(String partitionId, String continuationToken) {
-        return null;
-    }
 }

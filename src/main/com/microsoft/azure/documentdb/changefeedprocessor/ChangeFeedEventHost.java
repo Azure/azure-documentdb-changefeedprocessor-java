@@ -14,6 +14,9 @@ import com.microsoft.azure.documentdb.changefeedprocessor.internal.WorkerData;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServicesClient;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartition;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartitionServices;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,6 +36,8 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     ConcurrentMap<String, WorkerData> _partitionKeyRangeIdToWorkerMap;
     PartitionManager<DocumentServiceLease> _partitionManager;
 
+    ResourcePartitionServices _resourcePartitionSvcs;
+    CheckpointServices _checkpointSvcs;
 
     private IChangeFeedObserverFactory _observerFactory;
 
@@ -60,7 +65,8 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         this._auxCollectionLocation = CanoninicalizeCollectionInfo(auxCollectionLocation);
         this._partitionKeyRangeIdToWorkerMap = new ConcurrentHashMap<String, WorkerData>();
 
-
+        this._resourcePartitionSvcs = new ResourcePartitionServices();
+        this._checkpointSvcs = new CheckpointServices();
     }
 
     private DocumentCollectionInfo CanoninicalizeCollectionInfo(DocumentCollectionInfo collectionInfo)
@@ -81,18 +87,48 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
      */
     public void registerObserver(Class type)
     {
-        this._observerFactory = new ChangeFeedObserverFactory(type);
-        //this.StartAsync();
+        ChangeFeedObserverFactory factory = new ChangeFeedObserverFactory(type);
+
+        registerObserverFactory(factory);
+        start();
+    }
+    void registerObserverFactory(ChangeFeedObserverFactory factory) {
+        this._observerFactory = factory;
     }
 
-
-    public void StartAsync(){
-        this.InitializeAsync();
-        this._partitionManager.start();
+    void start(){
+        initializePartitions();
+        initializeLeaseManager();
     }
 
-    public void InitializeAsync(){}
+    void initializePartitions(){
+        // list partitions
+        // create resourcePartition
+        List<String> partitionIds = null;
 
+        // TEST: single partition
+        if( partitionIds == null ) {
+            _resourcePartitionSvcs.create("singleInstanceTest");
+            return;
+        }
+
+        for(String id : partitionIds) {
+            _resourcePartitionSvcs.create(id);
+        }
+    }
+
+    void initializeLeaseManager() {
+        // simulate a callback from partitionManager
+        hackStartSinglePartition();
+    }
+
+    void hackStartSinglePartition() {
+        // onPartitionAcquired(null);
+        ResourcePartition resourcePartition = _resourcePartitionSvcs.get("singleInstanceTest");
+
+        Object initialData = _checkpointSvcs.getCheckpointData("singleInstanceTest");
+        resourcePartition.start(initialData);
+    }
 
     public List listPartition(){
         DocumentServices service = new DocumentServices(_collectionLocation);
@@ -106,11 +142,21 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
     @Override
     public void onPartitionAcquired(DocumentServiceLease documentServiceLease) {
+        String partitionId = documentServiceLease.id;
 
+        ResourcePartition resourcePartition = _resourcePartitionSvcs.get(partitionId);
+        Object initialData = _checkpointSvcs.getCheckpointData(partitionId);
+
+        resourcePartition.start(initialData);
     }
 
     @Override
     public void onPartitionReleasedAsync(DocumentServiceLease documentServiceLease, ChangeFeedObserverCloseReason reason) {
+        String partitionId = documentServiceLease.id;
 
+        System.out.println("Partition finished");
+
+        ResourcePartition resourcePartition = _resourcePartitionSvcs.get(partitionId);
+        resourcePartition.stop();
     }
 }
