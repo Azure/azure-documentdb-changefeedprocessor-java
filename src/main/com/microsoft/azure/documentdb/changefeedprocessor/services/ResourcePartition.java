@@ -4,9 +4,9 @@ public class ResourcePartition {
     String _partitionId;
     Job _resourceJob;
 
-    public ResourcePartition(String partitionId) {
+    public ResourcePartition(String partitionId, ChangeFeedJob resourceJob) {
         _partitionId = partitionId;
-        _resourceJob = new ChangeFeedJob();
+        _resourceJob = resourceJob;
     }
 
     public void start(Object initialData) {

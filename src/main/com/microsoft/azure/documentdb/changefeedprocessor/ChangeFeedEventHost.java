@@ -9,6 +9,7 @@ package com.microsoft.azure.documentdb.changefeedprocessor;
 import com.microsoft.azure.documentdb.ChangeFeedOptions;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.*;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartition;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartitionServices;
 
@@ -32,6 +33,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     PartitionManager<DocumentServiceLease> _partitionManager;
 
     ResourcePartitionServices _resourcePartitionSvcs;
+    CheckpointServices _checkpointSvcs;
 
     private IChangeFeedObserverFactory _observerFactory;
 
@@ -60,6 +62,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         this._partitionKeyRangeIdToWorkerMap = new ConcurrentHashMap<String, WorkerData>();
 
         this._resourcePartitionSvcs = new ResourcePartitionServices();
+        this._checkpointSvcs = new CheckpointServices();
     }
 
     private DocumentCollectionInfo CanoninicalizeCollectionInfo(DocumentCollectionInfo collectionInfo)
@@ -117,14 +120,20 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
     void hackStartSinglePartition() {
         // onPartitionAcquired(null);
-        _resourcePartitionSvcs.start("singleInstanceTest");
+        ResourcePartition resourcePartition = _resourcePartitionSvcs.get("singleInstanceTest");
+
+        Object initialData = _checkpointSvcs.getCheckpointData("singleInstanceTest");
+        resourcePartition.start(initialData);
     }
 
     @Override
     public void onPartitionAcquired(DocumentServiceLease documentServiceLease) {
         String partitionId = documentServiceLease.id;
 
-        _resourcePartitionSvcs.start(partitionId);
+        ResourcePartition resourcePartition = _resourcePartitionSvcs.get(partitionId);
+        Object initialData = _checkpointSvcs.getCheckpointData(partitionId);
+
+        resourcePartition.start(initialData);
     }
 
     @Override
@@ -133,6 +142,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         System.out.println("Partition finished");
 
-        _resourcePartitionSvcs.start(partitionId);
+        ResourcePartition resourcePartition = _resourcePartitionSvcs.get(partitionId);
+        resourcePartition.stop();
     }
 }
