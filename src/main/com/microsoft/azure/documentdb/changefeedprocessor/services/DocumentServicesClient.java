@@ -22,17 +22,22 @@ public class DocumentServicesClient {
 
     public Object listPartitionRange() {
 
-//        do {
-//            options.setRequestContinuation(checkpointContinuation);
-//            FeedResponse<PartitionKeyRange> range = _client.readPartitionKeyRanges(collectionLink, options);
-//            try {
-//                partitionKeys.addAll(range.getQueryIterable().fetchNextBlock());
-//            }catch (DocumentClientException ex){}
-//
-//            checkpointContinuation = range.getResponseContinuation(); //PartitionLSN
-//        } while (checkpointContinuation != null);
+        String checkpointContinuation = null;
+        FeedOptions options = new FeedOptions();
 
-        return null;
+        List<PartitionKeyRange> partitionKeys = new ArrayList<>();
+
+        do {
+            options.setRequestContinuation(checkpointContinuation);
+            FeedResponse<PartitionKeyRange> range = _client.readPartitionKeyRanges(_collectionLink, options);
+            try {
+                partitionKeys.addAll(range.getQueryIterable().fetchNextBlock());
+            }catch (DocumentClientException ex){}
+
+            checkpointContinuation = range.getResponseContinuation(); //PartitionLSN
+        } while (checkpointContinuation != null);
+
+        return partitionKeys;
     }
 
     public FeedResponse<Document> createDocumentChangeFeedQuery(String partitionId) throws Exception {
