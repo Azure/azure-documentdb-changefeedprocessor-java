@@ -14,7 +14,7 @@ public class DocumentServices {
     private final String _masterKey;
     private final DocumentClient _client;
     private final String _collectionLink;
-    private final ChangeFeedOptions _options;
+//    private final ChangeFeedOptions _options;
 
     public DocumentServices(DocumentCollectionInfo collectionLocation) {
         this._url = collectionLocation.getUri().toString();
@@ -23,7 +23,7 @@ public class DocumentServices {
         this._masterKey = collectionLocation.getMasterKey();
         this._client = new DocumentClient(_url, _masterKey, new ConnectionPolicy(), ConsistencyLevel.Session);
         this._collectionLink = String.format("/dbs/%s/colls/%s", _database, _collection);
-        this._options = new ChangeFeedOptions ();
+//        this._options = new ChangeFeedOptions ();
     }
 
     public List<String> listPartitionRange() {
@@ -52,12 +52,19 @@ public class DocumentServices {
         return partitionsId;
     }
 
-    public FeedResponse<Document> createDocumentChangeFeedQuery(String partitionId) throws Exception {
-        FeedResponse<Document> query = _client.queryDocumentChangeFeed(_collectionLink, _options);;
+    public FeedResponse<Document> createDocumentChangeFeedQuery(String partitionId, String continuationToken) throws Exception {
 
-        if( query != null ) {
-            _options.setRequestContinuation(query.getResponseContinuation());
+        ChangeFeedOptions options = new ChangeFeedOptions();
+        options.setPartitionKeyRangeId(partitionId);
+
+        if (continuationToken == null || continuationToken.isEmpty())
+            options.setStartFromBeginning(true);
+        else {
+            options.setStartFromBeginning(false);
+            options.setRequestContinuation(continuationToken);
         }
+
+        FeedResponse<Document> query = _client.queryDocumentChangeFeed(_collectionLink, options);
 
         return query;
     }

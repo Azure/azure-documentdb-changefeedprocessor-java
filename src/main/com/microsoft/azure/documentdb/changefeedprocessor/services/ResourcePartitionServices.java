@@ -1,5 +1,7 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
+import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserverFactory;
+
 import java.util.Dictionary;
 import java.util.Hashtable;
 
@@ -7,16 +9,18 @@ public class ResourcePartitionServices {
     CheckpointServices _checkpointSvcs;
     Dictionary<String, ResourcePartition> _resourcePartitions;
     DocumentServices _client;
+    IChangeFeedObserverFactory _factory;
 
-    public ResourcePartitionServices(DocumentServices client, CheckpointServices checkpointSvcs) {
+    public ResourcePartitionServices(DocumentServices client, CheckpointServices checkpointSvcs, IChangeFeedObserverFactory factory) {
 
         _resourcePartitions = new Hashtable<>();
         _client = client;
         _checkpointSvcs = checkpointSvcs;
+        _factory = factory;
     }
 
     public ResourcePartition create(String partitionId) {
-        Job job = new ChangeFeedJob(partitionId, _client, _checkpointSvcs);
+        Job job = new ChangeFeedJob(partitionId, _client, _checkpointSvcs, _factory.createObserver());
         ResourcePartition resourcePartition = new ResourcePartition(partitionId, job);
 
         _resourcePartitions.put(partitionId, resourcePartition);

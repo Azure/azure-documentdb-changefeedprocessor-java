@@ -1,26 +1,51 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
+import com.microsoft.azure.documentdb.Document;
+import com.microsoft.azure.documentdb.FeedResponse;
+import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverContext;
+import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserver;
+
+import java.util.List;
+
 public class ChangeFeedJob implements Job {
 
     private final DocumentServices _client;
     private final CheckpointServices _checkpointSvcs;
     private final String _partitionId;
+    private final IChangeFeedObserver _observer;
 
-    public ChangeFeedJob(String partitionId, DocumentServices client, CheckpointServices checkpointSvcs) {
+    public ChangeFeedJob(String partitionId, DocumentServices client, CheckpointServices checkpointSvcs, IChangeFeedObserver observer) {
         this._client = client;
         this._checkpointSvcs = checkpointSvcs;
         this._partitionId = partitionId;
+        this._observer = observer;
+
+
     }
 
     @Override
     public void start(Object initialData) {
 
-//        service = new DocumentServices(docInfo);
-//        DocumentServicesClient client =  service.createClient();
-        // _client.createDocumentChangeFeedQuery();
+        ChangeFeedObserverContext context = new ChangeFeedObserverContext();
+        context.setPartitionKeyRangeId(_partitionId);
+        FeedResponse<Document> query = null;
 
         while(true) {
             System.out.println("running");
+
+            try {
+                query = _client.createDocumentChangeFeedQuery(_partitionId, (String)initialData);
+                if (query != null) {
+                    context.setFeedResponse(query);
+                    List<Document> docs = query.getQueryIterable().fetchNextBlock();
+                    _observer.processChanges(context, docs);
+
+                    this.checkpoint(query.getResponseContinuation());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
