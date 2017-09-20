@@ -105,14 +105,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
     void initializePartitions(){
         // list partitions
-        // create resourcePartition
-        List<String> partitionIds = null;
-
-        // TEST: single partition
-        if( partitionIds == null ) {
-            _resourcePartitionSvcs.create("singleInstanceTest");
-            return;
-        }
+        List<String> partitionIds = this.listPartition();
 
         for(String id : partitionIds) {
             _resourcePartitionSvcs.create(id);
@@ -132,7 +125,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         resourcePartition.start(initialData);
     }
 
-    public List listPartition(){
+    private List listPartition(){
         DocumentServices client = this._documentServices;
 
         List list = (List)client.listPartitionRange();

@@ -3,7 +3,6 @@ package com.microsoft.azure.documentdb.changefeedprocessor;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationException;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationFile;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
-import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServicesClient;
 import org.junit.Assert;
 import org.junit.Test;
 

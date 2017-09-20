@@ -26,12 +26,13 @@ public class DocumentServices {
         this._options = new ChangeFeedOptions ();
     }
 
-    public Object listPartitionRange() {
+    public List<String> listPartitionRange() {
 
         String checkpointContinuation = null;
         FeedOptions options = new FeedOptions();
 
-        List<PartitionKeyRange> partitionKeys = new ArrayList<>();
+        List<PartitionKeyRange> partitionKeys = new ArrayList();
+        List<String> partitionsId = new ArrayList();
 
         do {
             options.setRequestContinuation(checkpointContinuation);
@@ -43,7 +44,12 @@ public class DocumentServices {
             checkpointContinuation = range.getResponseContinuation(); //PartitionLSN
         } while (checkpointContinuation != null);
 
-        return partitionKeys;
+
+        for(PartitionKeyRange pkr : partitionKeys) {
+            partitionsId.add(pkr.getResourceId()); //Using ResourceID _rid, because it is unique (guid)
+        }
+
+        return partitionsId;
     }
 
     public FeedResponse<Document> createDocumentChangeFeedQuery(String partitionId) throws Exception {
