@@ -13,7 +13,6 @@ import com.microsoft.azure.documentdb.changefeedprocessor.internal.PartitionMana
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.WorkerData;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
-import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServicesClient;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartition;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartitionServices;
