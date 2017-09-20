@@ -2,9 +2,9 @@ package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
 public class ChangeFeedJob implements Job {
 
-    private final DocumentServicesClient _client;
+    private final DocumentServices _client;
 
-    public ChangeFeedJob(DocumentServicesClient client) {
+    public ChangeFeedJob(DocumentServices client) {
         this._client = client;
     }
 

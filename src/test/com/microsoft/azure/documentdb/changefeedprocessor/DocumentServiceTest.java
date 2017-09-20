@@ -17,7 +17,7 @@ public class DocumentServiceTest {
     public void testDocumentService(){
 
         ConfigurationFile config = null;
-        DocumentServices service = null;
+        DocumentServices client = null;
 
         try {
             config = new ConfigurationFile("app.secrets");
@@ -38,11 +38,7 @@ public class DocumentServiceTest {
 
         }
 
-        service = new DocumentServices(docInfo);
-
-        Assert.assertNotNull(service);
-
-        DocumentServicesClient client =  service.createClient();
+        client = new DocumentServices(docInfo);
 
         Assert.assertNotNull(client);
 

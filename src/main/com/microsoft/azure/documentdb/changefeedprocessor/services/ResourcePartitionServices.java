@@ -5,9 +5,9 @@ import java.util.Hashtable;
 
 public class ResourcePartitionServices {
     Dictionary<String, ResourcePartition> _resourcePartitions;
-    DocumentServicesClient _client;
+    DocumentServices _client;
 
-    public ResourcePartitionServices(DocumentServicesClient client) {
+    public ResourcePartitionServices(DocumentServices client) {
 
         _resourcePartitions = new Hashtable<>();
         _client = client;
