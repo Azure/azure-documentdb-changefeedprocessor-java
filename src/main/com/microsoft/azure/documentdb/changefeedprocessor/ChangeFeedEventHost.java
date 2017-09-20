@@ -26,7 +26,8 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     private String _hostName;
     DocumentCollectionInfo _auxCollectionLocation;
     ConcurrentMap<String, WorkerData> _partitionKeyRangeIdToWorkerMap;
-    //PartitionManager<DocumentServiceLease> partitionManager;
+    PartitionManager<DocumentServiceLease> _partitionManager;
+
 
     private IChangeFeedObserverFactory _observerFactory;
 
@@ -82,7 +83,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
     public void StartAsync(){
         this.InitializeAsync();
-        //this._partitionManager.StartAsync();
+        this._partitionManager.start();
     }
 
     public void InitializeAsync(){}

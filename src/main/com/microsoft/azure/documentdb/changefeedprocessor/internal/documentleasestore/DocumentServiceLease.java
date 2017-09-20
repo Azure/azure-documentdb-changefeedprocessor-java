@@ -5,10 +5,12 @@
  */
 package com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore;
 
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.Lease;
+
 /**
  *
  * @author yoterada
  */
-public class DocumentServiceLease {
+public class DocumentServiceLease extends Lease {
     
 }
