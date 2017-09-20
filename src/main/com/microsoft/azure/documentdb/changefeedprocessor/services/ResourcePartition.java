@@ -16,4 +16,8 @@ public class ResourcePartition {
     public void stop() {
         _resourceJob.stop();
     }
+
+    public Job getJob() {
+        return _resourceJob;
+    }
 }
