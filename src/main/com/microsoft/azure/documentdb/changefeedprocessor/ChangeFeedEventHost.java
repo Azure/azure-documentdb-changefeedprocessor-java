@@ -118,9 +118,11 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     }
 
     void hackStartSinglePartition() {
-        // onPartitionAcquired(null);
+        List<String> partitionIds = this.listPartition();
 
-        _resourcePartitionSvcs.start("singleInstanceTest");
+        for(String id : partitionIds) {
+            _resourcePartitionSvcs.start(id);
+        }
     }
 
     private List listPartition(){
