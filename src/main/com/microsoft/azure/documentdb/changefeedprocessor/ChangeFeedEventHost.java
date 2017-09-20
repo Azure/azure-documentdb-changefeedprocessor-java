@@ -117,18 +117,14 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
     void hackStartSinglePartition() {
         // onPartitionAcquired(null);
-        ResourcePartition rp =  _resourcePartitionSvcs.get("singleInstanceTest");
-        Object data = null; // getdata from checkpoint
-        rp.start(data );
+        _resourcePartitionSvcs.start("singleInstanceTest");
     }
 
     @Override
     public void onPartitionAcquired(DocumentServiceLease documentServiceLease) {
         String partitionId = documentServiceLease.id;
 
-        ResourcePartition rp =  _resourcePartitionSvcs.get(partitionId);
-        Object data = null; // getdata from checkpoint
-        rp.start(data);
+        _resourcePartitionSvcs.start(partitionId);
     }
 
     @Override
@@ -137,7 +133,6 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         System.out.println("Partition finished");
 
-        ResourcePartition rp =  _resourcePartitionSvcs.get(partitionId);
-        rp.stop();
+        _resourcePartitionSvcs.start(partitionId);
     }
 }
