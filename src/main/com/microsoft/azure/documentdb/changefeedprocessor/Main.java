@@ -37,19 +37,22 @@ public class Main {
     public static void main(String[] args) throws Exception{
         System.out.println("hello!!");
 
-        testChangeFeed();
+        testChangeFeed("localhost",
+                "http://cosmos",
+                "db1",
+                "col1",
+                "SECRET"
+        );
     }
 
-    public static void testChangeFeed() throws Exception{
+    public static void testChangeFeed(String hostname, String url, String database, String collection, String masterKey) throws Exception{
         System.out.println("Test: ChangeFeed");
 
-        String hostname = "localhost";
-
         DocumentCollectionInfo docColInfo = new DocumentCollectionInfo();
-        docColInfo.setUri(new URI("http://cosmos"));
-        docColInfo.setDatabaseName("db1");
-        docColInfo.setCollectionName("col1");
-        docColInfo.setMasterKey("SECRET");
+        docColInfo.setUri(new URI(url));
+        docColInfo.setDatabaseName(database);
+        docColInfo.setCollectionName(collection);
+        docColInfo.setMasterKey(masterKey);
 
         ChangeFeedOptions defaultFeedOptions = new ChangeFeedOptions();
         ChangeFeedHostOptions defaultHostOptions = new ChangeFeedHostOptions();
