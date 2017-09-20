@@ -5,13 +5,16 @@ import java.util.Hashtable;
 
 public class ResourcePartitionServices {
     Dictionary<String, ResourcePartition> _resourcePartitions;
+    DocumentServicesClient _client;
 
-    public ResourcePartitionServices() {
+    public ResourcePartitionServices(DocumentServicesClient client) {
+
         _resourcePartitions = new Hashtable<>();
+        _client = client;
     }
 
     public ResourcePartition create(String partitionId) {
-        ResourcePartition resourcePartition = new ResourcePartition(partitionId, new ChangeFeedJob(null));
+        ResourcePartition resourcePartition = new ResourcePartition(partitionId, new ChangeFeedJob(_client));
 
         _resourcePartitions.put(partitionId, resourcePartition);
 

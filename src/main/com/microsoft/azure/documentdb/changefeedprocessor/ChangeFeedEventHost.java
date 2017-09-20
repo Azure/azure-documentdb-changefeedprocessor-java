@@ -36,6 +36,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     ConcurrentMap<String, WorkerData> _partitionKeyRangeIdToWorkerMap;
     PartitionManager<DocumentServiceLease> _partitionManager;
 
+    DocumentServicesClient _documentServicesClient;
     ResourcePartitionServices _resourcePartitionSvcs;
     CheckpointServices _checkpointSvcs;
 
@@ -65,7 +66,12 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         this._auxCollectionLocation = CanoninicalizeCollectionInfo(auxCollectionLocation);
         this._partitionKeyRangeIdToWorkerMap = new ConcurrentHashMap<String, WorkerData>();
 
-        this._resourcePartitionSvcs = new ResourcePartitionServices();
+        this._documentServicesClient = new DocumentServicesClient(documentCollectionLocation.getUri().toString(),
+                documentCollectionLocation.getDatabaseName(),
+                documentCollectionLocation.getCollectionName(),
+                documentCollectionLocation.getMasterKey());
+
+        this._resourcePartitionSvcs = new ResourcePartitionServices(_documentServicesClient);
         this._checkpointSvcs = new CheckpointServices();
     }
 
@@ -131,7 +137,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     }
 
     public List listPartition(){
-        DocumentServices service = new DocumentServices(_collectionLocation);
+        DocumentServices service = this._documentServicesClient;
 
         DocumentServicesClient client =  service.createClient();
 
