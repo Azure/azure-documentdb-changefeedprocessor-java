@@ -25,32 +25,32 @@
 
 package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
+import lombok.Getter;
+import lombok.Setter;
+
 public abstract class Lease {
 
 
-    private String _partitionId;
-    private String _owner;
-    private String _continuationToken;
-    private long _sequenceNumber;
-    private String _concurrencyToken;
+    @Getter @Setter private String partitionId;
+    @Getter @Setter private String owner;
+    @Getter @Setter private String continuationToken;
+    @Getter @Setter private long sequenceNumber;
+    @Getter @Setter private String concurrencyToken;
 
 
 
-    public Lease()
-    {
+    public Lease() {
     }
 
-    public Lease(Lease source)
-    {
-        this._partitionId = source.getPartitionId();
-        this._owner = source.getOwner();
-        this._continuationToken = source.getContinuationToken();
-        this._sequenceNumber = source.getSequenceNumber();
+    public Lease(Lease source) {
+        this.partitionId = source.getPartitionId();
+        this.owner = source.getOwner();
+        this.continuationToken = source.getContinuationToken();
+        this.sequenceNumber = source.getSequenceNumber();
     }
 
 
-    public boolean Equals(Object obj)
-    {
+    public boolean equals(Object obj) {
         if (obj == this)
         {
             return true;
@@ -62,51 +62,11 @@ public abstract class Lease {
             return false;
         }
 
-        return this.getPartitionId().equals(lease.getPartitionId());
+        return partitionId.equals(lease.partitionId);
     }
 
-    public int GetHashCode()
-    {
-        return this.getPartitionId().hashCode();
+    public int getHashCode() {
+        return partitionId.hashCode();
     }
-
-    public String getPartitionId() {
-        return _partitionId;
-    }
-
-    public void setPartitionId(String _partitionId) {
-        this._partitionId = _partitionId;
-    }
-
-    public String getOwner() {
-        return _owner;
-    }
-
-    public void setOwner(String _owner) {
-        this._owner = _owner;
-    }
-
-    public String getContinuationToken() {
-        return _continuationToken;
-    }
-
-    public void setContinuationToken(String _continuationToken) {
-        this._continuationToken = _continuationToken;
-    }
-
-    public long getSequenceNumber() {
-        return _sequenceNumber;
-    }
-
-    public void setSequenceNumber(long _sequenceNumber) {
-        this._sequenceNumber = _sequenceNumber;
-    }
-
-    public String getConcurrencyToken() {
-        return _concurrencyToken;
-    }
-
-    public void setConcurrencyToken(String _concurrencyToken) {
-        this._concurrencyToken = _concurrencyToken;
-    }
+    
 }
