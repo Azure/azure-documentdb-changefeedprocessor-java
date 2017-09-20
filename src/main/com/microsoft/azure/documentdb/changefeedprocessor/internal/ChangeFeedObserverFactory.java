@@ -24,4 +24,10 @@ public class ChangeFeedObserverFactory implements IChangeFeedObserverFactory{
 
         return value;
     }
+
+	@Override
+	public IChangeFeedObserver CreateObserver() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
