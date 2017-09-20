@@ -7,12 +7,17 @@ package com.microsoft.azure.documentdb.changefeedprocessor;
 
 
 import com.microsoft.azure.documentdb.ChangeFeedOptions;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.*;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.ChangeFeedObserverFactory;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.IPartitionObserver;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.PartitionManager;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.WorkerData;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServicesClient;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Future;
 
 public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLease> {
 
@@ -88,6 +93,16 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
     public void InitializeAsync(){}
 
+
+    public List listPartition(){
+        DocumentServices service = new DocumentServices(_collectionLocation);
+
+        DocumentServicesClient client =  service.createClient();
+
+        List list = (List)client.listPartitionRange();
+
+        return list;
+    }
 
     @Override
     public void onPartitionAcquired(DocumentServiceLease documentServiceLease) {

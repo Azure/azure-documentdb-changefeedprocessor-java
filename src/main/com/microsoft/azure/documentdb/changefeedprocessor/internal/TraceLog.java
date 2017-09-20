@@ -13,6 +13,7 @@ public class TraceLog {
     private static int id = 0;
     enum TraceEventType {
         Verbose, Information, Warning, Error
+
     };
 
     public static void verbose(String message)
@@ -37,6 +38,8 @@ public class TraceLog {
 
     public static void exception(Exception ex)
     {
+        Lease lease = null;
+
         // TODO
         // Error(GetExceptionText(ex));
     }
