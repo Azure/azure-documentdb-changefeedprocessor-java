@@ -5,21 +5,9 @@
  */
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
-<<<<<<< HEAD
-/**
- *
- * @author yoterada
- */
-public class ChangeFeedEventHost {
-    public ChangeFeedEventHost(String hostName, DocumentCollectionInfo documentCollectionLocation, DocumentCollectionInfo auxCollectionLocation){
-//        this(hostName, documentCollectionLocation, auxCollectionLocation, new ChangeFeedOptions(), new ChangeFeedHostOptions());
-=======
 
 import com.microsoft.azure.documentdb.ChangeFeedOptions;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.CancellationTokenSource;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.ChangeFeedObserverFactory;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.IPartitionObserver;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.WorkerData;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.*;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,6 +26,8 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     private String _hostName;
     DocumentCollectionInfo _auxCollectionLocation;
     ConcurrentMap<String, WorkerData> _partitionKeyRangeIdToWorkerMap;
+    PartitionManager<DocumentServiceLease> _partitionManager;
+
 
     private IChangeFeedObserverFactory _observerFactory;
 
@@ -84,21 +74,28 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     /**
      * This code used to be async
      */
-    public void RegisterObserver()
+    public void registerObserver(Class type)
     {
-        this._observerFactory = new ChangeFeedObserverFactory<>();
+        this._observerFactory = new ChangeFeedObserverFactory(type);
         //this.StartAsync();
     }
 
 
+    public void StartAsync(){
+        this.InitializeAsync();
+        this._partitionManager.start();
+    }
+
+    public void InitializeAsync(){}
+
+
     @Override
-    public void OnPartitionAcquiredAsync(DocumentServiceLease documentServiceLease) {
+    public void onPartitionAcquired(DocumentServiceLease documentServiceLease) {
 
     }
 
     @Override
-    public void OnPartitionReleasedAsync(DocumentServiceLease documentServiceLease, ChangeFeedObserverCloseReason reason) {
+    public void onPartitionReleasedAsync(DocumentServiceLease documentServiceLease, ChangeFeedObserverCloseReason reason) {
 
->>>>>>> Event_Host
     }
 }
