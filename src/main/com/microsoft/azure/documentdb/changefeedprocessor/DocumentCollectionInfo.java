@@ -69,7 +69,7 @@ public class DocumentCollectionInfo {
      * Sets the URI of Document Service
      * @param _uri
      */
-    public void seUri(URI _uri) {
+    public void setUri(URI _uri) {
         this._uri = _uri;
     }
 
