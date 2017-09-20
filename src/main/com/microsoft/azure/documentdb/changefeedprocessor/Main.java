@@ -27,6 +27,7 @@ import com.microsoft.azure.documentdb.changefeedprocessor.internal.ChangeFeedObs
 
 import java.lang.*;
 import java.net.URI;
+import java.util.Scanner;
 
 /*
  *
@@ -37,12 +38,21 @@ public class Main {
 
     public static void main(String[] args) throws Exception{
 
-        testChangeFeed("localhost",
-                "http://cosmos",
-                "db1",
-                "col1",
-                "SECRET"
-        );
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.print("URL: ");
+        String url = scanner.nextLine();
+
+        System.out.print("MasterKey: ");
+        String masterKey = scanner.nextLine();
+
+        System.out.print("Database: ");
+        String database = scanner.nextLine();
+
+        System.out.print("Collection: ");
+        String collection = scanner.nextLine();
+
+        testChangeFeed("localhost", url, database, collection, masterKey);
     }
 
     public static void testChangeFeed(String hostname, String url, String database, String collection, String masterKey) throws Exception{
