@@ -42,11 +42,11 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
 
     private final static Logger LOGGER = Logger.getLogger(DocumentServiceLeaseManager.class.getName());
 
-    private final static String dateHeaderName = "Date";
-    private final static String containerSeparator = ".";
-    private final static String partitionPrefix = ".";
-    private final static String containerNameSuffix = "info";
-    private final static int retryCountOnConflict = 5;
+    private final static String DATE_HEADER_NAME = "Date";
+    private final static String CONTAINER_SEPARATOR = ".";
+    private final static String PARTITION_PREFIX = ".";
+    private final static String CONTAINER_NAME_SUFFIX = "info";
+    private final static int RETRY_COUNT_ON_CONFLICT = 5;
     private String containerNamePrefix;
     private DocumentCollectionInfo leaseStoreCollectionInfo;
 //    private TimeSpan leaseIntervalAllowance = TimeSpan.FromMilliseconds(25);  // Account for diff between local and server.
@@ -293,7 +293,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
                 serverLease.setContinuationToken(continuationToken);
                 serverLease.setSequenceNumber(sequenceNumber);
                 return serverLease;
-            }, dateHeaderName);
+            }, DATE_HEADER_NAME);
             return result;
         } catch (LeaseLostException | DocumentClientException ex) {
             Logger.getLogger(DocumentServiceLeaseManager.class.getName()).log(Level.SEVERE, null, ex);
@@ -344,7 +344,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     private String getDocumentId(String partitionId) //    private string GetDocumentId(string partitionId = null)
     {
         if (partitionId == null || partitionId.equals("")) {
-            return containerNamePrefix + DocumentServiceLeaseManager.containerSeparator + DocumentServiceLeaseManager.containerNameSuffix;
+            return containerNamePrefix + DocumentServiceLeaseManager.CONTAINER_SEPARATOR + DocumentServiceLeaseManager.CONTAINER_NAME_SUFFIX;
         } else {
             return getPartitionLeasePrefix() + partitionId;
         }
@@ -356,7 +356,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
     
     private String getPartitionLeasePrefix() {
-        return this.containerNamePrefix + containerSeparator + partitionPrefix;
+        return this.containerNamePrefix + CONTAINER_SEPARATOR + PARTITION_PREFIX;
     }
 
     private DocumentServiceLease updateInternal(
@@ -371,7 +371,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         }
 
         String leaseUri = String.format("/dbs/%s/colls/%s/docs/%s/", leaseStoreCollectionInfo.getDatabaseName(), leaseStoreCollectionInfo.getCollectionName(), lease.getId());
-        int retryCount = retryCountOnConflict;
+        int retryCount = RETRY_COUNT_ON_CONFLICT;
         while (true) {
             Document leaseDocument = null;
             try {
