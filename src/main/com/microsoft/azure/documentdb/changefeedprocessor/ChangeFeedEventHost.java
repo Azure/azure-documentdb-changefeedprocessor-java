@@ -174,7 +174,11 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         List<String> partitionIds = this.listPartition();
 
         for(String id : partitionIds) {
-            _resourcePartitionSvcs.start(id);
+            try {
+                _resourcePartitionSvcs.start(id);
+            } catch (DocumentClientException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -190,7 +194,12 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     public void onPartitionAcquired(DocumentServiceLease documentServiceLease) {
         String partitionId = documentServiceLease.id;
 
-        _resourcePartitionSvcs.start(partitionId);    }
+        try {
+            _resourcePartitionSvcs.start(partitionId);
+        } catch (DocumentClientException e) {
+            e.printStackTrace();
+        }
+    }
 
     @Override
     public void onPartitionReleased(DocumentServiceLease documentServiceLease, ChangeFeedObserverCloseReason reason) {
