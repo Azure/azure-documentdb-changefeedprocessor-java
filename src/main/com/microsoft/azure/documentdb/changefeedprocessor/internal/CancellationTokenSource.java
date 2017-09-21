@@ -25,48 +25,16 @@
 
 package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
-import lombok.Getter;
-import lombok.Setter;
+public class CancellationTokenSource {
 
-public abstract class Lease {
+    private boolean _cancel = false;
 
-
-    @Getter @Setter private String partitionId;
-    @Getter @Setter private String owner;
-    @Getter @Setter private String continuationToken;
-    @Getter @Setter private long sequenceNumber;
-    @Getter @Setter private String concurrencyToken;
-
-
-
-    public Lease() {
+    public void cancel(){
+        _cancel = true;
     }
 
-    public Lease(Lease source) {
-        this.partitionId = source.getPartitionId();
-        this.owner = source.getOwner();
-        this.continuationToken = source.getContinuationToken();
-        this.sequenceNumber = source.getSequenceNumber();
+    public boolean isCanceled(){
+        return _cancel;
     }
 
-
-    public boolean equals(Object obj) {
-        if (obj == this)
-        {
-            return true;
-        }
-
-        Lease lease = (Lease)obj ;
-        if (lease == null)
-        {
-            return false;
-        }
-
-        return partitionId.equals(lease.partitionId);
-    }
-
-    public int getHashCode() {
-        return partitionId.hashCode();
-    }
-    
 }

@@ -22,7 +22,12 @@
  */
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
+import com.microsoft.azure.documentdb.*;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.ChangeFeedObserverFactory;
+
 import java.lang.*;
+import java.net.URI;
+import java.util.Scanner;
 
 /*
  *
@@ -32,7 +37,41 @@ import java.lang.*;
 public class Main {
 
     public static void main(String[] args) throws Exception{
-        System.out.println("hello!!");
+
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.print("URL: ");
+        String url = scanner.nextLine();
+
+        System.out.print("MasterKey: ");
+        String masterKey = scanner.nextLine();
+
+        System.out.print("Database: ");
+        String database = scanner.nextLine();
+
+        System.out.print("Collection: ");
+        String collection = scanner.nextLine();
+
+        testChangeFeed("localhost", url, database, collection, masterKey);
+    }
+
+    public static void testChangeFeed(String hostname, String url, String database, String collection, String masterKey) throws Exception{
+        System.out.println("Test: ChangeFeed");
+
+        DocumentCollectionInfo docColInfo = new DocumentCollectionInfo();
+        docColInfo.setUri(new URI(url));
+        docColInfo.setDatabaseName(database);
+        docColInfo.setCollectionName(collection);
+        docColInfo.setMasterKey(masterKey);
+
+        ChangeFeedOptions defaultFeedOptions = new ChangeFeedOptions();
+        ChangeFeedHostOptions defaultHostOptions = new ChangeFeedHostOptions();
+
+        DocumentCollectionInfo docColInfoaux = new DocumentCollectionInfo(docColInfo);
+
+        ChangeFeedEventHost host = new ChangeFeedEventHost(hostname, docColInfo, docColInfoaux, defaultFeedOptions, defaultHostOptions);
+
+        host.registerObserver(TestChangeFeedObserver.class);
     }
 
 }

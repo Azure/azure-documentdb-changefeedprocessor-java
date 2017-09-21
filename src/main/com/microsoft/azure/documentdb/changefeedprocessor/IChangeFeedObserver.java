@@ -23,7 +23,7 @@
  *  
  */
 
-package java.com.microsoft.azure.documentdb.changefeedprocessor;
+package com.microsoft.azure.documentdb.changefeedprocessor;
 
 import com.microsoft.azure.documentdb.Document;
 
@@ -31,11 +31,7 @@ import java.util.List;
 import java.util.concurrent.Future;
 
 public interface IChangeFeedObserver {
-
-    public Future OpenTaskAsync(ChangeFeedObserverContext context);
-
-    public Future CloseAsync(ChangeFeedObserverContext context, ChangeFeedObserverCloseReason reason);
-
-    public Future ProcessChangesAsync(ChangeFeedObserverContext context, List<Document> docs);
-
+    void open(ChangeFeedObserverContext context);
+    void close(ChangeFeedObserverContext context, ChangeFeedObserverCloseReason reason);
+    void processChanges(ChangeFeedObserverContext context, List<Document> docs);
 }

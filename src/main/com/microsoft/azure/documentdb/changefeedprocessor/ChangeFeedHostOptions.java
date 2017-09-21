@@ -23,7 +23,7 @@
  *  
  */
 
-package java.com.microsoft.azure.documentdb.changefeedprocessor;
+package com.microsoft.azure.documentdb.changefeedprocessor;
 
 import java.time.Instant;
 import java.util.Calendar;
@@ -49,11 +49,12 @@ public class ChangeFeedHostOptions {
     private Instant _feedPollDelay;
     private CheckpointFrequency _checkpointFrequency;
     private String _leasePrefix;
-    private int _minPartitionCount;
-    private int _maxPartitionCount;
-    private boolean _discardExistingLeases;
+    int _minPartitionCount;
+    int _maxPartitionCount;
+    boolean _discardExistingLeases;
+    int DegreeOfParallelism;
 
-    public int DegreeOfParallelism(){
+    int getDegreeOfParallelism(){
         return this._maxPartitionCount > 0 ? this._maxPartitionCount : 25;
     }
 
@@ -109,23 +110,23 @@ public class ChangeFeedHostOptions {
         return _minPartitionCount;
     }
 
-    public void setMinPartitionCount(int _minPartitionCount) {
+    void setMinPartitionCount(int _minPartitionCount) {
         this._minPartitionCount = _minPartitionCount;
     }
 
-    public int getMaxPartitionCount() {
+    int getMaxPartitionCount() {
         return _maxPartitionCount;
     }
 
-    public void setMaxPartitionCount(int _maxPartitionCount) {
+    void setMaxPartitionCount(int _maxPartitionCount) {
         this._maxPartitionCount = _maxPartitionCount;
     }
 
-    public boolean isDiscardExistingLeases() {
+    boolean isDiscardExistingLeases() {
         return _discardExistingLeases;
     }
 
-    public void setDiscardExistingLeases(boolean _discardExistingLeases) {
+    void setDiscardExistingLeases(boolean _discardExistingLeases) {
         this._discardExistingLeases = _discardExistingLeases;
     }
 }
