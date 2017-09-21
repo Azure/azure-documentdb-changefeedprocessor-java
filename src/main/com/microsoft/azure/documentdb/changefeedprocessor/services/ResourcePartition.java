@@ -1,5 +1,7 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
+import com.microsoft.azure.documentdb.DocumentClientException;
+
 public class ResourcePartition {
     String partitionId;
     Job resourceJob;
@@ -9,7 +11,7 @@ public class ResourcePartition {
         this.resourceJob = resourceJob;
     }
 
-    public void start(Object initialData) {
+    public void start(Object initialData) throws DocumentClientException {
         resourceJob.start(initialData);
     }
 

@@ -1,5 +1,7 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
+import com.microsoft.azure.documentdb.DocumentClientException;
+
 public class JobRunnable implements Runnable {
 
     private final Job job;
@@ -12,7 +14,11 @@ public class JobRunnable implements Runnable {
 
     @Override
     public void run() {
-        job.start(initialData);
+        try {
+            job.start(initialData);
+        } catch (DocumentClientException e) {
+            e.printStackTrace();
+        }
     }
 
     // TODO: stop thread
