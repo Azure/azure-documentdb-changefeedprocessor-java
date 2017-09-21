@@ -1,5 +1,6 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
+import com.microsoft.azure.documentdb.changefeedprocessor.CheckpointFrequency;
 import com.microsoft.azure.documentdb.changefeedprocessor.CheckpointStats;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
 
@@ -10,6 +11,8 @@ public class CheckpointServices {
 
     //TODO: We are using this dictonary to save the continuations tokens for test only.
     Dictionary<String, String> checkpoints;
+
+    private CheckpointFrequency _checkpointOptions;
 
     public CheckpointServices(){
         checkpoints = new Hashtable<String, String>();
@@ -25,20 +28,19 @@ public class CheckpointServices {
 
     public boolean IsCheckpointNeeded(DocumentServiceLease lease, CheckpointStats checkpointStats)
     {
-//        var options = new ChangeFeedHostOptions() { CheckpointFrequency = _checkpointOptions };
-//
-//        Debug.Assert(lease != null);
-//        Debug.Assert(checkpointStats != null);
-//
-//        if (checkpointStats.ProcessedDocCount == 0)
-//        {
-//            return false;
-//        }
+        CheckpointFrequency options = _checkpointOptions;
+
+        assert (lease != null);
+        assert (checkpointStats != null);
+
+        if (checkpointStats.getProcessedDocCount() == 0) {
+            return false;
+        }
 
         boolean isCheckpointNeeded = true;
-
-//        if (options.CheckpointFrequency != null &&
-//                (options.CheckpointFrequency.ProcessedDocumentCount.HasValue || options.CheckpointFrequency.TimeInterval.HasValue))
+//
+//        if (options != null &&
+//                (options.getProcessedDocumentCount.HasValue || options.CheckpointFrequency.TimeInterval.HasValue))
 //        {
 //            // Note: if either condition is satisfied, we checkpoint.
 //            isCheckpointNeeded = false;
