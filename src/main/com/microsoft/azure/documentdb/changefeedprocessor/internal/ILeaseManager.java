@@ -13,7 +13,7 @@ import com.microsoft.azure.documentdb.DocumentClientException;
  */
 /// All of these functions used to be async
 public interface ILeaseManager<T extends Lease> {
-	boolean leaseStoreExists();
+	boolean leaseStoreExists() throws DocumentClientException;
 
 	/// <summary>
 	/// Checks whether lease store exists and creates if does not exist.
@@ -29,17 +29,17 @@ public interface ILeaseManager<T extends Lease> {
 	/// <returns>true if created, false otherwise.</returns>
 	boolean createLeaseIfNotExist(String partitionId, String continuationToken) throws DocumentClientException;
 
-	T getLease(String partitionId);
+	T getLease(String partitionId) throws DocumentClientException;
 
-	T acquire(T lease, String owner);
+	T acquire(T lease, String owner) throws DocumentClientException;
 
 	T renew(T lease) throws LeaseLostException, DocumentClientException;
 
-	boolean release(T lease);
+	boolean release(T lease) throws DocumentClientException;
 
 	void delete(T lease);
 
-	void deleteAll();
+	void deleteAll() throws DocumentClientException;
 
 	boolean isExpired(T lease);
 }
