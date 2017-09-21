@@ -7,11 +7,10 @@ package com.microsoft.azure.documentdb.changefeedprocessor;
 
 
 import com.microsoft.azure.documentdb.ChangeFeedOptions;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.ChangeFeedObserverFactory;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.IPartitionObserver;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.PartitionManager;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.WorkerData;
+import com.microsoft.azure.documentdb.DocumentClientException;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.*;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLeaseManager;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartitionServices;
@@ -30,9 +29,11 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     private ChangeFeedOptions _changeFeedOptions;
     private ChangeFeedHostOptions _options;
     private String _hostName;
+    private String _leasePrefix;
     DocumentCollectionInfo _auxCollectionLocation;
     ConcurrentMap<String, WorkerData> _partitionKeyRangeIdToWorkerMap;
     PartitionManager<DocumentServiceLease> _partitionManager;
+    ILeaseManager<DocumentServiceLease> _leaseManager;
 
     DocumentServices _documentServices;
     ResourcePartitionServices _resourcePartitionSvcs;
@@ -87,25 +88,69 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     /**
      * This code used to be async
      */
-    public void registerObserver(Class type)
+    public void registerObserver(Class type) throws Exception
     {
         ChangeFeedObserverFactory factory = new ChangeFeedObserverFactory(type);
 
         registerObserverFactory(factory);
         start();
     }
+
     void registerObserverFactory(ChangeFeedObserverFactory factory) {
         this._observerFactory = factory;
     }
 
-    void start(){
+    void start() throws Exception{
 
         //TODO: This is not the right place to have this code..
         this._resourcePartitionSvcs = new ResourcePartitionServices(_documentServices, _checkpointSvcs, _observerFactory,this.DEFAULT_PAGE_SIZE);
 
-
+        initializeIntegrations();
         initializePartitions();
         initializeLeaseManager();
+    }
+
+    void initializeIntegrations() throws DocumentClientException, LeaseLostException {
+        // Grab the options-supplied prefix if present otherwise leave it empty.
+        String optionsPrefix = this._options.getLeasePrefix();
+        if( optionsPrefix == null ) {
+            optionsPrefix = "";
+        }
+
+        // Beyond this point all access to collection is done via this self link: if collection is removed, we won't access new one using same name by accident.
+        // this._leasePrefix = String.format("{%s}{%s}_{%s}_{%s}", optionsPrefix, this.collectionLocation.Uri.Host, docdb.DatabaseResourceId, docdb.CollectionResourceId);
+
+        DocumentServiceLeaseManager leaseManager = new DocumentServiceLeaseManager(
+                this._auxCollectionLocation,
+                this._leasePrefix,
+                this._options.getLeaseExpirationInterval(),
+                this._options.getLeaseRenewInterval());
+
+        leaseManager.initialize();
+
+        this._leaseManager = leaseManager;
+
+//        this._checkpointSvcs = new Refactor.CheckpointServices((ICheckpointManager)leaseManager, this.options.CheckpointFrequency);
+
+        if (this._options.getDiscardExistingLeases()) {
+            //TraceLog.Warning(string.Format("Host '{0}': removing all leases, as requested by ChangeFeedHostOptions", this.HostName));
+            this._leaseManager.deleteAll();
+        }
+
+        // Note: lease store is never stale as we use monitored colleciton Rid as id prefix for aux collection.
+        // Collection was removed and re-created, the rid would change.
+        // If it's not deleted, it's not stale. If it's deleted, it's not stale as it doesn't exist.
+        this._leaseManager.createLeaseStoreIfNotExists();
+
+        List<String> range = this._documentServices.listPartitionRange();
+
+//        TraceLog.Informational(string.Format("Source collection: '{0}', {1} partition(s), {2} document(s)", docdb.CollectionName, range.Count, docdb.DocumentCount));
+
+//        this.CreateLeases(range);
+
+//        this.partitionManager = new PartitionManager<DocumentServiceLease>(this.HostName, this.leaseManager, this.options);
+//        await this.partitionManager.SubscribeAsync(this);
+//        await this.partitionManager.InitializeAsync();
     }
 
     void initializePartitions(){

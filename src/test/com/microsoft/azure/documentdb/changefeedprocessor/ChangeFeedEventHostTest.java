@@ -77,6 +77,11 @@ public class ChangeFeedEventHostTest {
         ChangeFeedEventHost host = new ChangeFeedEventHost("hotsname", docInfo, docAux );
         Assert.assertNotNull(host);
 
-        host.registerObserver(TestChangeFeedObserver.class);
+        try {
+            host.registerObserver(TestChangeFeedObserver.class);
+        }
+        catch(Exception e) {
+            Assert.fail("registerObserver exception " + e.getMessage());
+        }
     }
 }
