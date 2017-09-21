@@ -46,7 +46,7 @@ public class DocumentServices {
 
 
         for(PartitionKeyRange pkr : partitionKeys) {
-            partitionsId.add(pkr.getResourceId()); //Using ResourceID _rid, because it is unique (guid)
+            partitionsId.add(pkr.getId());
         }
 
         return partitionsId;
