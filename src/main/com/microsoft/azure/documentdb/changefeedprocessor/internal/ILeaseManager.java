@@ -35,11 +35,11 @@ public interface ILeaseManager<T extends Lease> {
 
 	T renew(T lease) throws LeaseLostException, DocumentClientException;
 
-	boolean release(T lease) throws DocumentClientException;
+	boolean release(T lease) throws DocumentClientException, LeaseLostException;
 
-	void delete(T lease);
+	void delete(T lease) throws DocumentClientException, LeaseLostException;
 
-	void deleteAll() throws DocumentClientException;
+	void deleteAll() throws DocumentClientException, LeaseLostException;
 
 	boolean isExpired(T lease);
 }
