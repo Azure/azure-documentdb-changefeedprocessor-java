@@ -29,18 +29,20 @@ public class ChangeFeedJob implements Job {
         ChangeFeedObserverContext context = new ChangeFeedObserverContext();
         context.setPartitionKeyRangeId(_partitionId);
         FeedResponse<Document> query = null;
+        this.checkpoint(initialData == null ? "":initialData);
 
         while(true) {
-            System.out.println("running");
 
             try {
-                query = _client.createDocumentChangeFeedQuery(_partitionId, (String)initialData);
+                query = _client.createDocumentChangeFeedQuery(_partitionId, (String) _checkpointSvcs.getCheckpointData(_partitionId));
                 if (query != null) {
                     context.setFeedResponse(query);
                     List<Document> docs = query.getQueryIterable().fetchNextBlock();
-                    _observer.processChanges(context, docs);
+                    if (docs != null) {
+                        _observer.processChanges(context, docs);
+                        this.checkpoint(query.getResponseContinuation());   
+                    }
 
-                    this.checkpoint(query.getResponseContinuation());
                 }
             } catch (Exception e) {
                 e.printStackTrace();
