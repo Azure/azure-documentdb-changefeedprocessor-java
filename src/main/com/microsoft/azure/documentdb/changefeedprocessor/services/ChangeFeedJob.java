@@ -72,7 +72,11 @@ public class ChangeFeedJob implements Job {
         ChangeFeedObserverContext context = new ChangeFeedObserverContext();
         context.setPartitionKeyRangeId(partitionId);
         FeedResponse<Document> query = null;
-        this.checkpoint(initialData);
+        try {
+            this.checkpoint(initialData);
+        } catch (DocumentClientException e) {
+            e.printStackTrace();
+        }
         boolean HasMoreResults = false;
         ChangeFeedObserverCloseReason closeReason = null;
 
@@ -122,8 +126,7 @@ public class ChangeFeedJob implements Job {
         }// while(!this.stop)
     }
 
-    void checkpoint(Object data) {
-
+    void checkpoint(Object data) throws DocumentClientException {
         String initialData = (String) (data == null ? "" : data);
         checkpointSvcs.setCheckpointData(partitionId, initialData);
     }

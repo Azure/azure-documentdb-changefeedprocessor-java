@@ -1,5 +1,6 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
+import com.microsoft.azure.documentdb.DocumentClientException;
 import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserverFactory;
 
 import java.util.Dictionary;
@@ -44,7 +45,7 @@ public class ResourcePartitionServices {
         return resourcePartitions.get(partitionId);
     }
 
-    public void start(String partitionId) {
+    public void start(String partitionId) throws DocumentClientException {
         ResourcePartition resourcePartition = this.get(partitionId);
         Job job = resourcePartition.getJob();
         Object initialData = checkpointSvcs.getCheckpointData(partitionId);

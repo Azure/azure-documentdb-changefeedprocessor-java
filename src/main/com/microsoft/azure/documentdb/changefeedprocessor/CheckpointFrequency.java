@@ -25,34 +25,38 @@
 
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
+import javax.swing.text.html.Option;
 import java.time.Instant;
+import java.util.Optional;
 
 /**
  * Specifies the frequency of lease event. The event will trigger when either of conditions is satisfied.
  */
 public class CheckpointFrequency {
 
-    private int _processedDocumentCount;
+    private Optional<Integer> _processedDocumentCount;
 
-    private Instant _timeInterval;
+    private Optional<Integer> _timeInterval;
 
     public CheckpointFrequency(){
 
     }
 
-    public int getProcessedDocumentCount() {
+    public Optional<Integer> getProcessedDocumentCount() {
+
         return _processedDocumentCount;
     }
 
-    public void setProcessedDocumentCount(int _processedDocumentCount) {
+    public void setProcessedDocumentCount(Optional<Integer> _processedDocumentCount) {
         this._processedDocumentCount = _processedDocumentCount;
     }
 
-    public Instant getTimeInterval() {
+    public Optional<Integer> getTimeInterval() {
         return _timeInterval;
     }
 
-    public void setTimeInterval(Instant _timeInterval) {
+    public void setTimeInterval(Optional<Integer> _timeInterval) {
         this._timeInterval = _timeInterval;
     }
+
 }
