@@ -5,6 +5,8 @@
  */
 package com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore;
 
+import com.microsoft.azure.documentdb.AccessCondition;
+import com.microsoft.azure.documentdb.AccessConditionType;
 import com.microsoft.azure.documentdb.ChangeFeedOptions;
 import com.microsoft.azure.documentdb.ConsistencyLevel;
 import com.microsoft.azure.documentdb.Document;
@@ -20,6 +22,7 @@ import com.microsoft.azure.documentdb.changefeedprocessor.internal.ICheckpointMa
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ILeaseManager;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.Lease;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.LeaseLostException;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.TraceLog;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -39,11 +42,13 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.http.HttpStatus;
+
 /**
  *
  * @author yoterada
  */
-public class DocumentServiceLeaseManager implements ILeaseManager, ICheckpointManager {
+public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>, ICheckpointManager {
 
     private final static Logger LOGGER = Logger.getLogger(DocumentServiceLeaseManager.class.getName());
 
@@ -65,51 +70,14 @@ public class DocumentServiceLeaseManager implements ILeaseManager, ICheckpointMa
     DocumentClient client;
 
     @Override
-    public boolean createLeaseIfNotExist(String partitionId, String continuationToken) throws DocumentClientException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public Lease getLease(String partitionId) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public Lease acquire(Lease lease, String owner) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public Lease renew(Lease lease) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public boolean release(Lease lease) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public void delete(Lease lease) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
     public void deleteAll() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    @Override
-    public boolean isExpired(Lease lease) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
+    @FunctionalInterface
+    private interface LeaseConflictResolver {
 
-
-//    private DocumentServiceLease 
-//        LeaseConflictResolver(DocumentServiceLease serverLease);
-    private abstract class LeaseConflictResolver {
-
-        public abstract DocumentServiceLease callBack(DocumentServiceLease serverLease);
+        DocumentServiceLease run(DocumentServiceLease serverLease);
     }
 
     public DocumentServiceLeaseManager(DocumentCollectionInfo leaseStoreCollectionInfo, String storeNamePrefix, Instant leaseInterval, Instant renewInterval) {
@@ -184,7 +152,8 @@ public class DocumentServiceLeaseManager implements ILeaseManager, ICheckpointMa
     /// Checks whether lease exists and creates if does not exist.
     /// </summary>
     /// <returns>true if created, false otherwise.</returns>
-    public boolean createLeaseIfNotExistAsync(String partitionId, String continuationToken) throws DocumentClientException //    public async Task<bool> CreateLeaseIfNotExistAsync(string partitionId, string continuationToken)
+    @Override
+    public boolean createLeaseIfNotExist(String partitionId, String continuationToken) throws DocumentClientException //    public async Task<bool> CreateLeaseIfNotExistAsync(string partitionId, string continuationToken)
     {
         boolean wasCreated = false;
         String leaseDocId = getDocumentId(partitionId);
@@ -201,11 +170,13 @@ public class DocumentServiceLeaseManager implements ILeaseManager, ICheckpointMa
         return wasCreated;
     }
 
-    public DocumentServiceLease getLeaseAsync(String partitionId) //    public async Task<DocumentServiceLease> GetLeaseAsync(string partitionId)
+    @Override
+    public DocumentServiceLease getLease(String partitionId) //    public async Task<DocumentServiceLease> GetLeaseAsync(string partitionId)
     {
         return tryGetLease(getDocumentId(partitionId));
     }
 
+    @Override
     public DocumentServiceLease acquire(DocumentServiceLease lease, String owner) {//    public async Task<DocumentServiceLease> AcquireAsync(DocumentServiceLease lease, string owner)
 
         if (lease == null || lease.getPartitionId() == null) {
@@ -219,20 +190,20 @@ public class DocumentServiceLeaseManager implements ILeaseManager, ICheckpointMa
         currentLease.setOwner(owner);
         currentLease.setState(LeaseState.Leased);
 
-
-        /*  TODO wait for the implementation
-        return await this.UpdateInternalAsync(
-            currentLease,
-            (DocumentServiceLease serverLease) =>
-        {
-            serverLease.Owner = currentLease.Owner;
-            serverLease.State = currentLease.State;
-            return serverLease;
-        });*/
+        try {
+            return updateInternal(currentLease, (DocumentServiceLease serverLease) -> {
+                serverLease.setOwner(currentLease.getOwner());
+                serverLease.setState(currentLease.getState());
+                return serverLease;
+            }, owner);
+        } catch (LeaseLostException | DocumentClientException ex) {
+            Logger.getLogger(DocumentServiceLeaseManager.class.getName()).log(Level.SEVERE, null, ex);
+        }
         return null;
     }
 
-    public Future renew(DocumentServiceLease lease) throws LeaseLostException, LeaseLostException//    public async Task<DocumentServiceLease> RenewAsync(DocumentServiceLease lease)
+    @Override
+    public DocumentServiceLease renew(DocumentServiceLease lease) //    public async Task<DocumentServiceLease> RenewAsync(DocumentServiceLease lease)
     {
         LOGGER.log(Level.FINEST, "{0} lease", Boolean.toString(lease != null));
         DocumentServiceLease refreshedLease = tryGetLease(getDocumentId(lease.getPartitionId()));
@@ -243,12 +214,15 @@ public class DocumentServiceLeaseManager implements ILeaseManager, ICheckpointMa
             LOGGER.log(Level.FINE, "Failed to renew lease for partition id {0}! The lease was already taken by another host.", lease.getPartitionId());
             throw new LeaseLostException(lease);
         }
-        /* TODO wait for the implementation
-        return await this.UpdateInternalAsync(refreshedLease, serverLease => serverLease);
-         */
-        return null;
+
+        try {
+            updateInternal(refreshedLease, (DocumentServiceLease serverLease) -> serverLease, null);
+        } catch (LeaseLostException | DocumentClientException ex) {
+            Logger.getLogger(DocumentServiceLeaseManager.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
+    @Override
     public boolean release(DocumentServiceLease lease) //    public async Task<bool> ReleaseAsync(DocumentServiceLease lease)
     {
         DocumentServiceLease refreshedLease = tryGetLease(getDocumentId(lease.getPartitionId()));
@@ -262,7 +236,16 @@ public class DocumentServiceLeaseManager implements ILeaseManager, ICheckpointMa
             String oldOwner = lease.getOwner();
             refreshedLease.setOwner(null);
             refreshedLease.setState(LeaseState.Available);
-            refreshedLease = updateInternalAsync(); // TODO Wait implementation of updateInternalAsync
+            try {
+                refreshedLease = updateInternal(refreshedLease, (DocumentServiceLease serverLease) -> {
+                    serverLease.setOwner(null); // In the lambda expression of Java, only access effective final value;
+                    serverLease.setState(LeaseState.Available); // In the lambda expression of Java, only access effective final value;
+                    return serverLease;
+                }, oldOwner); // TODO Wait implementation of updateInternalAsync
+            } catch (LeaseLostException | DocumentClientException ex) {
+                //TODO Need to throw the Exception
+                Logger.getLogger(DocumentServiceLeaseManager.class.getName()).log(Level.SEVERE, null, ex);
+            }
             if (refreshedLease != null) {
                 return true;
             } else {
@@ -272,18 +255,19 @@ public class DocumentServiceLeaseManager implements ILeaseManager, ICheckpointMa
         }
     }
 
-    public void delete(DocumentServiceLease lease) throws DocumentClientException//    public async Task DeleteAsync(DocumentServiceLease lease)
-    {
+    @Override
+    public void delete(DocumentServiceLease lease) {//    public async Task DeleteAsync(DocumentServiceLease lease)
 
         if (lease == null || lease.getId() == null) {
             throw new IllegalArgumentException("lease");
         }
         //Create URI String
         String uri = String.format("/dbs/%s/colls/%s/docs/%s", leaseStoreCollectionInfo.getDatabaseName(), leaseStoreCollectionInfo.getCollectionName(), lease.getId());
-        client.deleteDocument(uri, new RequestOptions());
+        try {
+            client.deleteDocument(uri, new RequestOptions());
 
-        /* TODO CHECK : in this time, I didn't throw HandleLeaseOperationException due to there is no class
-           Thus I thorw DocumentClientException;
+            /* TODO CHECK : in this time, I didn't throw HandleLeaseOperationException due to there is no class
+            Thus I thorw DocumentClientException;
             catch (DocumentClientException ex)
             {
             if (StatusCode.NotFound != (StatusCode)ex.StatusCode)
@@ -291,148 +275,56 @@ public class DocumentServiceLeaseManager implements ILeaseManager, ICheckpointMa
             this.HandleLeaseOperationException(lease, ExceptionDispatchInfo.Capture(ex));
             }
             }*/
+        } catch (DocumentClientException ex) {
+            //TODO: Need to throw the Exception. Need to thange the Interface side
+            Logger.getLogger(DocumentServiceLeaseManager.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     public void deleteAllAsync() throws DocumentClientException //    public async Task DeleteAllAsync()
     {
         Iterable<DocumentServiceLease> listDocuments = listDocuments(containerNamePrefix);
-        for(DocumentServiceLease lease: listDocuments){
+        for (DocumentServiceLease lease : listDocuments) {
             delete(lease);
         }
     }
 
+    @Override
     public boolean isExpired(DocumentServiceLease lease) //    public Task<bool> IsExpired(DocumentServiceLease lease)
     {
-        LOGGER.log(Level.FINEST, "{0} lease", Boolean.toString(lease != null));        
-        long leaseIntvalCheck = lease.getTimestamp().getNano() + leaseInterval.getNano()+ leaseIntervalAllowance.getNano();
+        LOGGER.log(Level.FINEST, "{0} lease", Boolean.toString(lease != null));
+        long leaseIntvalCheck = lease.getTimestamp().getNano() + leaseInterval.getNano() + leaseIntervalAllowance.getNano();
         long serverTime = Instant.now().getNano() + serverToLocalTimeDelta.toNanos();
-        // There is something wrong: need to check the implementation at the test.
+        //TODO :  There is something wrong: need to check the implementation at the test.
         return leaseIntvalCheck < serverTime;
     }
 
     @Override
-    public Lease checkpoint(Lease lease, String offset, long sequenceNumber) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public Lease checkpoint(Lease lease, String continuationToken, long sequenceNumber) {
+        DocumentServiceLease documentLease = (DocumentServiceLease) lease;
+        LOGGER.log(Level.FINEST, "{0} documentLease", Boolean.toString(documentLease != null));
+        try {
+            documentLease.setContinuationToken(continuationToken);
+            documentLease.setSequenceNumber(sequenceNumber);
+            DocumentServiceLease result = updateInternal(documentLease, (DocumentServiceLease serverLease) -> {
+                serverLease.setContinuationToken(continuationToken);
+                serverLease.setSequenceNumber(sequenceNumber);
+                return serverLease;
+            }, dateHeaderName);
+            return result;
+        } catch (LeaseLostException | DocumentClientException ex) {
+            Logger.getLogger(DocumentServiceLeaseManager.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
     }
-    
-    
-    public DocumentServiceLease checkpoint(Lease lease, String continuationToken, long sequenceNumber) //    public async Task<Lease> CheckpointAsync(Lease lease, string continuationToken, long sequenceNumber)
+
+    private Document tryGetDocument(String documentId) throws DocumentClientException//    private async Task<Document> TryGetDocument(string documentId)
     {
-        DocumentServiceLease documentLease = (DocumentServiceLease)lease;
-        
-        /*
-        DocumentServiceLease documentLease = lease as DocumentServiceLease;
-        Debug.Assert(documentLease != null, "documentLease");
-
-        documentLease.ContinuationToken = continuationToken;
-        documentLease.SequenceNumber = sequenceNumber;
-
-        DocumentServiceLease result = await this.UpdateInternalAsync(
-            documentLease,
-            (DocumentServiceLease serverLease) =>
-        {
-            serverLease.ContinuationToken = documentLease.ContinuationToken;
-            serverLease.SequenceNumber = documentLease.SequenceNumber;
-            return serverLease;
-        });
-
-        return result;
-         */
-        return null;
+        String uri = String.format("/dbs/%s/colls/%s/docs/%s", leaseStoreCollectionInfo.getDatabaseName(), leaseStoreCollectionInfo.getCollectionName(), documentId);
+        return  client.readDocument(uri, new RequestOptions()).getResource();
     }
 
-//    private async Task<DocumentServiceLease> UpdateInternalAsync(
-    private Future<V> updateInternalAsync(
-            DocumentServiceLease lease,
-            LeaseConflictResolver conflictResolver,
-            String owner) {
-        /*
-        Debug.Assert(lease != null, "lease");
-        Debug.Assert(!string.IsNullOrEmpty(lease.Id), "lease.Id");
-
-        if (string.IsNullOrEmpty(owner))
-        {
-            owner = lease.Owner;
-        }
-
-        Uri leaseUri = UriFactory.CreateDocumentUri(this.leaseStoreCollectionInfo.DatabaseName, this.leaseStoreCollectionInfo.CollectionName, lease.Id);
-        int retryCount = RetryCountOnConflict;
-        while (true)
-        {
-            Document leaseDocument = null;
-            try
-            {
-                leaseDocument = await this.client.ReplaceDocumentAsync(leaseUri, lease, this.CreateIfMatchOptions(lease));
-            }
-            catch (DocumentClientException ex)
-            {
-                if (StatusCode.PreconditionFailed != (StatusCode)ex.StatusCode)
-                {
-                    ExceptionDispatchInfo.Capture(ex);
-                    this.HandleLeaseOperationException(lease, ExceptionDispatchInfo.Capture(ex));
-
-                    Debug.Assert(false, "UpdateInternalAsync: should never reach this!");
-                    throw new LeaseLostException(lease);
-                }
-            }
-
-            if (leaseDocument != null)
-            {
-                return new DocumentServiceLease(leaseDocument);
-            }
-            else
-            {
-                // Check if precondition failed due to a change from same/this host and retry.
-                var document = await this.TryGetDocument(this.GetDocumentId(lease.PartitionId));
-                var serverLease = new DocumentServiceLease(document);
-                if (serverLease.Owner != owner)
-                {
-                    throw new LeaseLostException(lease);
-                }
-
-                if (retryCount-- > 0)
-                {
-                    TraceLog.Informational(string.Format("Partition '{0}' update failed because the lease with token '{1}' was updated by same/this host with token '{2}'. Will retry, {3} retry(s) left.", lease.PartitionId, lease.ConcurrencyToken, serverLease.ConcurrencyToken, retryCount));
-
-                    lease = conflictResolver(serverLease);
-                }
-                else
-                {
-                    throw new LeaseLostException(lease);
-                }
-            }
-        }
-         */
-        return null;
-    }
-
-    private Document tryGetDocument(String documentId) //    private async Task<Document> TryGetDocument(string documentId)
-    {
-        /*
-        Uri documentUri = UriFactory.CreateDocumentUri(
-                this.leaseStoreCollectionInfo.DatabaseName,
-                this.leaseStoreCollectionInfo.CollectionName,
-                documentId);
-
-        Document document = null;
-        try
-        {
-            document = await this.client.ReadDocumentAsync(documentUri);
-        }
-        catch (DocumentClientException ex)
-        {
-            if (StatusCode.NotFound != (StatusCode)ex.StatusCode)
-            {
-                throw;
-            }
-        }
-
-        return document;
-         */
-        return null;
-    }
-
-    private DocumentServiceLease tryGetLease(String documentId) //    private async Task<DocumentServiceLease> TryGetLease(string documentId)
+    private DocumentServiceLease tryGetLease(String documentId) throws DocumentClientException //    private async Task<DocumentServiceLease> TryGetLease(string documentId)
     {
         Document leaseDocument = tryGetDocument(documentId);
         if (leaseDocument != null) {
@@ -534,11 +426,12 @@ public class DocumentServiceLeaseManager implements ILeaseManager, ICheckpointMa
     return null;
     }
      */
-    public boolean LeaseStoreExistsAsync() //    public async Task<bool> LeaseStoreExistsAsync()
+    public boolean LeaseStoreExistsAsync() throws DocumentClientException //    public async Task<bool> LeaseStoreExistsAsync()
     {
         DocumentServiceLease containerDocument = tryGetLease(getDocumentId());
-        return containerDocument != null ? true : false;
+        return containerDocument != null;
     }
+
     /*
     public async Task<bool> CreateLeaseStoreIfNotExistsAsync() {
         bool wasCreated = false;
@@ -736,34 +629,29 @@ public class DocumentServiceLeaseManager implements ILeaseManager, ICheckpointMa
         });
 
         return result;
-    }
-
-    private async Task
-    <DocumentServiceLease> UpdateInternalAsync(
+    }*/
+    private DocumentServiceLease updateInternal(
             DocumentServiceLease lease,
             LeaseConflictResolver conflictResolver,
-            string owner 
-        = null)
-    {
-        Debug.Assert(lease != null, "lease");
-        Debug.Assert(!string.IsNullOrEmpty(lease.Id), "lease.Id");
+            String owner) throws LeaseLostException, DocumentClientException {
+        assert lease != null : "lease";
+        assert lease.getId() != null && !lease.getId().isEmpty() : "lease.Id";
 
-        if (string.IsNullOrEmpty(owner)) {
-            owner = lease.Owner;
+        if (lease.getOwner() != null && !lease.getOwner().isEmpty()) {
+            owner = lease.getOwner();
         }
 
-        Uri leaseUri = UriFactory.CreateDocumentUri(this.leaseStoreCollectionInfo.DatabaseName, this.leaseStoreCollectionInfo.CollectionName, lease.Id);
-        int retryCount = RetryCountOnConflict;
+        String leaseUri = String.format("/dbs/%s/colls/%s/docs/%s/", leaseStoreCollectionInfo.getDatabaseName(), leaseStoreCollectionInfo.getCollectionName(), lease.getId());
+        int retryCount = retryCountOnConflict;
         while (true) {
             Document leaseDocument = null;
             try {
-                leaseDocument = await this.client.ReplaceDocumentAsync(leaseUri, lease, this.CreateIfMatchOptions(lease));
+                leaseDocument = client.replaceDocument(leaseUri, lease, createIfMatchOptions(lease)).getResource();
             } catch (DocumentClientException ex) {
-                if (StatusCode.PreconditionFailed != (StatusCode) ex.StatusCode) {
-                    ExceptionDispatchInfo.Capture(ex);
-                    this.HandleLeaseOperationException(lease, ExceptionDispatchInfo.Capture(ex));
+                if (HttpStatus.SC_PRECONDITION_FAILED != ex.getStatusCode()) {
+                    handleLeaseOperationException(lease, ex);
 
-                    Debug.Assert(false, "UpdateInternalAsync: should never reach this!");
+                    assert false : "UpdateInternalAsync: should never reach this!";
                     throw new LeaseLostException(lease);
                 }
             }
@@ -772,24 +660,24 @@ public class DocumentServiceLeaseManager implements ILeaseManager, ICheckpointMa
                 return new DocumentServiceLease(leaseDocument);
             } else {
                 // Check if precondition failed due to a change from same/this host and retry.
-                var document = await this.TryGetDocument(this.GetDocumentId(lease.PartitionId));
-                var serverLease = new DocumentServiceLease(document);
-                if (serverLease.Owner != owner) {
+                Document document = tryGetDocument(getDocumentId(lease.getPartitionId()));
+                DocumentServiceLease serverLease = new DocumentServiceLease(document);
+                if (!serverLease.getOwner().equals(owner)) {
                     throw new LeaseLostException(lease);
                 }
 
                 if (retryCount-- > 0) {
-                    TraceLog.Informational(string.Format("Partition '{0}' update failed because the lease with token '{1}' was updated by same/this host with token '{2}'. Will retry, {3} retry(s) left.", lease.PartitionId, lease.ConcurrencyToken, serverLease.ConcurrencyToken, retryCount));
+                    TraceLog.informational(String.format("Partition '{0}' update failed because the lease with token '{1}' was updated by same/this host with token '{2}'. Will retry, {3} retry(s) left.", lease.getPartitionId(), lease.getConcurrencyToken(), serverLease.getConcurrencyToken(), retryCount));
 
-                    lease = conflictResolver(serverLease);
+                    lease = conflictResolver.run(serverLease);
                 } else {
                     throw new LeaseLostException(lease);
                 }
             }
         }
-    }*/
+    }
 
- /*
+    /*
     private async Task
     <Document> TryGetDocument(string documentId) {
         Uri documentUri = UriFactory.CreateDocumentUri(
@@ -837,52 +725,47 @@ public class DocumentServiceLeaseManager implements ILeaseManager, ICheckpointMa
         return Task.FromResult<IEnumerable<DocumentServiceLease>> (query.AsEnumerable<DocumentServiceLease>
 
 ());
-    }*/
+    }
     /// <summary>
     /// Creates id either for container (if partitionId parameter is empty) or for lease otherwise.
     /// </summary>
     /// <param name="partitionId">The lease partition id.</param>
     /// <returns>Document id for container or lease.</returns>
-    /*
+    
     private string GetDocumentId(string partitionId = null)
     {
         return string.IsNullOrEmpty(partitionId) ?
                 this.containerNamePrefix + DocumentServiceLeaseManager.ContainerSeparator + DocumentServiceLeaseManager.ContainerNameSuffix :
                 this.GetPartitionLeasePrefix() + partitionId;
     }
+     */
+    private RequestOptions createIfMatchOptions(DocumentServiceLease lease) {
+        assert lease != null : "lease";
 
-    private RequestOptions CreateIfMatchOptions(DocumentServiceLease lease)
-    {
-        Debug.Assert(lease != null, "lease");
+        AccessCondition ifMatchCondition = new AccessCondition();
+        ifMatchCondition.setType(AccessConditionType.IfMatch);
+        ifMatchCondition.setCondition(lease.eTag);
 
-        AccessCondition ifMatchCondition = new AccessCondition { Type = AccessConditionType.IfMatch, Condition = lease.ETag };
-        return new RequestOptions { AccessCondition = ifMatchCondition };
+        RequestOptions options = new RequestOptions();
+        options.setAccessCondition(ifMatchCondition);
+
+        return options;
     }
 
-    private void HandleLeaseOperationException(DocumentServiceLease lease, ExceptionDispatchInfo dispatchInfo)
-    {
-        Debug.Assert(lease != null, "lease");
-        Debug.Assert(dispatchInfo != null, "dispatchInfo");
+    private void handleLeaseOperationException(DocumentServiceLease lease, DocumentClientException dcex) throws DocumentClientException, LeaseLostException {
+        assert lease != null : "lease";
+        assert dcex != null : "dispatchInfo";
 
-        DocumentClientException dcex = (DocumentClientException)dispatchInfo.SourceException;
-        TraceLog.Warning(string.Format("Lease operation exception, status code: ", dcex.StatusCode));
+        TraceLog.warning(String.format("Lease operation exception, status code: ", dcex.getStatusCode()));
 
-        if (StatusCode.PreconditionFailed == (StatusCode)dcex.StatusCode ||
-                StatusCode.Conflict == (StatusCode)dcex.StatusCode ||
-                StatusCode.NotFound == (StatusCode)dcex.StatusCode)
-        {
-            throw new LeaseLostException(lease, dcex, StatusCode.NotFound == (StatusCode)dcex.StatusCode);
-        }
-        else
-        {
-            dispatchInfo.Throw();
+        if (HttpStatus.SC_PRECONDITION_FAILED == dcex.getStatusCode()
+                || HttpStatus.SC_CONFLICT == dcex.getStatusCode()
+                || HttpStatus.SC_NOT_FOUND == dcex.getStatusCode()) {
+            throw new LeaseLostException(lease, dcex, HttpStatus.SC_NOT_FOUND == dcex.getStatusCode());
+        } else {
+            throw dcex;
         }
     }
-
-    private string GetPartitionLeasePrefix()
-    {
-        return this.containerNamePrefix + ContainerSeparator + PartitionPrefix;
-    }*/
 }
 
 class PartitionInfo implements Partition {
