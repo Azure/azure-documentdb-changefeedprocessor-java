@@ -7,16 +7,14 @@ package com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleas
 
 import com.microsoft.azure.documentdb.AccessCondition;
 import com.microsoft.azure.documentdb.AccessConditionType;
-import com.microsoft.azure.documentdb.ChangeFeedOptions;
+
 import com.microsoft.azure.documentdb.ConsistencyLevel;
 import com.microsoft.azure.documentdb.Document;
 import com.microsoft.azure.documentdb.DocumentClient;
 import com.microsoft.azure.documentdb.DocumentClientException;
-import com.microsoft.azure.documentdb.DocumentCollection;
 import com.microsoft.azure.documentdb.FeedOptions;
 import com.microsoft.azure.documentdb.FeedResponse;
 import com.microsoft.azure.documentdb.RequestOptions;
-import com.microsoft.azure.documentdb.ResourceResponse;
 import com.microsoft.azure.documentdb.SqlParameter;
 import com.microsoft.azure.documentdb.SqlParameterCollection;
 import com.microsoft.azure.documentdb.SqlQuerySpec;
@@ -26,23 +24,11 @@ import com.microsoft.azure.documentdb.changefeedprocessor.internal.ILeaseManager
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.Lease;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.LeaseLostException;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.TraceLog;
-import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.temporal.ChronoField;
 import java.util.Date;
 import java.util.Locale;
 import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import java.util.concurrent.Future;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -201,6 +187,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         return null;
     }
 
+    @Override
     public DocumentServiceLease renew(DocumentServiceLease lease) throws LeaseLostException, DocumentClientException {  //    public async Task<DocumentServiceLease> RenewAsync(DocumentServiceLease lease)
         assert lease != null : "lease";
 
@@ -210,7 +197,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
             TraceLog.informational(String.format("Failed to renew lease for partition id {0}! The lease is gone already.", lease.getPartitionId()));
             throw new LeaseLostException(lease);
         }
-        else if (refreshedLease.getOwner() != lease.getOwner())
+        else if (!refreshedLease.getOwner().equals(lease.getOwner()))
         {
             TraceLog.informational(String.format("Failed to renew lease for partition id {0}! The lease was already taken by another host.", lease.getPartitionId()));
             throw new LeaseLostException(lease);
@@ -277,6 +264,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         }
     }
 
+    @Override
     public void deleteAll() throws DocumentClientException { //    public async Task DeleteAllAsync()
         Iterable<DocumentServiceLease> listDocuments = listDocuments(containerNamePrefix);
         for (DocumentServiceLease lease : listDocuments) {
