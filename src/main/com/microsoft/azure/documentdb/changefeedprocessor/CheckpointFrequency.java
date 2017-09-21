@@ -36,7 +36,7 @@ public class CheckpointFrequency {
 
     private Optional<Integer> _processedDocumentCount;
 
-    private Optional<Instant> _timeInterval;
+    private Optional<Integer> _timeInterval;
 
     public CheckpointFrequency(){
 
@@ -51,11 +51,11 @@ public class CheckpointFrequency {
         this._processedDocumentCount = _processedDocumentCount;
     }
 
-    public Optional<Instant> getTimeInterval() {
+    public Optional<Integer> getTimeInterval() {
         return _timeInterval;
     }
 
-    public void setTimeInterval(Optional<Instant> _timeInterval) {
+    public void setTimeInterval(Optional<Integer> _timeInterval) {
         this._timeInterval = _timeInterval;
     }
 

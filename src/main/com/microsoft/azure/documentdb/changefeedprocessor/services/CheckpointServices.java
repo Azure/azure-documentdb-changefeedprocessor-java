@@ -4,6 +4,7 @@ import com.microsoft.azure.documentdb.changefeedprocessor.CheckpointFrequency;
 import com.microsoft.azure.documentdb.changefeedprocessor.CheckpointStats;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
 
+import java.time.Instant;
 import java.util.Dictionary;
 import java.util.Hashtable;
 
@@ -38,23 +39,23 @@ public class CheckpointServices {
         }
 
         boolean isCheckpointNeeded = true;
-//
-//        if (options != null &&
-//                (options.getProcessedDocumentCount.HasValue || options.CheckpointFrequency.TimeInterval.HasValue))
-//        {
-//            // Note: if either condition is satisfied, we checkpoint.
-//            isCheckpointNeeded = false;
-//            if (options.CheckpointFrequency.ProcessedDocumentCount.HasValue)
-//            {
-//                isCheckpointNeeded = checkpointStats.ProcessedDocCount >= options.CheckpointFrequency.ProcessedDocumentCount.Value;
-//            }
-//
-//            if (options.CheckpointFrequency.TimeInterval.HasValue)
-//            {
-//                isCheckpointNeeded = isCheckpointNeeded ||
-//                        DateTime.Now - checkpointStats.LastCheckpointTime >= options.CheckpointFrequency.TimeInterval.Value;
-//            }
-//        }
+
+        boolean hasProcessedDocumentCount = options.getProcessedDocumentCount().isPresent();
+        boolean hasTimeInterval = options.getTimeInterval().isPresent();
+
+        if (options != null && (hasProcessedDocumentCount || hasTimeInterval)) {
+            // Note: if either condition is satisfied, we checkpoint.
+            isCheckpointNeeded = false;
+
+            if (hasProcessedDocumentCount) {
+                isCheckpointNeeded = (checkpointStats.getProcessedDocCount() >= options.getProcessedDocumentCount().get());
+            }
+
+            if (hasTimeInterval) {
+                isCheckpointNeeded = isCheckpointNeeded ||
+                        (Instant.now().getEpochSecond() - checkpointStats.getLastCheckpointTime().getEpochSecond()) >= options.getTimeInterval().get();
+            }
+        }
 
         return isCheckpointNeeded;
     }
