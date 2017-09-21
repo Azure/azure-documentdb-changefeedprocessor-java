@@ -9,7 +9,7 @@ package com.microsoft.azure.documentdb.changefeedprocessor.internal;
  *
  * @author yoterada
  */
-/// All of these functions used to be async
+/// TODO: All of these functions used to be async
 public interface ILeaseManager<T extends Lease> {
 	boolean leaseStoreExists();
 

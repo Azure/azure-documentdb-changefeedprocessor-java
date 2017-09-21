@@ -1,5 +1,5 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
-public interface IObservableDisposable {
-    void Dispose();
+public interface IDisposable {
+    public void Dispose();
 }

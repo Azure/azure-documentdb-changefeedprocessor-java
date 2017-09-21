@@ -1,58 +1,54 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
+
 import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverCloseReason;
 
 
-public class PartitionObserverManager<T extends Lease> {
-//    readonly PartitionManager<T> partitionManager;
-//    readonly List<IPartitionObserver<T>> observers;
+final class PartitionObserverManager<T extends Lease> {
+    final PartitionManager<T> partitionManager;
+    final List<IPartitionObserver<T>> observers;
 
-    public PartitionObserverManager(PartitionManager<T> partitionManager)
-    {
-//        this.partitionManager = partitionManager;
-//        this.observers = new List<IPartitionObserver<T>>();
+    public PartitionObserverManager(PartitionManager<T> partitionManager){
+        this.partitionManager = partitionManager;
+        this.observers = new ArrayList<IPartitionObserver<T>>();
     }
 
-    // TODO: implements subscribe
+    // TODO: implement subscribeAsync ,notifyPartitionAcquiredAsync,  notifyPartitionReleasedAsync
 
-    public IObservableDisposable subscribeAsync(IPartitionObserver<T> observer)
-    {
-//    if (!this.observers.Contains(observer))
-//    {
-//        this.observers.Add(observer);
-//
-//        foreach (var lease in this.partitionManager.currentlyOwnedPartitions.Values)
-//        {
-//            try
-//            {
-//                await observer.OnPartitionAcquiredAsync(lease);
-//            }
-//            catch (Exception ex)
-//            {
-//                // Eat any exceptions during notification of observers
-//                TraceLog.Exception(ex);
-//            }
-//        }
-//    }
-//
-//    return new Unsubscriber(this.observers, observer);
-        return null;
+    public IDisposable subscribe(IPartitionObserver<T> observer){
+    if (!this.observers.contains(observer)){
+        this.observers.add(observer);
+
+        for (T lease : this.partitionManager.currentlyOwnedPartitions.values()){
+            try{
+              //  await observer.OnPartitionAcquiredAsync(lease);
+            	observer.onPartitionAcquired(lease);
+            }
+            catch (Exception ex){
+                // Eat any exceptions during notification of observers
+                TraceLog.exception(ex);
+            }
+        }
     }
 
-    public void notifyPartitionAcquired(T lease)
-    {
-//        foreach (var observer in this.observers)
-//        {
-//            await observer.OnPartitionAcquiredAsync(lease);
-//        }
+    return new Unsubscriber(this.observers, observer);
     }
 
-    public void notifyPartitionReleased(T lease, ChangeFeedObserverCloseReason reason)
-    {
-//        foreach (var observer in this.observers)
-//        {
-//            await observer.OnPartitionReleasedAsync(lease, reason);
-//        }
+    public void notifyPartitionAcquired(T lease){
+        for (IPartitionObserver<T> obs : this.observers){
+            obs.onPartitionAcquired(lease);
+            //await obs.onPartitionAcquiredAsync(lease);
+        }
+    }
+
+    public void notifyPartitionReleased(T lease, ChangeFeedObserverCloseReason reason){
+        for (IPartitionObserver<T> obs : this.observers){
+            obs.onPartitionReleased(lease, reason);
+            //await obs.onPartitionReleasedAsync(lease, reason);
+        }
     }
 }
 
