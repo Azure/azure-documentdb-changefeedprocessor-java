@@ -4,7 +4,8 @@
     <artifactId>azure-documentdb-changefeedprocessor</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <build>
-        <sourceDirectory>src/main</sourceDirectory>        
+        <sourceDirectory>src/main</sourceDirectory>
+        <testSourceDirectory>src/test</testSourceDirectory>        
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
