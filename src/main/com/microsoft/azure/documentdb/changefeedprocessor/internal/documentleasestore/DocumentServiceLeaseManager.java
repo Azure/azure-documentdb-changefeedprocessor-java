@@ -66,8 +66,8 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     private String containerNamePrefix;
     private DocumentCollectionInfo leaseStoreCollectionInfo;
     private Duration leaseIntervalAllowance = Duration.ofMillis(25);
-    private Instant leaseInterval;
-    private Instant renewInterval;
+    private Duration leaseInterval;
+    private Duration renewInterval;
 
     private String leaseStoreCollectionLink;
     private Duration serverToLocalTimeDelta;
@@ -79,7 +79,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         DocumentServiceLease run(DocumentServiceLease serverLease);
     }
 
-    public DocumentServiceLeaseManager(DocumentCollectionInfo leaseStoreCollectionInfo, String storeNamePrefix, Instant leaseInterval, Instant renewInterval) {
+    public DocumentServiceLeaseManager(DocumentCollectionInfo leaseStoreCollectionInfo, String storeNamePrefix, Duration leaseInterval, Duration renewInterval) {
         this.leaseStoreCollectionInfo = leaseStoreCollectionInfo;
         this.containerNamePrefix = storeNamePrefix;
         this.leaseInterval = leaseInterval;

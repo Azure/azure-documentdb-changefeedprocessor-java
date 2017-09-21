@@ -5,29 +5,57 @@
  */
 package com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore;
 
+import com.microsoft.azure.documentdb.changefeedprocessor.DocumentCollectionInfo;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationException;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationFile;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.Lease;
 import org.junit.Test;
 import static org.junit.Assert.*;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.time.Duration;
+
+import org.junit.Assert;
+import org.junit.Before;
 
 /**
  *
  * @author yoterada
  */
 public class DocumentServiceLeaseManagerTest {
+    DocumentServiceLeaseManager instance = null;
+    static final Duration DEFAULT_EXPIRATION_INTERVAL = Duration.ofSeconds(60);
+    static final Duration DEFAULT_RENEW_INTERVAL = Duration.ofSeconds(17);
     
     public DocumentServiceLeaseManagerTest() {
     }
+    
+    @Before
+    public void init() {
+        
+        ConfigurationFile config = null;
 
-    /**
-     * Test of dispose method, of class DocumentServiceLeaseManager.
-     */
-    @Test
-    public void testDispose() {
-        System.out.println("dispose");
-        DocumentServiceLeaseManager instance = null;
-        instance.dispose();
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+        try {
+            config = new ConfigurationFile("app.secrets");
+        } catch (ConfigurationException e) {
+            Assert.fail(e.getMessage());
+        }
+        
+        DocumentCollectionInfo docInfo = new DocumentCollectionInfo();
+        try {
+            docInfo.setUri(new URI(config.get("COSMOSDB_ENDPOINT")));
+            docInfo.setMasterKey(config.get("COSMOSDB_SECRET"));
+            docInfo.setDatabaseName(config.get("COSMOSDB_DATABASE"));
+            docInfo.setCollectionName(config.get("COSMOSDB_LEASE_COLLECTION"));
+        } catch (URISyntaxException e) {
+            Assert.fail("COSMOSDB URI FAIL: " + e.getMessage());
+        } catch (ConfigurationException e) {
+            Assert.fail("Configuration Error " + e.getMessage());
+
+        }
+        
+        instance = new DocumentServiceLeaseManager(docInfo, "", DEFAULT_EXPIRATION_INTERVAL, DEFAULT_RENEW_INTERVAL);
     }
 
     /**
