@@ -1,22 +1,23 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
-public class Unsubscriber {
+import java.util.List;
 
-    //: IDisposable
-//        readonly List<IPartitionObserver<T>> observers;
-//        readonly IPartitionObserver<T> observer;
-//
-//        internal Unsubscriber(List<IPartitionObserver<T>> observers, IPartitionObserver<T> observer)
-//        {
-//        this.observers = observers;
-//        this.observer = observer;
+final class Unsubscriber<T> implements IDisposable {
+
+        final List<IPartitionObserver<T>> observers;
+        final IPartitionObserver<T> observer;
+
+        Unsubscriber(List<IPartitionObserver<T>> observers, IPartitionObserver<T> observer){
+        this.observers = observers;
+        this.observer = observer;
+        }
 
     public void Dispose()
     {
-//        if (this.observers.Contains(this.observer))
-//        {
-//            this.observers.Remove(this.observer);
-//        }
+        if (this.observers.contains(this.observer))
+        {
+            this.observers.remove(this.observer);
+        }
     }
 
 };

@@ -29,6 +29,8 @@ import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverClos
 
 public interface IPartitionObserver<T> {
         void onPartitionAcquired(T lease);
-        void onPartitionReleasedAsync(T lease, ChangeFeedObserverCloseReason reason);
+        //void onPatitionAcquiredAsync(T lease);
+        void onPartitionReleased(T lease, ChangeFeedObserverCloseReason reason);
+       // void onPartitionReleasedAsync(T lease, ChangeFeedObserverCloseReason reason);
 }
 
