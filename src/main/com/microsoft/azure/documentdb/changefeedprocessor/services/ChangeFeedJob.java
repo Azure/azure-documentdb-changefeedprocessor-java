@@ -40,7 +40,7 @@ public class ChangeFeedJob implements Job {
                     List<Document> docs = query.getQueryIterable().fetchNextBlock();
                     if (docs != null) {
                         _observer.processChanges(context, docs);
-                        this.checkpoint(query.getResponseContinuation());   
+                        this.checkpoint(query.getResponseContinuation());
                     }
 
                 }
