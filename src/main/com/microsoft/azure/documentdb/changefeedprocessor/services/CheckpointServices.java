@@ -6,17 +6,17 @@ import java.util.Hashtable;
 public class CheckpointServices {
 
     //TODO: We are using this dictonary to save the continuations tokens for test only.
-    Dictionary<String, String> _checkpoints;
+    Dictionary<String, String> checkpoints;
 
     public CheckpointServices(){
-        _checkpoints = new Hashtable<String, String>();
+        checkpoints = new Hashtable<String, String>();
     }
 
     public Object getCheckpointData(String partitionId) {
-        return _checkpoints.get(partitionId);
+        return checkpoints.get(partitionId);
     }
 
     public void setCheckpointData(String partitionId, Object data) {
-        _checkpoints.put(partitionId, (String)data);
+        checkpoints.put(partitionId, (String)data);
     }
 }

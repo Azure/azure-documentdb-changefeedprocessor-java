@@ -8,22 +8,20 @@ import java.util.List;
 
 public class DocumentServices {
 
-    private final String _url;
-    private final String _database;
-    private final String _collection;
-    private final String _masterKey;
-    private final DocumentClient _client;
-    private final String _collectionLink;
-//    private final ChangeFeedOptions _options;
+    private final String url;
+    private final String database;
+    private final String collection;
+    private final String masterKey;
+    private final DocumentClient client;
+    private final String collectionLink;
 
     public DocumentServices(DocumentCollectionInfo collectionLocation) {
-        this._url = collectionLocation.getUri().toString();
-        this._database = collectionLocation.getDatabaseName();
-        this._collection = collectionLocation.getCollectionName();
-        this._masterKey = collectionLocation.getMasterKey();
-        this._client = new DocumentClient(_url, _masterKey, new ConnectionPolicy(), ConsistencyLevel.Session);
-        this._collectionLink = String.format("/dbs/%s/colls/%s", _database, _collection);
-//        this._options = new ChangeFeedOptions ();
+        this.url = collectionLocation.getUri().toString();
+        this.database = collectionLocation.getDatabaseName();
+        this.collection = collectionLocation.getCollectionName();
+        this.masterKey = collectionLocation.getMasterKey();
+        this.client = new DocumentClient(url, masterKey, new ConnectionPolicy(), ConsistencyLevel.Session);
+        this.collectionLink = String.format("/dbs/%s/colls/%s", database, collection);
     }
 
     public List<String> listPartitionRange() {
@@ -36,7 +34,7 @@ public class DocumentServices {
 
         do {
             options.setRequestContinuation(checkpointContinuation);
-            FeedResponse<PartitionKeyRange> range = _client.readPartitionKeyRanges(_collectionLink, options);
+            FeedResponse<PartitionKeyRange> range = client.readPartitionKeyRanges(collectionLink, options);
             try {
                 partitionKeys.addAll(range.getQueryIterable().fetchNextBlock());
             }catch (DocumentClientException ex){}
@@ -52,10 +50,11 @@ public class DocumentServices {
         return partitionsId;
     }
 
-    public FeedResponse<Document> createDocumentChangeFeedQuery(String partitionId, String continuationToken) throws Exception {
+    public FeedResponse<Document> createDocumentChangeFeedQuery(String partitionId, String continuationToken, int pageSize) throws Exception {
 
         ChangeFeedOptions options = new ChangeFeedOptions();
         options.setPartitionKeyRangeId(partitionId);
+        options.setPageSize(pageSize);
 
         if (continuationToken == null || continuationToken.isEmpty())
             options.setStartFromBeginning(true);
@@ -64,7 +63,7 @@ public class DocumentServices {
             options.setRequestContinuation(continuationToken);
         }
 
-        FeedResponse<Document> query = _client.queryDocumentChangeFeed(_collectionLink, options);
+        FeedResponse<Document> query = client.queryDocumentChangeFeed(collectionLink, options);
 
         return query;
     }

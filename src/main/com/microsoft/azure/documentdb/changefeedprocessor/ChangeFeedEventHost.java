@@ -39,6 +39,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     CheckpointServices _checkpointSvcs;
 
     private IChangeFeedObserverFactory _observerFactory;
+    private final int DEFAULT_PAGE_SIZE = 100;
 
     public ChangeFeedEventHost( String hostName, DocumentCollectionInfo documentCollectionLocation, DocumentCollectionInfo auxCollectionLocation){
         this(hostName, documentCollectionLocation, auxCollectionLocation, new ChangeFeedOptions(), new ChangeFeedHostOptions());
@@ -100,7 +101,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     void start(){
 
         //TODO: This is not the right place to have this code..
-        this._resourcePartitionSvcs = new ResourcePartitionServices(_documentServices, _checkpointSvcs, _observerFactory);
+        this._resourcePartitionSvcs = new ResourcePartitionServices(_documentServices, _checkpointSvcs, _observerFactory,this.DEFAULT_PAGE_SIZE);
 
 
         initializePartitions();
