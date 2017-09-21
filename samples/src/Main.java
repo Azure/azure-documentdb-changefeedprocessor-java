@@ -1,5 +1,3 @@
-package com.microsoft.azure.documentdb.sample;
-
 public class Main {
 
     public static void main(String[] args) {
