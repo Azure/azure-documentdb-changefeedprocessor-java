@@ -128,4 +128,7 @@ public class ChangeFeedHostOptions {
         this._discardExistingLeases = _discardExistingLeases;
     }
 
+    boolean getDiscardExistingLeases() {
+        return _discardExistingLeases;
+    }
 }

@@ -49,10 +49,15 @@ public class SimpleTest {
         ChangeFeedEventHost host = new ChangeFeedEventHost("hotsname", docInfo, docAux, options, new ChangeFeedHostOptions() );
         Assert.assertNotNull(host);
 
-        host.registerObserver(TestChangeFeedObserver.class);
+        try {
+            host.registerObserver(TestChangeFeedObserver.class);
 
-        System.out.println("Press ENTER to finish");
-        Scanner scanner = new Scanner(System.in);
-        scanner.nextLine();
+            System.out.println("Press ENTER to finish");
+            Scanner scanner = new Scanner(System.in);
+            scanner.nextLine();
+        }
+        catch(Exception e) {
+            Assert.fail("failed");
+        }
     }
 }
