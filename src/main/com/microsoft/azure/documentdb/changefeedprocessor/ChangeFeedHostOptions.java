@@ -51,7 +51,6 @@ public class ChangeFeedHostOptions {
     int _maxPartitionCount;
     boolean _discardExistingLeases;
     int DegreeOfParallelism;
-    private int pageSize;
 
     int getDegreeOfParallelism(){
         return this._maxPartitionCount > 0 ? this._maxPartitionCount : 25;
@@ -129,6 +128,4 @@ public class ChangeFeedHostOptions {
         this._discardExistingLeases = _discardExistingLeases;
     }
 
-    public int getPageSize(){return this.pageSize;}
-    public void setPageSize(int pageSize){this.pageSize = pageSize;}
 }
