@@ -26,17 +26,15 @@ public class CheckpointServices {
     }
 
     public Object getCheckpointData(String partitionId) throws DocumentClientException {
-        return getCheckpoint(partitionId);
-        //return checkpoints.get(partitionId);
+        //return getCheckpoint(partitionId);
+        return checkpoints.get(partitionId);
     }
 
     public void setCheckpointData(String partitionId, Object data) throws DocumentClientException {
-        DocumentServiceLease lease = (DocumentServiceLease)_leaseManager.getLease(partitionId);
-
-        String continuation = lease.getContinuationToken();
-
-        checkpoint(lease, continuation);
-        //checkpoints.put(partitionId, (String)data);
+        //DocumentServiceLease lease = (DocumentServiceLease)_leaseManager.getLease(partitionId);
+        String continuation = (String)data;
+        //checkpoint(lease, continuation);
+        checkpoints.put(partitionId, continuation);
     }
 
     String getCheckpoint(String partitionId) throws DocumentClientException {
