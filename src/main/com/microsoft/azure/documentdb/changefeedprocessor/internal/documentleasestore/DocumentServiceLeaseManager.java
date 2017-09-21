@@ -1,7 +1,24 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * The MIT License (MIT)
+ * Copyright (c) 2016 Microsoft Corporation
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore;
 
@@ -49,7 +66,6 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     private final static int RETRY_COUNT_ON_CONFLICT = 5;
     private String containerNamePrefix;
     private DocumentCollectionInfo leaseStoreCollectionInfo;
-//    private TimeSpan leaseIntervalAllowance = TimeSpan.FromMilliseconds(25);  // Account for diff between local and server.
     private Duration leaseIntervalAllowance = Duration.ofMillis(25);
     private Instant leaseInterval;
     private Instant renewInterval;
@@ -61,7 +77,6 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
 
     @FunctionalInterface
     private interface LeaseConflictResolver {
-
         DocumentServiceLease run(DocumentServiceLease serverLease);
     }
 
@@ -86,7 +101,6 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         client.readDocuments(uri, options);
 
         Instant snapshot1 = Instant.now();
-
         //TODO: Test is needed
         Document document = new Document();
         document.setId(getDocumentId() + UUID.randomUUID().toString());
@@ -107,8 +121,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
 
     @Override
-    public boolean leaseStoreExists() throws DocumentClientException //    public async Task<bool> LeaseStoreExistsAsync()
-    {
+    public boolean leaseStoreExists() throws DocumentClientException { //    public async Task<bool> LeaseStoreExistsAsync()
         DocumentServiceLease containerDocument = tryGetLease(getDocumentId());
         return containerDocument != null;
     }
@@ -128,8 +141,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
 
     @Override
-    public Iterable<DocumentServiceLease> listLeases() //    public Task<IEnumerable<DocumentServiceLease>> ListLeases()
-    {
+    public Iterable<DocumentServiceLease> listLeases() {//    public Task<IEnumerable<DocumentServiceLease>> ListLeases()
         return listDocuments(getPartitionLeasePrefix());
     }
 
@@ -138,8 +150,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     /// </summary>
     /// <returns>true if created, false otherwise.</returns>
     @Override
-    public boolean createLeaseIfNotExist(String partitionId, String continuationToken) throws DocumentClientException //    public async Task<bool> CreateLeaseIfNotExistAsync(string partitionId, string continuationToken)
-    {
+    public boolean createLeaseIfNotExist(String partitionId, String continuationToken) throws DocumentClientException {//    public async Task<bool> CreateLeaseIfNotExistAsync(string partitionId, string continuationToken)
         boolean wasCreated = false;
         String leaseDocId = getDocumentId(partitionId);
 
@@ -156,14 +167,12 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
 
     @Override
-    public DocumentServiceLease getLease(String partitionId) throws DocumentClientException //    public async Task<DocumentServiceLease> GetLeaseAsync(string partitionId)
-    {
+    public DocumentServiceLease getLease(String partitionId) throws DocumentClientException {//    public async Task<DocumentServiceLease> GetLeaseAsync(string partitionId)
         return tryGetLease(getDocumentId(partitionId));
     }
 
     @Override
     public DocumentServiceLease acquire(DocumentServiceLease lease, String owner) throws DocumentClientException {//    public async Task<DocumentServiceLease> AcquireAsync(DocumentServiceLease lease, string owner)
-
         if (lease == null || lease.getPartitionId() == null) {
             throw new IllegalArgumentException("lease");
         }
@@ -202,12 +211,11 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
             TraceLog.informational(String.format("Failed to renew lease for partition id {0}! The lease was already taken by another host.", lease.getPartitionId()));
             throw new LeaseLostException(lease);
         }
-        return updateInternal(refreshedLease, serverLease -> serverLease, null);
+        return updateInternal(refreshedLease, (DocumentServiceLease serverLease) -> serverLease, null);
     }
 
     @Override
-    public boolean release(DocumentServiceLease lease) throws DocumentClientException //    public async Task<bool> ReleaseAsync(DocumentServiceLease lease)
-    {
+    public boolean release(DocumentServiceLease lease) throws DocumentClientException {//    public async Task<bool> ReleaseAsync(DocumentServiceLease lease)
         DocumentServiceLease refreshedLease = tryGetLease(getDocumentId(lease.getPartitionId()));
         if (refreshedLease == null) {
             LOGGER.log(Level.FINE, "Failed to release lease for partition id {0}! The lease is gone already.", lease.getPartitionId());
@@ -273,9 +281,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
 
     @Override
-    public boolean isExpired(DocumentServiceLease lease) //    public Task<bool> IsExpired(DocumentServiceLease lease)
-    {
-        LOGGER.log(Level.FINEST, "{0} lease", Boolean.toString(lease != null));
+    public boolean isExpired(DocumentServiceLease lease) {//    public Task<bool> IsExpired(DocumentServiceLease lease)        LOGGER.log(Level.FINEST, "{0} lease", Boolean.toString(lease != null));
         long leaseIntvalCheck = lease.getTimestamp().getNano() + leaseInterval.getNano() + leaseIntervalAllowance.getNano();
         long serverTime = Instant.now().getNano() + serverToLocalTimeDelta.toNanos();
         //TODO :  There is something wrong: need to check the implementation at the test.
@@ -301,14 +307,12 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         return null;
     }
 
-    private Document tryGetDocument(String documentId) throws DocumentClientException//    private async Task<Document> TryGetDocument(string documentId)
-    {
+    private Document tryGetDocument(String documentId) throws DocumentClientException {//    private async Task<Document> TryGetDocument(string documentId)
         String uri = String.format("/dbs/%s/colls/%s/docs/%s", leaseStoreCollectionInfo.getDatabaseName(), leaseStoreCollectionInfo.getCollectionName(), documentId);
         return  client.readDocument(uri, new RequestOptions()).getResource();
     }
 
-    private DocumentServiceLease tryGetLease(String documentId) throws DocumentClientException //    private async Task<DocumentServiceLease> TryGetLease(string documentId)
-    {
+    private DocumentServiceLease tryGetLease(String documentId) throws DocumentClientException {//    private async Task<DocumentServiceLease> TryGetLease(string documentId)
         Document leaseDocument = tryGetDocument(documentId);
         if (leaseDocument != null) {
             return new DocumentServiceLease(leaseDocument);
@@ -318,8 +322,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
 
     // TODO: Justine is working on this function
-    private Iterable<DocumentServiceLease> listDocuments(String prefix) //    private Task<IEnumerable<DocumentServiceLease>> ListDocuments(string prefix)
-    {
+    private Iterable<DocumentServiceLease> listDocuments(String prefix) {//    private Task<IEnumerable<DocumentServiceLease>> ListDocuments(string prefix)
         assert prefix != null && !prefix.isEmpty() : "prefix";
 
         SqlParameter param = new SqlParameter();
@@ -341,8 +344,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         return getDocumentId(null);
     }
 
-    private String getDocumentId(String partitionId) //    private string GetDocumentId(string partitionId = null)
-    {
+    private String getDocumentId(String partitionId) {//    private string GetDocumentId(string partitionId = null)
         if (partitionId == null || partitionId.equals("")) {
             return containerNamePrefix + DocumentServiceLeaseManager.CONTAINER_SEPARATOR + DocumentServiceLeaseManager.CONTAINER_NAME_SUFFIX;
         } else {
