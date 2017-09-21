@@ -15,7 +15,7 @@ import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserverFac
 public class ChangeFeedObserverFactory<T extends IChangeFeedObserver> implements IChangeFeedObserverFactory {
     private final Class _type;
 
-    private ChangeFeedObserverFactory(Class type) {
+    public ChangeFeedObserverFactory(Class type) {
         this._type = type;
     }
 

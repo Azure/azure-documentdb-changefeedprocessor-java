@@ -82,6 +82,7 @@ public class ChangeFeedJob implements Job {
                         }
                     }
                 } catch (Exception e) {
+                    query.getResponseHeaders();
                     e.printStackTrace();
                 }
             }while (HasMoreResults && !this.stop );

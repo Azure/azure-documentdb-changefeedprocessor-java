@@ -25,7 +25,14 @@ public class ResourcePartitionServices {
     }
 
     public ResourcePartition create(String partitionId) {
-        Job job = new ChangeFeedJob(partitionId, client, checkpointSvcs, factory.createObserver(), pageSize);
+        Job job = null;
+        try {
+            job = new ChangeFeedJob(partitionId, client, checkpointSvcs, factory.createObserver(), pageSize);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        }
         ResourcePartition resourcePartition = new ResourcePartition(partitionId, job);
 
         resourcePartitions.put(partitionId, resourcePartition);

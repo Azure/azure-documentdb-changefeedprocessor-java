@@ -148,7 +148,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         _resourcePartitionSvcs.start(partitionId);    }
 
     @Override
-    public void onPartitionReleasedAsync(DocumentServiceLease documentServiceLease, ChangeFeedObserverCloseReason reason) {
+    public void onPartitionReleased(DocumentServiceLease documentServiceLease, ChangeFeedObserverCloseReason reason) {
         String partitionId = documentServiceLease.id;
 
         System.out.println("Partition finished");

@@ -115,7 +115,7 @@ public class PartitionManager<T extends Lease> {
 //        this.leaseRenewerCancellationTokenSource = null;
     }
 
-    public IObservableDisposable SubscribeAsync(IPartitionObserver<T> observer)
+    public IDisposable SubscribeAsync(IPartitionObserver<T> observer)
     {
 //        return this.partitionObserverManager.SubscribeAsync(observer);
         return null;
