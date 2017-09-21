@@ -31,10 +31,12 @@ hs_err_pid*
 *.iws
 *.ipr
 /.idea/
+.idea/
 
 /azure-documentdb-changefeedprocessor/bin/
 
 /target/
-app.secrets
+app.secrets*
+!app.secrets.template
 
 /*.dll
