@@ -51,4 +51,6 @@ public enum StatusCode {
     private StatusCode(int value) {
         this.value = value;
     }
+
+    public int Value() {return this.value;}
 }

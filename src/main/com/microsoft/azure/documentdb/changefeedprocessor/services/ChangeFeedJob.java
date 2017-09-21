@@ -2,11 +2,16 @@ package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
 import com.microsoft.azure.documentdb.ChangeFeedOptions;
 import com.microsoft.azure.documentdb.Document;
+import com.microsoft.azure.documentdb.DocumentClientException;
 import com.microsoft.azure.documentdb.FeedResponse;
+import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverCloseReason;
 import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverContext;
 import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserver;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.StatusCode;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.SubStatusCode;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 public class ChangeFeedJob implements Job {
 
@@ -19,6 +24,8 @@ public class ChangeFeedJob implements Job {
     private int pageSize;
     private final int DEFAULT_PAGE_SIZE = 100;
     private final int DEFAULT_THREAD_WAIT = 1000;
+
+    private static Logger logger = Logger.getLogger("com.microsoft.azure.documentdb.changefeedprocessor");
 
 
     /***
@@ -60,13 +67,14 @@ public class ChangeFeedJob implements Job {
     }
 
     @Override
-    public void start(Object initialData) {
+    public void start(Object initialData) throws DocumentClientException {
 
         ChangeFeedObserverContext context = new ChangeFeedObserverContext();
         context.setPartitionKeyRangeId(partitionId);
         FeedResponse<Document> query = null;
         this.checkpoint(initialData);
         boolean HasMoreResults = false;
+        ChangeFeedObserverCloseReason closeReason = null;
 
         while(!this.stop) {
             do {
@@ -81,9 +89,24 @@ public class ChangeFeedJob implements Job {
                             this.checkpoint(query.getResponseContinuation());
                         }
                     }
-                } catch (Exception e) {
-                    query.getResponseHeaders();
-                    e.printStackTrace();
+                } catch (DocumentClientException dce) {
+                    int subStatusCode = getSubStatusCode(dce);
+                    if (dce.getStatusCode() == StatusCode.NotFound.Value() &&
+                            SubStatusCode.ReadSessionNotAvailable.Value() != subStatusCode){
+                        closeReason = ChangeFeedObserverCloseReason.ResourceGone;
+                        this.stop();
+                    }else if(dce.getStatusCode() == StatusCode.Gone.Value()){
+                        //TODO: handle partition split
+                    }
+                    else if (SubStatusCode.Splitting.Value() == subStatusCode)
+                    {
+                        logger.warning(String.format("Partition {0} is splitting. Will retry to read changes until split finishes. {1}", context.getPartitionKeyRangeId(), dce.getMessage()));
+                    }
+                    else
+                    {
+                        dce.printStackTrace();
+                        throw dce;
+                    }
                 }
             }while (HasMoreResults && !this.stop );
 
@@ -108,5 +131,22 @@ public class ChangeFeedJob implements Job {
     @Override
     public void stop() {
         stop = true;
+    }
+
+    private int getSubStatusCode(DocumentClientException exception)
+    {
+        String SubStatusHeaderName = "x-ms-substatus";
+        String valueSubStatus = exception.getResponseHeaders().get(SubStatusHeaderName);
+        if (valueSubStatus != null && !valueSubStatus.isEmpty())
+        {
+            int subStatusCode = 0;
+            try {
+                return Integer.parseInt(valueSubStatus);
+            }catch (Exception e){
+                //TODO:Log the error
+            }
+        }
+
+        return -1;
     }
 }

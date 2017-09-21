@@ -50,7 +50,7 @@ public class DocumentServices {
         return partitionsId;
     }
 
-    public FeedResponse<Document> createDocumentChangeFeedQuery(String partitionId, String continuationToken, int pageSize) throws Exception {
+    public FeedResponse<Document> createDocumentChangeFeedQuery(String partitionId, String continuationToken, int pageSize) throws DocumentClientException {
 
         ChangeFeedOptions options = new ChangeFeedOptions();
         options.setPartitionKeyRangeId(partitionId);
