@@ -17,9 +17,13 @@ import com.microsoft.azure.documentdb.FeedOptions;
 import com.microsoft.azure.documentdb.FeedResponse;
 import com.microsoft.azure.documentdb.RequestOptions;
 import com.microsoft.azure.documentdb.ResourceResponse;
+import com.microsoft.azure.documentdb.SqlParameter;
+import com.microsoft.azure.documentdb.SqlParameterCollection;
+import com.microsoft.azure.documentdb.SqlQuerySpec;
 import com.microsoft.azure.documentdb.changefeedprocessor.DocumentCollectionInfo;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ICheckpointManager;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ILeaseManager;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.Lease;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.LeaseLostException;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.TraceLog;
 
@@ -31,6 +35,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoField;
 import java.util.Date;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
@@ -47,7 +52,7 @@ import org.apache.http.HttpStatus;
  *
  * @author yoterada
  */
-public class DocumentServiceLeaseManager implements ILeaseManager, ICheckpointManager {
+public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>, ICheckpointManager {
 
     private final static Logger LOGGER = Logger.getLogger(DocumentServiceLeaseManager.class.getName());
 
@@ -194,25 +199,21 @@ public class DocumentServiceLeaseManager implements ILeaseManager, ICheckpointMa
         return null;
     }
 
-    public Future renewAsync(DocumentServiceLease lease) //    public async Task<DocumentServiceLease> RenewAsync(DocumentServiceLease lease)
-    {
-        /*
-        Debug.Assert(lease != null, "lease");
+    public DocumentServiceLease renew(DocumentServiceLease lease) throws LeaseLostException, DocumentClientException {  //    public async Task<DocumentServiceLease> RenewAsync(DocumentServiceLease lease)
+        assert lease != null : "lease";
 
-        DocumentServiceLease refreshedLease = await this.TryGetLease(this.GetDocumentId(lease.PartitionId));
+        DocumentServiceLease refreshedLease = tryGetLease(getDocumentId(lease.getPartitionId()));
         if (refreshedLease == null)
         {
-            TraceLog.Informational(string.Format("Failed to renew lease for partition id {0}! The lease is gone already.", lease.PartitionId));
+            TraceLog.informational(String.format("Failed to renew lease for partition id {0}! The lease is gone already.", lease.getPartitionId()));
             throw new LeaseLostException(lease);
         }
-        else if (refreshedLease.Owner != lease.Owner)
+        else if (refreshedLease.getOwner() != lease.getOwner())
         {
-            TraceLog.Informational(string.Format("Failed to renew lease for partition id {0}! The lease was already taken by another host.", lease.PartitionId));
+            TraceLog.informational(String.format("Failed to renew lease for partition id {0}! The lease was already taken by another host.", lease.getPartitionId()));
             throw new LeaseLostException(lease);
         }
-        return await this.UpdateInternalAsync(refreshedLease, serverLease => serverLease);
-         */
-        return null;
+        return updateInternal(refreshedLease, serverLease -> serverLease, null);
     }
 
     public Future<V> releaseAsync(DocumentServiceLease lease) //    public async Task<bool> ReleaseAsync(DocumentServiceLease lease)
@@ -425,24 +426,23 @@ public class DocumentServiceLeaseManager implements ILeaseManager, ICheckpointMa
 
     private Iterable<DocumentServiceLease> listDocuments(String prefix) //    private Task<IEnumerable<DocumentServiceLease>> ListDocuments(string prefix)
     {
-        /*
-        Debug.Assert(!string.IsNullOrEmpty(prefix), "prefix");
+        assert prefix != null && !prefix.isEmpty() : "prefix";
 
-        var querySpec = new SqlQuerySpec(
-                string.Format(CultureInfo.InvariantCulture, "SELECT * FROM c WHERE STARTSWITH(c.id, @PartitionLeasePrefix)"),
-                new SqlParameterCollection(new SqlParameter[] { new SqlParameter { Name = "@PartitionLeasePrefix", Value = prefix } }));
-        var query = this.client.CreateDocumentQuery<DocumentServiceLease>(this.leaseStoreCollectionLink, querySpec);
+        SqlParameter param = new SqlParameter();
+        param.setName("@PartitionLeasePrefix");
+        param.setValue(prefix);
+        SqlQuerySpec querySpec = new SqlQuerySpec(
+                String.format(Locale.ROOT, "SELECT * FROM c WHERE STARTSWITH(c.id, @PartitionLeasePrefix)"),
+                new SqlParameterCollection(new SqlParameter[] { param }));
+        FeedResponse<Document> query = client.queryDocuments(leaseStoreCollectionLink, querySpec, new FeedOptions()); // createDocumentQuery<DocumentServiceLease>(this.leaseStoreCollectionLink, querySpec);
 
-        return Task.FromResult<IEnumerable<DocumentServiceLease>>(query.AsEnumerable<DocumentServiceLease>());
-         */
-        return null;
+        return query;
     }
 
-    /// <summary>
-    /// Creates id either for container (if partitionId parameter is empty) or for lease otherwise.
-    /// </summary>
-    /// <param name="partitionId">The lease partition id.</param>
-    /// <returns>Document id for container or lease.</returns>
+    /**
+     * Creates id either for container (if partitionId parameter is empty) or for lease otherwise.
+     * @param partitionId, the lease partition id.
+     * @return Document id for container or lease. */
     private String getDocumentId() { //    private string GetDocumentId(string partitionId = null)    
         return getDocumentId(null);
     }
@@ -460,265 +460,17 @@ public class DocumentServiceLeaseManager implements ILeaseManager, ICheckpointMa
                 this.GetPartitionLeasePrefix() + partitionId;
          */
     }
-
-    /*    
-    private RequestOptions CreateIfMatchOptions(DocumentServiceLease lease) {
-
-        Debug.Assert(lease != null, "lease");
-
-        AccessCondition ifMatchCondition = new AccessCondition { Type = AccessConditionType.IfMatch, Condition = lease.ETag };
-        return new RequestOptions { AccessCondition = ifMatchCondition };
-
-    }
-     */
-
- /*
-    private void HandleLeaseOperationException(DocumentServiceLease lease, ExceptionDispatchInfo dispatchInfo) {
-
-        Debug.Assert(lease != null, "lease");
-        Debug.Assert(dispatchInfo != null, "dispatchInfo");
-
-        DocumentClientException dcex = (DocumentClientException)dispatchInfo.SourceException;
-        TraceLog.Warning(string.Format("Lease operation exception, status code: ", dcex.StatusCode));
-
-        if (StatusCode.PreconditionFailed == (StatusCode)dcex.StatusCode ||
-                StatusCode.Conflict == (StatusCode)dcex.StatusCode ||
-                StatusCode.NotFound == (StatusCode)dcex.StatusCode)
-        {
-            throw new LeaseLostException(lease, dcex, StatusCode.NotFound == (StatusCode)dcex.StatusCode);
-        }
-        else
-        {
-            dispatchInfo.Throw();
-        }
-    }*/
+    
     private String getPartitionLeasePrefix() {
         return this.containerNamePrefix + containerSeparator + partitionPrefix;
     }
 
-    /*
-    public Future<Void> initializeAsync() //    public async Task initializeAsync()
-    {
-
-        Uri collectionUri = UriFactory.CreateDocumentCollectionUri(this.leaseStoreCollectionInfo.DatabaseName, this.leaseStoreCollectionInfo.CollectionName);
-        DocumentCollection collection = await this.client.ReadDocumentCollectionAsync(collectionUri);
-        this.leaseStoreCollectionLink = collection.SelfLink;
-
-        // Get delta between server and local time for time synchonization.
-        DateTime snapshot1 = DateTime.UtcNow;
-        Document dummyDocument = await this.client.CreateDocumentAsync(this.leaseStoreCollectionLink, new Document { Id = this.GetDocumentId() + Guid.NewGuid().ToString() });
-        DateTime snapshot2 = DateTime.UtcNow;
-        this.serverToLocalTimeDelta = dummyDocument.Timestamp.ToUniversalTime() - new DateTime((snapshot1.Ticks + snapshot2.Ticks) / 2, DateTimeKind.Utc);
-        await this.client.DeleteDocumentAsync(dummyDocument.SelfLink);
-
-        TraceLog.Verbose(string.Format("Server to local time delta: {0}", this.serverToLocalTimeDelta));
-    return null;
-    }
-     */
     public boolean LeaseStoreExistsAsync() //    public async Task<bool> LeaseStoreExistsAsync()
     {
         DocumentServiceLease containerDocument = tryGetLease(getDocumentId());
         return containerDocument != null ? true : false;
     }
-    /*
-    public async Task<bool> CreateLeaseStoreIfNotExistsAsync() {
-        bool wasCreated = false;
-
-        if (!await 
-            this.LeaseStoreExistsAsync()
-        
-            )
-        {
-            var containerDocument = new Document 
-            {
-                Id = this.GetDocumentId() };
-
-            try {
-                await this.client.CreateDocumentAsync(this.leaseStoreCollectionLink, containerDocument);
-                wasCreated = true;
-            } catch (DocumentClientException ex) {
-                if (StatusCode.Conflict != (StatusCode) ex.StatusCode) {
-                    throw ;
-                }
-            }
-        }
-
-        return wasCreated;
-    }    
-     */
- /*
-    public Task<IEnumerable<DocumentServiceLease>> ListLeases() {
-        return this.ListDocuments(this.GetPartitionLeasePrefix());
-    }
-     */
-    /// <summary>
-    /// Checks whether lease exists and creates if does not exist.
-    /// </summary>
-    /// <returns>true if created, false otherwise.</returns>
-    /*
-    public async Task<bool> CreateLeaseIfNotExistAsync(string partitionId, string continuationToken) {
-        bool wasCreated = false;
-        var leaseDocId = this.GetDocumentId(partitionId);
-        if (await 
-            this.TryGetLease(leaseDocId) == null
-        
-            )
-        {
-            try {
-                await this.client.CreateDocumentAsync(
-                        this.leaseStoreCollectionLink,
-                    new DocumentServiceLease 
-                {
-                    Id = leaseDocId
-                    , PartitionId = partitionId
-                    , ContinuationToken = continuationToken });
-                wasCreated = true;
-            } catch (DocumentClientException ex) {
-                if (StatusCode.Conflict != (StatusCode) ex.StatusCode) {
-                    throw ;
-                }
-            }
-        }
-
-        return wasCreated;
-    }
-
-    public async Task
-    <DocumentServiceLease
-
-    > GetLeaseAsync(string partitionId) {
-        return await this.TryGetLease(this.GetDocumentId(partitionId));
-    }
-
-    public async Task
-    <DocumentServiceLease> AcquireAsync(DocumentServiceLease lease, string owner) {
-        if (lease == null || lease.PartitionId == null) {
-            throw new ArgumentException("lease");
-        }
-
-        if (string.IsNullOrWhiteSpace(owner)) {
-            throw new ArgumentException("owner");
-        }
-
-        DocumentServiceLease currentLease = await this.TryGetLease(this.GetDocumentId(lease.PartitionId));
-        currentLease.Owner = owner;
-        currentLease.State = LeaseState.Leased;
-
-        return await this.UpdateInternalAsync(
-                currentLease,
-                (DocumentServiceLease serverLease) =  >
-        {
-            serverLease.Owner = currentLease.Owner;
-            serverLease.State = currentLease.State;
-            return serverLease;
-        });
-    }*/
-
- /*
-    public async Task<DocumentServiceLease> RenewAsync(DocumentServiceLease lease) {
-        Debug.Assert(lease != null, "lease");
-
-        DocumentServiceLease refreshedLease = await this.TryGetLease(this.GetDocumentId(lease.PartitionId));
-        if (refreshedLease == null) {
-            TraceLog.Informational(string.Format("Failed to renew lease for partition id {0}! The lease is gone already.", lease.PartitionId));
-            throw new LeaseLostException(lease);
-        } else if (refreshedLease.Owner != lease.Owner) {
-            TraceLog.Informational(string.Format("Failed to renew lease for partition id {0}! The lease was already taken by another host.", lease.PartitionId));
-            throw new LeaseLostException(lease);
-        }
-
-        return await this.UpdateInternalAsync(refreshedLease, serverLease =  > serverLease);
-    }
-
-    public async Task<bool> ReleaseAsync(DocumentServiceLease lease) {
-        DocumentServiceLease refreshedLease = await this.TryGetLease(this.GetDocumentId(lease.PartitionId));
-        if (refreshedLease == null) {
-            TraceLog.Informational(string.Format("Failed to release lease for partition id {0}! The lease is gone already.", lease.PartitionId));
-            return false;
-        } else if (refreshedLease.Owner != lease.Owner) {
-            TraceLog.Informational(string.Format("No need to release lease for partition id {0}! The lease was already taken by another host.", lease.PartitionId));
-            return true;
-        }
-
-        string oldOwner = lease.Owner;
-        refreshedLease.Owner = null;
-        refreshedLease.State = LeaseState.Available;
-
-        refreshedLease = await this.UpdateInternalAsync(
-                refreshedLease,
-                (DocumentServiceLease serverLease) =  >
-        {
-            serverLease.Owner = refreshedLease.Owner;
-            serverLease.State = refreshedLease.State;
-            return serverLease;
-        },
-        oldOwner
-        );
-        if (refreshedLease != null) {
-            return true;
-        } else {
-            TraceLog.Informational(string.Format("Failed to release lease for partition id {0}! Probably the lease was stolen by another host.", lease.PartitionId));
-            return false;
-        }
-    }
-
-    public async Task
-
-    DeleteAsync(DocumentServiceLease lease) {
-        if (lease == null || lease.Id == null) {
-            throw new ArgumentException("lease");
-        }
-
-        Uri leaseUri = UriFactory.CreateDocumentUri(this.leaseStoreCollectionInfo.DatabaseName, this.leaseStoreCollectionInfo.CollectionName, lease.Id);
-        try {
-            await this.client.DeleteDocumentAsync(leaseUri);
-        } catch (DocumentClientException ex) {
-            if (StatusCode.NotFound != (StatusCode) ex.StatusCode) {
-                this.HandleLeaseOperationException(lease, ExceptionDispatchInfo.Capture(ex));
-            }
-        }
-    }*/
-
- /*
-    public async Task
-
-    DeleteAllAsync() {
-        var docs = await this.ListDocuments(this.containerNamePrefix);
-        foreach(var doc in docs
-        
-            )
-        {
-            DocumentServiceLease lease = new DocumentServiceLease(doc);
-            await this.DeleteAsync(lease);
-        }
-    }
-
-    public Task<bool> IsExpired(DocumentServiceLease lease) {
-        Debug.Assert(lease != null);
-
-        return Task.FromResult < bool > (lease.Timestamp.ToUniversalTime() + this.leaseInterval + this.leaseIntervalAllowance < DateTime.UtcNow + this.serverToLocalTimeDelta);
-    }
-
-    public async Task
-    <Lease> CheckpointAsync(Lease lease, string continuationToken, long sequenceNumber) {
-        DocumentServiceLease documentLease = lease as DocumentServiceLease;
-        Debug.Assert(documentLease != null, "documentLease");
-
-        documentLease.ContinuationToken = continuationToken;
-        documentLease.SequenceNumber = sequenceNumber;
-
-        DocumentServiceLease result = await this.UpdateInternalAsync(
-                documentLease,
-                (DocumentServiceLease serverLease) =  >
-        {
-            serverLease.ContinuationToken = documentLease.ContinuationToken;
-            serverLease.SequenceNumber = documentLease.SequenceNumber;
-            return serverLease;
-        });
-
-        return result;
-    }*/
-
+ 
     private DocumentServiceLease updateInternal(
             DocumentServiceLease lease,
             LeaseConflictResolver conflictResolver,
@@ -765,69 +517,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager, ICheckpointMa
             }
         }
     }
-
- /*
-    private async Task
-    <Document> TryGetDocument(string documentId) {
-        Uri documentUri = UriFactory.CreateDocumentUri(
-                this.leaseStoreCollectionInfo.DatabaseName,
-                this.leaseStoreCollectionInfo.CollectionName,
-                documentId);
-
-        Document document = null;
-        try {
-            document = await this.client.ReadDocumentAsync(documentUri);
-        } catch (DocumentClientException ex) {
-            if (StatusCode.NotFound != (StatusCode) ex.StatusCode) {
-                throw ;
-            }
-        }
-
-        return document;
-    }
-
-    private async Task
-    <DocumentServiceLease
-
-    > TryGetLease(string documentId) {
-        Document leaseDocument = await this.TryGetDocument(documentId);
-
-        if (leaseDocument != null) {
-            return new DocumentServiceLease(leaseDocument);
-        } else {
-            return null;
-        }
-    }
-
-    private Task<IEnumerable<DocumentServiceLease>> ListDocuments(string prefix) {
-        Debug.Assert(!string.IsNullOrEmpty(prefix), "prefix");
-
-        var querySpec = new SqlQuerySpec(
-                string.Format(CultureInfo.InvariantCulture, "SELECT * FROM c WHERE STARTSWITH(c.id, @PartitionLeasePrefix)"),
-                new SqlParameterCollection(new SqlParameter[]{new SqlParameter  {
-            Name  = "@PartitionLeasePrefix", Value = prefix } }
-    ));
-        var query = this.client.CreateDocumentQuery < DocumentServiceLease > (this.leaseStoreCollectionLink, querySpec
-
-    );
-
-        return Task.FromResult<IEnumerable<DocumentServiceLease>> (query.AsEnumerable<DocumentServiceLease>
-
-());
-    }
-    /// <summary>
-    /// Creates id either for container (if partitionId parameter is empty) or for lease otherwise.
-    /// </summary>
-    /// <param name="partitionId">The lease partition id.</param>
-    /// <returns>Document id for container or lease.</returns>
     
-    private string GetDocumentId(string partitionId = null)
-    {
-        return string.IsNullOrEmpty(partitionId) ?
-                this.containerNamePrefix + DocumentServiceLeaseManager.ContainerSeparator + DocumentServiceLeaseManager.ContainerNameSuffix :
-                this.GetPartitionLeasePrefix() + partitionId;
-    }
-*/
     private RequestOptions createIfMatchOptions(DocumentServiceLease lease) {
         assert lease != null : "lease";
 

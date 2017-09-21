@@ -33,7 +33,7 @@ public interface ILeaseManager<T extends Lease> {
 
 	T acquire(T lease, String owner);
 
-	T renew(T lease);
+	T renew(T lease) throws LeaseLostException, DocumentClientException;
 
 	boolean release(T lease);
 
