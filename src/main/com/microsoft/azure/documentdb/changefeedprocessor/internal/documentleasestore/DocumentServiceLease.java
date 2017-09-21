@@ -1,16 +1,120 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * The MIT License (MIT)
+ * Copyright (c) 2016 Microsoft Corporation
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 package com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore;
 
+import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalTime;
+import java.util.Locale;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.microsoft.azure.documentdb.Document;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.Lease;
+
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  *
  * @author yoterada
  */
 public class DocumentServiceLease extends Lease {
+	
+	private static final Instant unixStartTime = Instant.EPOCH;
+
+    public DocumentServiceLease() { 
+    }
+
+    public DocumentServiceLease(DocumentServiceLease other) {
+        super(other);
+    	this.id = other.id;
+        this.state = other.state;
+        this.eTag = other.eTag;
+        this.tS = other.tS;
+    }
+
+    public DocumentServiceLease(Document document) {
+        super(fromDocument(document));
+    	if (document == null) {
+            throw new IllegalArgumentException("document");
+        }
+    }
+
+    @JsonProperty("id")
+    @Getter @Setter public String id;
+
+    @JsonProperty("_etag")
+    @Getter @Setter public String eTag;
     
+    @JsonProperty("state")
+    @Getter @Setter public LeaseState state;
+
+    @JsonIgnore
+    public Instant timestamp;
+
+    @JsonIgnore
+    public String concurrencyToken;
+    
+    @JsonProperty("_ts")
+    @Getter @Setter private long tS;
+        
+    public Instant getTimestamp() {
+    	return unixStartTime.plusSeconds(tS);
+    }
+    
+    public void setTimestamp(Instant value) {
+    	tS = Duration.between(value, unixStartTime).getSeconds(); 
+    }    
+
+    @Override
+    public String getConcurrencyToken() {
+    	return eTag;
+    }
+
+    @Override
+    public String toString() {
+        return String.format(
+            Locale.ROOT,
+            "{0} {1} Owner='{2}' Continuation={3} Timestamp(local)={4}",
+            id,
+            state,
+            getOwner(),
+            getContinuationToken(),
+            LocalTime.from(timestamp));
+    }
+
+    private static DocumentServiceLease fromDocument(Document document) {
+        ObjectMapper mapper = new ObjectMapper();
+    	
+        try {
+        	String json = mapper.writeValueAsString(document);
+			return mapper.readValue(json, DocumentServiceLease.class);
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+    } 
 }

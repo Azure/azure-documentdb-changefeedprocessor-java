@@ -7,12 +7,18 @@ package com.microsoft.azure.documentdb.changefeedprocessor;
 
 
 import com.microsoft.azure.documentdb.ChangeFeedOptions;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.*;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.ChangeFeedObserverFactory;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.IPartitionObserver;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.PartitionManager;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.WorkerData;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartitionServices;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Future;
 
 public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLease> {
 
@@ -28,8 +34,12 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     ConcurrentMap<String, WorkerData> _partitionKeyRangeIdToWorkerMap;
     PartitionManager<DocumentServiceLease> _partitionManager;
 
+    DocumentServices _documentServices;
+    ResourcePartitionServices _resourcePartitionSvcs;
+    CheckpointServices _checkpointSvcs;
 
     private IChangeFeedObserverFactory _observerFactory;
+    private final int DEFAULT_PAGE_SIZE = 100;
 
     public ChangeFeedEventHost( String hostName, DocumentCollectionInfo documentCollectionLocation, DocumentCollectionInfo auxCollectionLocation){
         this(hostName, documentCollectionLocation, auxCollectionLocation, new ChangeFeedOptions(), new ChangeFeedHostOptions());
@@ -55,7 +65,13 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         this._auxCollectionLocation = CanoninicalizeCollectionInfo(auxCollectionLocation);
         this._partitionKeyRangeIdToWorkerMap = new ConcurrentHashMap<String, WorkerData>();
 
+        this._documentServices = new DocumentServices(documentCollectionLocation);
+        this._checkpointSvcs = new CheckpointServices();
 
+        this._resourcePartitionSvcs = null;
+
+        if (_changeFeedOptions.getPageSize() == 0)
+            _changeFeedOptions.setPageSize(this.DEFAULT_PAGE_SIZE);
     }
 
     private DocumentCollectionInfo CanoninicalizeCollectionInfo(DocumentCollectionInfo collectionInfo)
@@ -76,26 +92,67 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
      */
     public void registerObserver(Class type)
     {
-        this._observerFactory = new ChangeFeedObserverFactory(type);
-        //this.StartAsync();
+        ChangeFeedObserverFactory factory = new ChangeFeedObserverFactory(type);
+
+        registerObserverFactory(factory);
+        start();
+    }
+    void registerObserverFactory(ChangeFeedObserverFactory factory) {
+        this._observerFactory = factory;
     }
 
+    void start(){
 
-    public void StartAsync(){
-        this.InitializeAsync();
-        this._partitionManager.start();
+        //TODO: This is not the right place to have this code..
+        this._resourcePartitionSvcs = new ResourcePartitionServices(_documentServices, _checkpointSvcs, _observerFactory,_changeFeedOptions.getPageSize());
+
+
+        initializePartitions();
+        initializeLeaseManager();
     }
 
-    public void InitializeAsync(){}
+    void initializePartitions(){
+        // list partitions
+        List<String> partitionIds = this.listPartition();
 
+        for(String id : partitionIds) {
+            _resourcePartitionSvcs.create(id);
+        }
+    }
+
+    void initializeLeaseManager() {
+        // simulate a callback from partitionManager
+        hackStartSinglePartition();
+    }
+
+    void hackStartSinglePartition() {
+        List<String> partitionIds = this.listPartition();
+
+        for(String id : partitionIds) {
+            _resourcePartitionSvcs.start(id);
+        }
+    }
+
+    private List listPartition(){
+        DocumentServices client = this._documentServices;
+
+        List list = (List)client.listPartitionRange();
+
+        return list;
+    }
 
     @Override
     public void onPartitionAcquired(DocumentServiceLease documentServiceLease) {
+        String partitionId = documentServiceLease.id;
 
-    }
+        _resourcePartitionSvcs.start(partitionId);    }
 
     @Override
     public void onPartitionReleasedAsync(DocumentServiceLease documentServiceLease, ChangeFeedObserverCloseReason reason) {
+        String partitionId = documentServiceLease.id;
 
+        System.out.println("Partition finished");
+
+        _resourcePartitionSvcs.stop(partitionId);
     }
 }

@@ -3,25 +3,68 @@ package com.microsoft.azure.documentdb.changefeedprocessor.services;
 import com.microsoft.azure.documentdb.*;
 import com.microsoft.azure.documentdb.changefeedprocessor.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class DocumentServices {
 
-    private final String _url;
-    private final String _database;
-    private final String _collection;
-    private final String _masterKey;
+    private final String url;
+    private final String database;
+    private final String collection;
+    private final String masterKey;
+    private final DocumentClient client;
+    private final String collectionLink;
 
     public DocumentServices(DocumentCollectionInfo collectionLocation) {
-        this._url = collectionLocation.getUri().toString();
-        this._database = collectionLocation.getDatabaseName();
-        this._collection = collectionLocation.getCollectionName();
-        this._masterKey = collectionLocation.getMasterKey();
+        this.url = collectionLocation.getUri().toString();
+        this.database = collectionLocation.getDatabaseName();
+        this.collection = collectionLocation.getCollectionName();
+        this.masterKey = collectionLocation.getMasterKey();
+        this.client = new DocumentClient(url, masterKey, new ConnectionPolicy(), ConsistencyLevel.Session);
+        this.collectionLink = String.format("/dbs/%s/colls/%s", database, collection);
     }
 
-    public DocumentServicesClient createClient() {
-        return new DocumentServicesClient(_url, _database, _collection, _masterKey);
+    public List<String> listPartitionRange() {
+
+        String checkpointContinuation = null;
+        FeedOptions options = new FeedOptions();
+
+        List<PartitionKeyRange> partitionKeys = new ArrayList();
+        List<String> partitionsId = new ArrayList();
+
+        do {
+            options.setRequestContinuation(checkpointContinuation);
+            FeedResponse<PartitionKeyRange> range = client.readPartitionKeyRanges(collectionLink, options);
+            try {
+                partitionKeys.addAll(range.getQueryIterable().fetchNextBlock());
+            }catch (DocumentClientException ex){}
+
+            checkpointContinuation = range.getResponseContinuation(); //PartitionLSN
+        } while (checkpointContinuation != null);
+
+
+        for(PartitionKeyRange pkr : partitionKeys) {
+            partitionsId.add(pkr.getId());
+        }
+
+        return partitionsId;
     }
 
-    public DocumentServices createClient(String partitionId, String continuationToken) {
-        return null;
+    public FeedResponse<Document> createDocumentChangeFeedQuery(String partitionId, String continuationToken, int pageSize) throws Exception {
+
+        ChangeFeedOptions options = new ChangeFeedOptions();
+        options.setPartitionKeyRangeId(partitionId);
+        options.setPageSize(pageSize);
+
+        if (continuationToken == null || continuationToken.isEmpty())
+            options.setStartFromBeginning(true);
+        else {
+            options.setStartFromBeginning(false);
+            options.setRequestContinuation(continuationToken);
+        }
+
+        FeedResponse<Document> query = client.queryDocumentChangeFeed(collectionLink, options);
+
+        return query;
     }
 }

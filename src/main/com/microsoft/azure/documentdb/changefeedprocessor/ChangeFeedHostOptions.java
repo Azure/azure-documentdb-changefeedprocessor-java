@@ -26,8 +26,6 @@
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
 import java.time.Instant;
-import java.util.Calendar;
-import java.util.Date;
 
 public class ChangeFeedHostOptions {
 
@@ -129,4 +127,5 @@ public class ChangeFeedHostOptions {
     void setDiscardExistingLeases(boolean _discardExistingLeases) {
         this._discardExistingLeases = _discardExistingLeases;
     }
+
 }

@@ -11,17 +11,26 @@ import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserverFac
  *
  * @author yoterada
  */
-public class ChangeFeedObserverFactory<T extends IChangeFeedObserver> implements IChangeFeedObserverFactory {
 
+public class ChangeFeedObserverFactory<T extends IChangeFeedObserver> implements IChangeFeedObserverFactory {
     private final Class _type;
 
     private ChangeFeedObserverFactory(Class type) {
         this._type = type;
     }
 
-    public IChangeFeedObserver createObserver() throws IllegalAccessException, InstantiationException {
-        IChangeFeedObserver value = (IChangeFeedObserver)_type.newInstance();
+    public IChangeFeedObserver createObserver() {
 
-        return value;
+        IChangeFeedObserver newInstance = null;
+
+        try {
+            newInstance = (IChangeFeedObserver)_type.newInstance();
+        }
+        catch(IllegalAccessException e) {
+        }
+        catch(InstantiationException e) {
+        }
+
+        return newInstance;
     }
 }

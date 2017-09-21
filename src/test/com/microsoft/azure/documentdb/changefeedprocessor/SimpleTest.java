@@ -1,22 +1,20 @@
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
+import com.microsoft.azure.documentdb.ChangeFeedOptions;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationException;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationFile;
-import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
+import java.util.Scanner;
 
-public class DocumentServiceTest {
+public class SimpleTest {
 
     @Test
-    public void testDocumentService(){
-
+    public void testCreatChangeFeedHostUsingSecrets()  {
         ConfigurationFile config = null;
-        DocumentServices client = null;
 
         try {
             config = new ConfigurationFile("app.secrets");
@@ -37,15 +35,24 @@ public class DocumentServiceTest {
 
         }
 
-        client = new DocumentServices(docInfo);
+        DocumentCollectionInfo docAux = new DocumentCollectionInfo(docInfo);
 
-        Assert.assertNotNull(client);
+        try {
+            docAux.setCollectionName(config.get("COSMOSDB_AUX_COLLECTION"));
+        } catch (ConfigurationException e) {
+            Assert.fail("Configuration Error " + e.getMessage());
+        }
 
-        Object list = client.listPartitionRange();
+        ChangeFeedOptions options = new ChangeFeedOptions();
+        options.setPageSize(3);
 
-        Assert.assertNotNull(list);
+        ChangeFeedEventHost host = new ChangeFeedEventHost("hotsname", docInfo, docAux, options, new ChangeFeedHostOptions() );
+        Assert.assertNotNull(host);
 
-        Assert.assertTrue("It must have at least one partition!!", ((ArrayList)list).size() >= 1);
+        host.registerObserver(TestChangeFeedObserver.class);
+
+        System.out.println("Press ENTER to finish");
+        Scanner scanner = new Scanner(System.in);
+        scanner.nextLine();
     }
-
 }

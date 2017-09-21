@@ -35,7 +35,7 @@ public class ChangeFeedObserverContext {
         return _partitionKeyRangeId;
     }
 
-    void setPartitionKeyRangeId(String _partitionKeyRangeId) {
+    public void setPartitionKeyRangeId(String _partitionKeyRangeId) {
         this._partitionKeyRangeId = _partitionKeyRangeId;
     }
 
@@ -44,7 +44,7 @@ public class ChangeFeedObserverContext {
         return _feedResponse;
     }
 
-    void setFeedResponse(FeedResponse<Document> feedResponse){
+    public void setFeedResponse(FeedResponse<Document> feedResponse){
         _feedResponse = feedResponse;
     }
 

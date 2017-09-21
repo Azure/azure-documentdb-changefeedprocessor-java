@@ -16,5 +16,4 @@ public interface IChangeFeedObserverFactory {
     /// </summary>
     /// <returns>Created instance of <see cref="DocumentDB.ChangeFeedProcessor.IChangeFeedObserver"/>.</returns>
     IChangeFeedObserver createObserver() throws IllegalAccessException, InstantiationException;
-    
 }
