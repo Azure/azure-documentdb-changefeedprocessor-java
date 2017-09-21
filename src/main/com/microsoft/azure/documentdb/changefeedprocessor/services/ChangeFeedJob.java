@@ -75,8 +75,8 @@ public class ChangeFeedJob implements Job {
                     if (query != null) {
                         context.setFeedResponse(query);
                         List<Document> docs = query.getQueryIterable().fetchNextBlock();
+                        HasMoreResults = query.getQueryIterator().hasNext();
                         if (docs != null) {
-                            HasMoreResults = docs.size() == pageSize;
                             observer.processChanges(context, docs);
                             this.checkpoint(query.getResponseContinuation());
                         }
