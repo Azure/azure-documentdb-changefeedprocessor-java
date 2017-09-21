@@ -57,6 +57,7 @@ public class SimpleTest {
             scanner.nextLine();
         }
         catch(Exception e) {
+            e.printStackTrace();
             Assert.fail("failed");
         }
     }
