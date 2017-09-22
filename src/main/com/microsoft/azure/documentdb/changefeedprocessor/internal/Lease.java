@@ -25,19 +25,18 @@
 
 package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
+@EqualsAndHashCode(of={"partitionId"})
 public abstract class Lease {
-
 
     @Getter @Setter private String partitionId;
     @Getter @Setter private String owner;
     @Getter @Setter private String continuationToken;
     @Getter @Setter private long sequenceNumber;
     @Getter @Setter private String concurrencyToken;
-
-
 
     public Lease() {
     }
@@ -49,24 +48,4 @@ public abstract class Lease {
         this.sequenceNumber = source.getSequenceNumber();
     }
 
-
-    public boolean equals(Object obj) {
-        if (obj == this)
-        {
-            return true;
-        }
-
-        Lease lease = (Lease)obj ;
-        if (lease == null)
-        {
-            return false;
-        }
-
-        return partitionId.equals(lease.partitionId);
-    }
-
-    public int getHashCode() {
-        return partitionId.hashCode();
-    }
-    
 }
