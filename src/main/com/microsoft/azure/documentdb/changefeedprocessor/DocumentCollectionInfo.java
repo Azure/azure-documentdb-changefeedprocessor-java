@@ -30,16 +30,16 @@ import java.net.URI;
 
 public class DocumentCollectionInfo {
 
-    private URI _uri;
-    private String _masterKey;
-    private String _databaseName;
-    private String _collectionName;
-    private ConnectionPolicy _connectionPolicy;
+    private URI uri;
+    private String masterKey;
+    private String databaseName;
+    private String collectionName;
+    private ConnectionPolicy connectionPolicy;
 
     public DocumentCollectionInfo(){
 
-        _connectionPolicy = new ConnectionPolicy();
-        _connectionPolicy.setConnectionMode(ConnectionMode.DirectHttps);
+        connectionPolicy = new ConnectionPolicy();
+        connectionPolicy.setConnectionMode(ConnectionMode.DirectHttps);
 
     }
 
@@ -50,11 +50,11 @@ public class DocumentCollectionInfo {
      */
     public DocumentCollectionInfo(DocumentCollectionInfo other)
     {
-        this._uri = other.getUri();
-        this._masterKey= other.getMasterKey();
-        this._databaseName= other.getDatabaseName();
-        this._collectionName= other.getCollectionName();
-        this._connectionPolicy = other.getConnectionPolicy();
+        this.uri = other.getUri();
+        this.masterKey = other.getMasterKey();
+        this.databaseName = other.getDatabaseName();
+        this.collectionName = other.getCollectionName();
+        this.connectionPolicy = other.getConnectionPolicy();
     }
 
     /**
@@ -62,7 +62,7 @@ public class DocumentCollectionInfo {
      * @return
      */
     public URI getUri() {
-        return _uri;
+        return uri;
     }
 
     /**
@@ -70,7 +70,7 @@ public class DocumentCollectionInfo {
      * @param _uri
      */
     public void setUri(URI _uri) {
-        this._uri = _uri;
+        this.uri = _uri;
     }
 
     /**
@@ -78,7 +78,7 @@ public class DocumentCollectionInfo {
      * @return
      */
     public String getMasterKey() {
-        return _masterKey;
+        return masterKey;
     }
 
     /**
@@ -86,7 +86,7 @@ public class DocumentCollectionInfo {
      * @param _masterKey
      */
     public void setMasterKey(String _masterKey) {
-        this._masterKey = _masterKey;
+        this.masterKey = _masterKey;
     }
 
     /**
@@ -94,7 +94,7 @@ public class DocumentCollectionInfo {
      * @return
      */
     public String getDatabaseName() {
-        return _databaseName;
+        return databaseName;
     }
 
     /**
@@ -102,7 +102,7 @@ public class DocumentCollectionInfo {
      * @param _databaseName
      */
     public void setDatabaseName(String _databaseName) {
-        this._databaseName = _databaseName;
+        this.databaseName = _databaseName;
     }
 
     /**
@@ -110,7 +110,7 @@ public class DocumentCollectionInfo {
      * @return
      */
     public String getCollectionName() {
-        return _collectionName;
+        return collectionName;
     }
 
     /**
@@ -118,7 +118,7 @@ public class DocumentCollectionInfo {
      * @param _collectionName
      */
     public void setCollectionName(String _collectionName) {
-        this._collectionName = _collectionName;
+        this.collectionName = _collectionName;
     }
 
     /**
@@ -126,7 +126,7 @@ public class DocumentCollectionInfo {
      * @return
      */
     public ConnectionPolicy getConnectionPolicy() {
-        return _connectionPolicy;
+        return connectionPolicy;
     }
 
     /**
@@ -134,7 +134,7 @@ public class DocumentCollectionInfo {
      * @param _connectionPolicy
      */
     public void setConnectionPolicy(ConnectionPolicy _connectionPolicy) {
-        this._connectionPolicy = _connectionPolicy;
+        this.connectionPolicy = _connectionPolicy;
     }
 
 }

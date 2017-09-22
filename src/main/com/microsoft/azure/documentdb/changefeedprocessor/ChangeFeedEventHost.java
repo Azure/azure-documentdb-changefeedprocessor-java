@@ -25,21 +25,21 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     final String LeaseContainerName = "docdb-changefeed";
     final String LSNPropertyName = "_lsn";
 
-    private DocumentCollectionInfo _collectionLocation;
-    private ChangeFeedOptions _changeFeedOptions;
-    private ChangeFeedHostOptions _options;
-    private String _hostName;
-    private String _leasePrefix;
-    DocumentCollectionInfo _auxCollectionLocation;
-    ConcurrentMap<String, WorkerData> _partitionKeyRangeIdToWorkerMap;
+    private DocumentCollectionInfo collectionLocation;
+    private ChangeFeedOptions changeFeedOptions;
+    private ChangeFeedHostOptions options;
+    private String hostName;
+    private String leasePrefix;
+    DocumentCollectionInfo auxCollectionLocation;
+    ConcurrentMap<String, WorkerData> partitionKeyRangeIdToWorkerMap;
     PartitionManager<DocumentServiceLease> _partitionManager;
-    ILeaseManager<DocumentServiceLease> _leaseManager;
+    ILeaseManager<DocumentServiceLease> leaseManager;
 
-    DocumentServices _documentServices;
-    ResourcePartitionServices _resourcePartitionSvcs;
-    CheckpointServices _checkpointSvcs;
+    DocumentServices documentServices;
+    ResourcePartitionServices resourcePartitionSvcs;
+    CheckpointServices checkpointSvcs;
 
-    private IChangeFeedObserverFactory _observerFactory;
+    private IChangeFeedObserverFactory observerFactory;
     private final int DEFAULT_PAGE_SIZE = 100;
 
     public ChangeFeedEventHost( String hostName, DocumentCollectionInfo documentCollectionLocation, DocumentCollectionInfo auxCollectionLocation){
@@ -59,20 +59,20 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         if (documentCollectionLocation.getCollectionName() == null || documentCollectionLocation.getCollectionName().isEmpty()) throw new IllegalArgumentException("documentCollectionLocation.getCollectionName() is null or empty");
         if (hostOptions.getMinPartitionCount() > hostOptions.getMaxPartitionCount()) throw new IllegalArgumentException("hostOptions.MinPartitionCount cannot be greater than hostOptions.MaxPartitionCount");
 
-        this._collectionLocation = CanoninicalizeCollectionInfo(documentCollectionLocation);
-        this._changeFeedOptions = changeFeedOptions;
-        this._options = hostOptions;
-        this._hostName = hostName;
-        this._auxCollectionLocation = CanoninicalizeCollectionInfo(auxCollectionLocation);
-        this._partitionKeyRangeIdToWorkerMap = new ConcurrentHashMap<String, WorkerData>();
+        this.collectionLocation = CanoninicalizeCollectionInfo(documentCollectionLocation);
+        this.changeFeedOptions = changeFeedOptions;
+        this.options = hostOptions;
+        this.hostName = hostName;
+        this.auxCollectionLocation = CanoninicalizeCollectionInfo(auxCollectionLocation);
+        this.partitionKeyRangeIdToWorkerMap = new ConcurrentHashMap<String, WorkerData>();
 
-        this._documentServices = new DocumentServices(documentCollectionLocation);
-        this._checkpointSvcs = new CheckpointServices();
+        this.documentServices = new DocumentServices(documentCollectionLocation);
+        this.checkpointSvcs = new CheckpointServices();
 
-        this._resourcePartitionSvcs = null;
+        this.resourcePartitionSvcs = null;
 
-        if (_changeFeedOptions.getPageSize() == 0)
-            _changeFeedOptions.setPageSize(this.DEFAULT_PAGE_SIZE);
+        if (this.changeFeedOptions.getPageSize() == 0)
+            this.changeFeedOptions.setPageSize(this.DEFAULT_PAGE_SIZE);
     }
 
     private DocumentCollectionInfo CanoninicalizeCollectionInfo(DocumentCollectionInfo collectionInfo)
@@ -100,13 +100,13 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     }
 
     void registerObserverFactory(ChangeFeedObserverFactory factory) {
-        this._observerFactory = factory;
+        this.observerFactory = factory;
     }
 
     void start() throws Exception{
 
         //TODO: This is not the right place to have this code..
-        this._resourcePartitionSvcs = new ResourcePartitionServices(_documentServices, _checkpointSvcs, _observerFactory,_changeFeedOptions.getPageSize());
+        this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, observerFactory, changeFeedOptions.getPageSize());
 
         initializeIntegrations();
         initializePartitions();
@@ -115,37 +115,37 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
     void initializeIntegrations() throws DocumentClientException, LeaseLostException {
         // Grab the options-supplied prefix if present otherwise leave it empty.
-        String optionsPrefix = this._options.getLeasePrefix();
+        String optionsPrefix = this.options.getLeasePrefix();
         if( optionsPrefix == null ) {
             optionsPrefix = "";
         }
 
         // Beyond this point all access to collection is done via this self link: if collection is removed, we won't access new one using same name by accident.
-        // this._leasePrefix = String.format("{%s}{%s}_{%s}_{%s}", optionsPrefix, this.collectionLocation.Uri.Host, docdb.DatabaseResourceId, docdb.CollectionResourceId);
+        // this.leasePrefix = String.format("{%s}{%s}_{%s}_{%s}", optionsPrefix, this.collectionLocation.Uri.Host, docdb.DatabaseResourceId, docdb.CollectionResourceId);
 
         DocumentServiceLeaseManager leaseManager = new DocumentServiceLeaseManager(
-                this._auxCollectionLocation,
-                this._leasePrefix,
-                this._options.getLeaseExpirationInterval(),
-                this._options.getLeaseRenewInterval());
+                this.auxCollectionLocation,
+                this.leasePrefix,
+                this.options.getLeaseExpirationInterval(),
+                this.options.getLeaseRenewInterval());
 
         leaseManager.initialize();
 
-        this._leaseManager = leaseManager;
+        this.leaseManager = leaseManager;
 
-//        this._checkpointSvcs = new Refactor.CheckpointServices((ICheckpointManager)leaseManager, this.options.CheckpointFrequency);
+//        this.checkpointSvcs = new Refactor.CheckpointServices((ICheckpointManager)leaseManager, this.options.CheckpointFrequency);
 
-        if (this._options.getDiscardExistingLeases()) {
+        if (this.options.getDiscardExistingLeases()) {
             //TraceLog.Warning(string.Format("Host '{0}': removing all leases, as requested by ChangeFeedHostOptions", this.HostName));
-            this._leaseManager.deleteAll();
+            this.leaseManager.deleteAll();
         }
 
         // Note: lease store is never stale as we use monitored colleciton Rid as id prefix for aux collection.
         // Collection was removed and re-created, the rid would change.
         // If it's not deleted, it's not stale. If it's deleted, it's not stale as it doesn't exist.
-        this._leaseManager.createLeaseStoreIfNotExists();
+        this.leaseManager.createLeaseStoreIfNotExists();
 
-        List<String> range = this._documentServices.listPartitionRange();
+        List<String> range = this.documentServices.listPartitionRange();
 
 //        TraceLog.Informational(string.Format("Source collection: '{0}', {1} partition(s), {2} document(s)", docdb.CollectionName, range.Count, docdb.DocumentCount));
 
@@ -161,7 +161,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         List<String> partitionIds = this.listPartition();
 
         for(String id : partitionIds) {
-            _resourcePartitionSvcs.create(id);
+            resourcePartitionSvcs.create(id);
         }
     }
 
@@ -175,7 +175,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         for(String id : partitionIds) {
             try {
-                _resourcePartitionSvcs.start(id);
+                resourcePartitionSvcs.start(id);
             } catch (DocumentClientException e) {
                 e.printStackTrace();
             }
@@ -183,7 +183,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     }
 
     private List listPartition(){
-        DocumentServices client = this._documentServices;
+        DocumentServices client = this.documentServices;
 
         List list = (List)client.listPartitionRange();
 
@@ -195,7 +195,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         String partitionId = documentServiceLease.id;
 
         try {
-            _resourcePartitionSvcs.start(partitionId);
+            resourcePartitionSvcs.start(partitionId);
         } catch (DocumentClientException e) {
             e.printStackTrace();
         }
@@ -207,6 +207,6 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         System.out.println("Partition finished");
 
-        _resourcePartitionSvcs.stop(partitionId);
+        resourcePartitionSvcs.stop(partitionId);
     }
 }

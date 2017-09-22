@@ -27,25 +27,25 @@ import com.microsoft.azure.documentdb.FeedResponse;
 
 public class ChangeFeedObserverContext {
 
-    private String _partitionKeyRangeId;
-    private FeedResponse<Document>_feedResponse ;
+    private String partitionKeyRangeId;
+    private FeedResponse<Document> feedResponse;
 
 
     public String getPartitionKeyRangeId() {
-        return _partitionKeyRangeId;
+        return partitionKeyRangeId;
     }
 
     public void setPartitionKeyRangeId(String _partitionKeyRangeId) {
-        this._partitionKeyRangeId = _partitionKeyRangeId;
+        this.partitionKeyRangeId = _partitionKeyRangeId;
     }
 
 
     public FeedResponse<Document> getFeedResponde(){
-        return _feedResponse;
+        return feedResponse;
     }
 
     public void setFeedResponse(FeedResponse<Document> feedResponse){
-        _feedResponse = feedResponse;
+        this.feedResponse = feedResponse;
     }
 
 

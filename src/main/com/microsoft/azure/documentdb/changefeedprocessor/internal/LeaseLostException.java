@@ -11,8 +11,8 @@ package com.microsoft.azure.documentdb.changefeedprocessor.internal;
  */
 public class LeaseLostException extends Exception {
 
-    private Lease _lease;
-    private Boolean _isGone;
+    private Lease lease;
+    private Boolean isGone;
 
     /// <summary>Initializes a new instance of the <see cref="DocumentDB.ChangeFeedProcessor.LeaseLostException" /> class using default values.</summary>
     public LeaseLostException()
@@ -50,13 +50,13 @@ public class LeaseLostException extends Exception {
 //    }
 
     public Lease getLease() {
-        return _lease;
+        return lease;
     }
     private void setLease(Lease value) {
     }
 
     public Boolean geteIsGone() {
-        return _isGone;
+        return isGone;
     }
 
     public void setIsGone(Boolean value) {

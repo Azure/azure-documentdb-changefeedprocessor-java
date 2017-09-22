@@ -35,100 +35,100 @@ public class ChangeFeedHostOptions {
     static Instant DefaultFeedPollDelay = Instant.ofEpochMilli(0).plusSeconds(5);
 
     public ChangeFeedHostOptions(){
-        _leaseRenewInterval = DefaultRenewInterval;
-        _leaseAcquireInterval = DefaultAcquireInterval;
-        _leaseExpirationInterval = DefaultExpirationInterval;
-        _feedPollDelay = DefaultFeedPollDelay;
+        leaseRenewInterval = DefaultRenewInterval;
+        leaseAcquireInterval = DefaultAcquireInterval;
+        leaseExpirationInterval = DefaultExpirationInterval;
+        feedPollDelay = DefaultFeedPollDelay;
     }
 
-    private Instant _leaseRenewInterval;
-    private Instant _leaseAcquireInterval;
-    private Instant _leaseExpirationInterval;
-    private Instant _feedPollDelay;
-    private CheckpointFrequency _checkpointFrequency;
-    private String _leasePrefix;
-    int _minPartitionCount;
-    int _maxPartitionCount;
-    boolean _discardExistingLeases;
-    int DegreeOfParallelism;
+    private Instant leaseRenewInterval;
+    private Instant leaseAcquireInterval;
+    private Instant leaseExpirationInterval;
+    private Instant feedPollDelay;
+    private CheckpointFrequency checkpointFrequency;
+    private String leasePrefix;
+    int minPartitionCount;
+    int maxPartitionCount;
+    boolean discardExistingLeases;
+    int degreeOfParallelism;
 
     int getDegreeOfParallelism(){
-        return this._maxPartitionCount > 0 ? this._maxPartitionCount : 25;
+        return this.maxPartitionCount > 0 ? this.maxPartitionCount : 25;
     }
 
     public Instant getLeaseRenewInterval() {
-        return _leaseRenewInterval;
+        return leaseRenewInterval;
     }
 
     public void setLeaseRenewInterval(Instant _leaseRenewInterval) {
-        this._leaseRenewInterval = _leaseRenewInterval;
+        this.leaseRenewInterval = _leaseRenewInterval;
     }
 
     public Instant getLeaseAcquireInterval() {
-        return _leaseAcquireInterval;
+        return leaseAcquireInterval;
     }
 
     public void setLeaseAcquireInterval(Instant _leaseAcquireInterval) {
-        this._leaseAcquireInterval = _leaseAcquireInterval;
+        this.leaseAcquireInterval = _leaseAcquireInterval;
     }
 
     public Instant getLeaseExpirationInterval() {
-        return _leaseExpirationInterval;
+        return leaseExpirationInterval;
     }
 
     public void setLeaseExpirationInterval(Instant _leaseExpirationInterval) {
-        this._leaseExpirationInterval = _leaseExpirationInterval;
+        this.leaseExpirationInterval = _leaseExpirationInterval;
     }
 
     public Instant getFeedPollDelay() {
-        return _feedPollDelay;
+        return feedPollDelay;
     }
 
     public void setFeedPollDelay(Instant _feedPollDelay) {
-        this._feedPollDelay = _feedPollDelay;
+        this.feedPollDelay = _feedPollDelay;
     }
 
     public CheckpointFrequency getCheckpointFrequency() {
-        return _checkpointFrequency;
+        return checkpointFrequency;
     }
 
     public void setCheckpointFrequency(CheckpointFrequency _checkpointFrequency) {
-        this._checkpointFrequency = _checkpointFrequency;
+        this.checkpointFrequency = _checkpointFrequency;
     }
 
     public String getLeasePrefix() {
-        return _leasePrefix;
+        return leasePrefix;
     }
 
     public void setLeasePrefix(String _leasePrefix) {
-        this._leasePrefix = _leasePrefix;
+        this.leasePrefix = _leasePrefix;
     }
 
     public int getMinPartitionCount() {
-        return _minPartitionCount;
+        return minPartitionCount;
     }
 
     void setMinPartitionCount(int _minPartitionCount) {
-        this._minPartitionCount = _minPartitionCount;
+        this.minPartitionCount = _minPartitionCount;
     }
 
     int getMaxPartitionCount() {
-        return _maxPartitionCount;
+        return maxPartitionCount;
     }
 
     void setMaxPartitionCount(int _maxPartitionCount) {
-        this._maxPartitionCount = _maxPartitionCount;
+        this.maxPartitionCount = _maxPartitionCount;
     }
 
     boolean isDiscardExistingLeases() {
-        return _discardExistingLeases;
+        return discardExistingLeases;
     }
 
     void setDiscardExistingLeases(boolean _discardExistingLeases) {
-        this._discardExistingLeases = _discardExistingLeases;
+        this.discardExistingLeases = _discardExistingLeases;
     }
 
     boolean getDiscardExistingLeases() {
-        return _discardExistingLeases;
+        return discardExistingLeases;
     }
 }

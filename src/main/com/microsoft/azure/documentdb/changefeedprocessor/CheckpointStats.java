@@ -4,27 +4,27 @@ import java.time.Instant;
 
 public class CheckpointStats
 {
-    private int _processedDocCount;
-    private Instant _lastCheckpointTime;
+    private int processedDocCount;
+    private Instant lastCheckpointTime;
 
     public void reset() {
-        this._processedDocCount = 0;
-        this._lastCheckpointTime = Instant.now();
+        this.processedDocCount = 0;
+        this.lastCheckpointTime = Instant.now();
     }
 
     public int getProcessedDocCount() {
-        return _processedDocCount;
+        return processedDocCount;
     }
 
     public Instant getLastCheckpointTime() {
-        return _lastCheckpointTime;
+        return lastCheckpointTime;
     }
 
     public void setProcessedDocCount(int processedDocCount) {
-        this._processedDocCount = processedDocCount;
+        this.processedDocCount = processedDocCount;
     }
 
     public void setLastCheckpointTime(Instant lastCheckpointTime) {
-        _lastCheckpointTime = lastCheckpointTime;
+        this.lastCheckpointTime = lastCheckpointTime;
     }
 }

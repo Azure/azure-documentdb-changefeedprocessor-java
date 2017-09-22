@@ -25,8 +25,6 @@
 
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
-import javax.swing.text.html.Option;
-import java.time.Instant;
 import java.util.Optional;
 
 /**
@@ -34,9 +32,9 @@ import java.util.Optional;
  */
 public class CheckpointFrequency {
 
-    private Optional<Integer> _processedDocumentCount;
+    private Optional<Integer> processedDocumentCount;
 
-    private Optional<Integer> _timeInterval;
+    private Optional<Integer> timeInterval;
 
     public CheckpointFrequency(){
 
@@ -44,19 +42,19 @@ public class CheckpointFrequency {
 
     public Optional<Integer> getProcessedDocumentCount() {
 
-        return _processedDocumentCount;
+        return processedDocumentCount;
     }
 
     public void setProcessedDocumentCount(Optional<Integer> _processedDocumentCount) {
-        this._processedDocumentCount = _processedDocumentCount;
+        this.processedDocumentCount = _processedDocumentCount;
     }
 
     public Optional<Integer> getTimeInterval() {
-        return _timeInterval;
+        return timeInterval;
     }
 
     public void setTimeInterval(Optional<Integer> _timeInterval) {
-        this._timeInterval = _timeInterval;
+        this.timeInterval = _timeInterval;
     }
 
 }
