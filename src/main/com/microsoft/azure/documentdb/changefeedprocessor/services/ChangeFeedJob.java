@@ -95,11 +95,11 @@ public class ChangeFeedJob implements Job {
                     }
                 } catch (DocumentClientException dce) {
                     int subStatusCode = getSubStatusCode(dce);
-                    if (dce.getStatusCode() == StatusCode.NotFound.Value() &&
+                    if (dce.getStatusCode() == StatusCode.NOTFOUND.Value() &&
                             SubStatusCode.ReadSessionNotAvailable.Value() != subStatusCode){
                         closeReason = ChangeFeedObserverCloseReason.ResourceGone;
                         this.stop();
-                    }else if(dce.getStatusCode() == StatusCode.Gone.Value()){
+                    }else if(dce.getStatusCode() == StatusCode.CODE.Value()){
                         //TODO: handle partition split
                     }
                     else if (SubStatusCode.Splitting.Value() == subStatusCode)
