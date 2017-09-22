@@ -3,13 +3,12 @@ package com.microsoft.azure.documentdb.changefeedprocessor.services;
 import com.microsoft.azure.documentdb.DocumentClientException;
 import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserverFactory;
 
-import java.util.Dictionary;
-import java.util.Hashtable;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ResourcePartitionServices {
     private JobServices jobServices;
     private CheckpointServices checkpointSvcs;
-    private Dictionary<String, ResourcePartition> resourcePartitions;
+    private ConcurrentHashMap<String, ResourcePartition> resourcePartitions;
     private DocumentServices client;
     private IChangeFeedObserverFactory factory;
     private int pageSize;
@@ -17,7 +16,7 @@ public class ResourcePartitionServices {
 
     public ResourcePartitionServices(DocumentServices client, CheckpointServices checkpointSvcs, IChangeFeedObserverFactory factory, int pageSize) {
 
-        resourcePartitions = new Hashtable<>();
+        resourcePartitions = new ConcurrentHashMap<>();
         this.client = client;
         this.checkpointSvcs = checkpointSvcs;
         this.factory = factory;
