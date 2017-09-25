@@ -28,7 +28,6 @@ package com.microsoft.azure.documentdb.changefeedprocessor;
 import com.microsoft.azure.documentdb.Document;
 
 import java.util.List;
-import java.util.concurrent.Future;
 
 public interface IChangeFeedObserver {
     void open(ChangeFeedObserverContext context);
