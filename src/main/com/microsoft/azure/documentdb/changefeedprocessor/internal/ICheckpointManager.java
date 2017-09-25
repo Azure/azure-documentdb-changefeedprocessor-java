@@ -12,6 +12,7 @@ package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 /// <summary>
 /// Provides methods for running checkpoint asynchronously. Extensibility is provided to specify host-specific storage for storing the offset.
 /// </summary>
+//TODO: Need to convert this to Async
 public interface ICheckpointManager {
 
     /// <summary>Stores the offset of a particular partition in the host-specific store.</summary>
@@ -20,4 +21,6 @@ public interface ICheckpointManager {
     /// <param name="sequenceNumber">The sequence number of the partition.</param>
     /// <returns>Returns <see cref="System.Threading.Tasks.Task" />.</returns>
     Lease checkpoint(Lease lease, String offset, long sequenceNumber);
+    
+ //   Lease checkpointAsync(Lease lease, String offset, long sequenceNumber);
 }

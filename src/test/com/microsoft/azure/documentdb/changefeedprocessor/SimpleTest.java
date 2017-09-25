@@ -1,11 +1,11 @@
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
+import com.microsoft.azure.documentdb.ChangeFeedOptions;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationException;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationFile;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Scanner;
@@ -43,13 +43,22 @@ public class SimpleTest {
             Assert.fail("Configuration Error " + e.getMessage());
         }
 
-        ChangeFeedEventHost host = new ChangeFeedEventHost("hotsname", docInfo, docAux );
+        ChangeFeedOptions options = new ChangeFeedOptions();
+        options.setPageSize(3);
+
+        ChangeFeedEventHost host = new ChangeFeedEventHost("hotsname", docInfo, docAux, options, new ChangeFeedHostOptions() );
         Assert.assertNotNull(host);
 
-        host.registerObserver(TestChangeFeedObserver.class);
+        try {
+            host.registerObserver(TestChangeFeedObserver.class);
 
-        System.out.println("Press ENTER to finish");
-        Scanner scanner = new Scanner(System.in);
-        scanner.nextLine();
+            System.out.println("Press ENTER to finish");
+            Scanner scanner = new Scanner(System.in);
+            scanner.nextLine();
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+            Assert.fail("failed");
+        }
     }
 }

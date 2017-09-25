@@ -27,14 +27,14 @@ package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
 public class CancellationTokenSource {
 
-    private boolean _cancel = false;
+    private boolean cancel = false;
 
     public void cancel(){
-        _cancel = true;
+        cancel = true;
     }
 
     public boolean isCanceled(){
-        return _cancel;
+        return cancel;
     }
 
 }

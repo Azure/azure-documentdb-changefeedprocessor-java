@@ -40,3 +40,6 @@ app.secrets*
 !app.secrets.template
 
 /*.dll
+
+# NetBeans Project Files #
+/nbproject/

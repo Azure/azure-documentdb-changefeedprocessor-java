@@ -28,4 +28,6 @@ public enum SubStatusCode {
     private SubStatusCode(int value) {
         this.value = value;
     }
+
+    public int Value() {return this.value;}
 }

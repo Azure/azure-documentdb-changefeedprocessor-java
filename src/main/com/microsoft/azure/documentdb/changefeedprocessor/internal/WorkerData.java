@@ -7,49 +7,49 @@ import java.util.concurrent.Future;
 
 public class WorkerData
 {
-    private Future _task;
-    private IChangeFeedObserver _observer;
-    private ChangeFeedObserverContext _context;
-    private CancellationTokenSource _cancellation;
+    private Future task;
+    private IChangeFeedObserver observer;
+    private ChangeFeedObserverContext context;
+    private CancellationTokenSource cancellation;
 
     public WorkerData(Future task, IChangeFeedObserver observer, ChangeFeedObserverContext context, CancellationTokenSource cancellation)
     {
-        this._task = task;
-        this._observer = observer;
-        this._context = context;
-        this._cancellation = cancellation;
+        this.task = task;
+        this.observer = observer;
+        this.context = context;
+        this.cancellation = cancellation;
     }
 
 
     public Future getTask() {
-        return _task;
+        return task;
     }
 
     public void setTask(Future _task) {
-        this._task = _task;
+        this.task = _task;
     }
 
     public IChangeFeedObserver getObserver() {
-        return _observer;
+        return observer;
     }
 
     public void setObserver(IChangeFeedObserver _observer) {
-        this._observer = _observer;
+        this.observer = _observer;
     }
 
     public ChangeFeedObserverContext getContext() {
-        return _context;
+        return context;
     }
 
     public void setContext(ChangeFeedObserverContext _context) {
-        this._context = _context;
+        this.context = _context;
     }
 
     public CancellationTokenSource getCancellation() {
-        return _cancellation;
+        return cancellation;
     }
 
-    public void set_cancellation(CancellationTokenSource _cancellation) {
-        this._cancellation = _cancellation;
+    public void setCancellation(CancellationTokenSource cancellation) {
+        this.cancellation = cancellation;
     }
 }

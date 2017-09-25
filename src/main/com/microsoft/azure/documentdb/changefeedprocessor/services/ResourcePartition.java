@@ -1,23 +1,25 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
+import com.microsoft.azure.documentdb.DocumentClientException;
+
 public class ResourcePartition {
-    String _partitionId;
-    Job _resourceJob;
+    String partitionId;
+    Job resourceJob;
 
     public ResourcePartition(String partitionId, Job resourceJob) {
-        _partitionId = partitionId;
-        _resourceJob = resourceJob;
+        this.partitionId = partitionId;
+        this.resourceJob = resourceJob;
     }
 
-    public void start(Object initialData) {
-        _resourceJob.start(initialData);
+    public void start(Object initialData) throws DocumentClientException, InterruptedException {
+        resourceJob.start(initialData);
     }
 
     public void stop() {
-        _resourceJob.stop();
+        resourceJob.stop();
     }
 
     public Job getJob() {
-        return _resourceJob;
+        return resourceJob;
     }
 }
