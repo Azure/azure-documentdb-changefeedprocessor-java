@@ -18,6 +18,8 @@ public class JobRunnable implements Runnable {
             job.start(initialData);
         } catch (DocumentClientException e) {
             e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 

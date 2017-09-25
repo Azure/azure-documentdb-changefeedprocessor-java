@@ -67,7 +67,7 @@ public class ChangeFeedJob implements Job {
     }
 
     @Override
-    public void start(Object initialData) throws DocumentClientException {
+    public void start(Object initialData) throws DocumentClientException, InterruptedException {
 
         ChangeFeedObserverContext context = new ChangeFeedObserverContext();
         context.setPartitionKeyRangeId(partitionId);
@@ -116,11 +116,7 @@ public class ChangeFeedJob implements Job {
 
             if (!this.stop)
             {
-                try {
-                    Thread.sleep(this.DEFAULT_THREAD_WAIT);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                Thread.sleep(this.DEFAULT_THREAD_WAIT);
             }
 
         }// while(!this.stop)

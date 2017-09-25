@@ -11,7 +11,7 @@ public class ResourcePartition {
         this.resourceJob = resourceJob;
     }
 
-    public void start(Object initialData) throws DocumentClientException {
+    public void start(Object initialData) throws DocumentClientException, InterruptedException {
         resourceJob.start(initialData);
     }
 
