@@ -20,17 +20,11 @@ public class ChangeFeedObserverFactory<T extends IChangeFeedObserver> implements
     }
 
     @Override
-    public IChangeFeedObserver createObserver() {
+    public IChangeFeedObserver createObserver() throws IllegalAccessException, InstantiationException {
 
         IChangeFeedObserver newInstance = null;
+        newInstance = (IChangeFeedObserver) type.newInstance();
 
-        try {
-            newInstance = (IChangeFeedObserver) type.newInstance();
-        }
-        catch(IllegalAccessException e) {
-        }
-        catch(InstantiationException e) {
-        }
 
         return newInstance;
     }
