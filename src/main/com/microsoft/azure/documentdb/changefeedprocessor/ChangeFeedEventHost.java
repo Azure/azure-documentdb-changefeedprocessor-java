@@ -21,9 +21,9 @@ import java.util.concurrent.ConcurrentMap;
 
 public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLease> {
 
-    final String DefaultUserAgentSuffix = "changefeed-0.2";
-    final String LeaseContainerName = "docdb-changefeed";
-    final String LSNPropertyName = "_lsn";
+    private final String DefaultUserAgentSuffix = "changefeed-0.2";
+    private final String LeaseContainerName = "docdb-changefeed";
+    private final String LSNPropertyName = "_lsn";
 
     private DocumentCollectionInfo collectionLocation;
     private ChangeFeedOptions changeFeedOptions;
@@ -32,7 +32,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     private String leasePrefix;
     DocumentCollectionInfo auxCollectionLocation;
     ConcurrentMap<String, WorkerData> partitionKeyRangeIdToWorkerMap;
-    PartitionManager<DocumentServiceLease> _partitionManager;
+    PartitionManager<DocumentServiceLease> partitionManager;
     ILeaseManager<DocumentServiceLease> leaseManager;
 
     DocumentServices documentServices;
@@ -64,7 +64,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         this.options = hostOptions;
         this.hostName = hostName;
         this.auxCollectionLocation = CanoninicalizeCollectionInfo(auxCollectionLocation);
-        this.partitionKeyRangeIdToWorkerMap = new ConcurrentHashMap<String, WorkerData>();
+        this.partitionKeyRangeIdToWorkerMap = new ConcurrentHashMap<>();
 
         this.documentServices = new DocumentServices(documentCollectionLocation);
         this.checkpointSvcs = new CheckpointServices();
@@ -160,9 +160,10 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         // list partitions
         List<String> partitionIds = this.listPartition();
 
-        for(String id : partitionIds) {
+        partitionIds.stream().forEach((id) -> {
             resourcePartitionSvcs.create(id);
-        }
+        });
+
     }
 
     void initializeLeaseManager() {
@@ -173,13 +174,14 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     void hackStartSinglePartition() {
         List<String> partitionIds = this.listPartition();
 
-        for(String id : partitionIds) {
+        partitionIds.stream().forEach((id) -> {
             try {
                 resourcePartitionSvcs.start(id);
             } catch (DocumentClientException e) {
                 e.printStackTrace();
             }
-        }
+        });
+
     }
 
     private List listPartition(){
