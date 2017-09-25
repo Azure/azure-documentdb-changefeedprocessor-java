@@ -179,7 +179,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         }
         DocumentServiceLease currentLease = tryGetLease(getDocumentId(lease.getPartitionId()));
         currentLease.setOwner(owner);
-        currentLease.setState(LeaseState.Leased);
+        currentLease.setState(LeaseState.LEASED);
 
         try {
             return updateInternal(currentLease, (DocumentServiceLease serverLease) -> {
@@ -223,10 +223,10 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         } else {
             String oldOwner = lease.getOwner();
             refreshedLease.setOwner(null);
-            refreshedLease.setState(LeaseState.Available);
+            refreshedLease.setState(LeaseState.AVAILABLE);
             refreshedLease = updateInternal(refreshedLease, (DocumentServiceLease serverLease) -> {
                 serverLease.setOwner(null); // In the lambda expression of Java, only access effective final value;
-                serverLease.setState(LeaseState.Available); // In the lambda expression of Java, only access effective final value;
+                serverLease.setState(LeaseState.AVAILABLE); // In the lambda expression of Java, only access effective final value;
                 return serverLease;
             }, oldOwner);
             if (refreshedLease != null) {
