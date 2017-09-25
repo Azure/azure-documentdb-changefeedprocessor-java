@@ -29,31 +29,31 @@ public enum ChangeFeedObserverCloseReason
 {
 
     /**
-     * Unknown failure. This should never be sent to observers.
+     * UNKNOWN failure. This should never be sent to observers.
      */
-    Unknown,
+    UNKNOWN,
     /**
      * The ChangeFeedEventHost is shutting down.
      */
-    Shutdown,
+    SHUTDOWN,
 
     /**
      * The resource, such as database or collection was removed.
      */
-    ResourceGone,
+    RESOURCE_GONE,
 
     /**
      * Lease was lost due to expiration or load-balancing.
      */
-    LeaseLost,
+    LEASE_LOST,
 
     /**
      * IChangeFeedObserver threw an exception.
      */
-    ObserverError,
+    OBSERVER_ERROR,
 
     /**
      * The lease is gone. This can be due to partition split.
      */
-    LeaseGone,
+    LEASE_GONE,
 }

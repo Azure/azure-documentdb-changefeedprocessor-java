@@ -97,7 +97,7 @@ public class ChangeFeedJob implements Job {
                     int subStatusCode = getSubStatusCode(dce);
                     if (dce.getStatusCode() == StatusCode.NOTFOUND.Value() &&
                             SubStatusCode.ReadSessionNotAvailable.Value() != subStatusCode){
-                        closeReason = ChangeFeedObserverCloseReason.ResourceGone;
+                        closeReason = ChangeFeedObserverCloseReason.RESOURCE_GONE;
                         this.stop();
                     }else if(dce.getStatusCode() == StatusCode.CODE.Value()){
                         //TODO: handle partition split

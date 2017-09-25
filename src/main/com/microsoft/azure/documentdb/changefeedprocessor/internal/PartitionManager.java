@@ -505,7 +505,7 @@ public class PartitionManager<T extends Lease> {
 //            // We need to release the lease if we fail to initialize the processor, so some other node can pick up the parition
 //            if (failedToInitialize)
 //            {
-//                await this.RemoveLeaseAsync(lease, true, ChangeFeedObserverCloseReason.ObserverError);
+//                await this.RemoveLeaseAsync(lease, true, ChangeFeedObserverCloseReason.OBSERVER_ERROR);
 //            }
 //        }
 //        else
