@@ -1,8 +1,9 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
-public class ChangeFeedJobFactory implements JobFactory {
+public class TestChangeFeedJobFactory implements JobFactory {
+
     @Override
     public Job create() {
-        return null;
+        return new TestJob();
     }
 }

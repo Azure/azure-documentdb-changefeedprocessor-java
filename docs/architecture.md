@@ -8,7 +8,7 @@ Services
    - Enumerate partitions and register
    - Control multi-host execution 
 
-* Change Feed job: run the job
+* Change Feed job: create jobs / stop / start
 
 * Partition Services: enumerates the partitions
 

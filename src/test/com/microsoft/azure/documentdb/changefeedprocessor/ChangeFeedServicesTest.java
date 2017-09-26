@@ -13,7 +13,7 @@ public class ChangeFeedServicesTest {
 
     @Test
     public void test() {
-        ChangeFeedJobFactory factory = new ChangeFeedJobFactory();
+        JobFactory factory = new TestChangeFeedJobFactory();
         PartitionServices partitionServices = new PartitionServices();
         LeaseServices leaseServices = new LeaseServices();
 
