@@ -14,7 +14,7 @@ public class ChangeFeedServicesTest {
     @Test
     public void test() {
         JobFactory factory = new TestChangeFeedJobFactory();
-        PartitionServices partitionServices = new PartitionServices();
+        PartitionServices partitionServices = new TestPartitionServices();
         LeaseServices leaseServices = new LeaseServices();
 
         ChangeFeedServices changeFeedServices = new ChangeFeedServices(factory, partitionServices, leaseServices);
