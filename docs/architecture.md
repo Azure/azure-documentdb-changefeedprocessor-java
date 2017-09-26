@@ -4,6 +4,11 @@ Services
 * Change Feed Host API: contains the stable API
 
 * Change Feed Services: controls the components
+   - Run jobs (individual job per partition)
+   - Enumerate partitions and register
+   - Control multi-host execution 
+
+* Change Feed job: run the job
 
 * Partition Services: enumerates the partitions
 
