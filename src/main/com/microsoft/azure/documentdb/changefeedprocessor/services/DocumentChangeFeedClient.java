@@ -17,11 +17,11 @@ public class DocumentChangeFeedClient {
     private final int pageSize;
     private String continuationToken;
 
-    public DocumentChangeFeedClient(DocumentServices client, String partitionId, String continuationToken) {
+    public DocumentChangeFeedClient(DocumentServices client, String partitionId, String continuationToken, int pageSize) {
         this.partitionId = partitionId;
         this.client = client;
         this.continuationToken = continuationToken;
-        this.pageSize = 100;
+        this.pageSize = pageSize;
     }
 
     public List<Document> read() throws DocumentChangeFeedException {
@@ -30,7 +30,9 @@ public class DocumentChangeFeedClient {
 
             FeedResponse<Document> query = client.createDocumentChangeFeedQuery(partitionId, continuationToken, pageSize);
             if (query != null) {
-                docs = query.getQueryIterable().toList();
+                //docs = query.getQueryIterable().toList();
+                docs = query.getQueryIterable().fetchNextBlock();
+
 //                List<Document> docs = query.getQueryIterable().fetchNextBlock();
 //                boolean hasMoreResults = query.getQueryIterator().hasNext();
                 //
