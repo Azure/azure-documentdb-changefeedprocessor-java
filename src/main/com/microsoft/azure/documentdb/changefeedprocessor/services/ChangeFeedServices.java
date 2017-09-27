@@ -42,6 +42,10 @@ public class ChangeFeedServices implements ILeaseSubscriber {
         }
     }
 
+    public void rescan() {
+
+    }
+
     @Override
     public void onLeaseAcquired(ResourcePartition partition) {
         Job job = changeFeedJobFactory.create();
