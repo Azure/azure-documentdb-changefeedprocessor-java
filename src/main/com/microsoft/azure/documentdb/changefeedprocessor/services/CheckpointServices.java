@@ -35,11 +35,11 @@ public class CheckpointServices {
         this.checkpoints.put(partitionId, continuation);
     }
 
-    String getCheckpoint(String partitionId) throws DocumentClientException {
-        DocumentServiceLease lease = (DocumentServiceLease) this.leaseManager.getLease(partitionId);
-
-        return lease.getContinuationToken();
-    }
+//    String getCheckpoint(String partitionId) throws DocumentClientException {
+//        DocumentServiceLease lease = (DocumentServiceLease) this.leaseManager.getLease(partitionId);
+//
+//        return lease.getContinuationToken();
+//    }
     public void checkpoint(DocumentServiceLease lease, String continuation) {
         assert (lease != null);
         assert (continuation != null && continuation != "");

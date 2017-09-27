@@ -112,7 +112,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         //TODO: This is not the right place to have this code..
         this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, observerFactory, changeFeedOptions.getPageSize());
 
-        initializeIntegrations();
+        //initializeIntegrations();
         initializePartitions();
         initializeLeaseManager();
     }

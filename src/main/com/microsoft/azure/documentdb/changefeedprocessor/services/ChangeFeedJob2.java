@@ -44,7 +44,7 @@ public class ChangeFeedJob2 implements Job {
 
         this.partitionId = (String)initialData;
 
-        String continuationToken = checkpointSvcs.getCheckpoint(partitionId);
+        String continuationToken = ""; // checkpointSvcs.getCheckpoint(partitionId);
 
         DocumentChangeFeedClient client = documentServices.createClient(partitionId, continuationToken);
 
