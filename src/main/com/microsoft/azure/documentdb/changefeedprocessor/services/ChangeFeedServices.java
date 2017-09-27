@@ -1,5 +1,7 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
+import com.microsoft.azure.documentdb.DocumentClientException;
+
 /**
  * Controls the
  * - create jobs and start/stop jobs
@@ -25,7 +27,7 @@ public class ChangeFeedServices implements ILeaseSubscriber {
 
         // subscribe to lease services
         leaseServices.subscribe(this);
-        
+
         // register the partition in lease services
         for(ResourcePartition p : partitions) {
             leaseServices.register(p);
@@ -42,11 +44,18 @@ public class ChangeFeedServices implements ILeaseSubscriber {
 
     @Override
     public void onLeaseAcquired(ResourcePartition partition) {
-        System.out.println("run partition: " + partition.getId());
+        Job job = changeFeedJobFactory.create();
+        try {
+            partition.startJob(job);
+        } catch (DocumentClientException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void onLeaseReleased(ResourcePartition partition) {
-        System.out.println("stop partition: " + partition.getId());
+        partition.stopJob();
     }
 }

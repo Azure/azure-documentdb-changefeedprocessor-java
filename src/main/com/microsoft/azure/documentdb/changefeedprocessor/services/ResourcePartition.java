@@ -37,6 +37,15 @@ public class ResourcePartition {
         resourceJob.stop();
     }
 
+    public void startJob(Job resourceJob) throws DocumentClientException, InterruptedException {
+        Object initialData = this.partitionId;
+        resourceJob.start(initialData);
+    }
+
+    public void stopJob() {
+        resourceJob.stop();
+    }
+
     public Job getJob() {
         return resourceJob;
     }
