@@ -43,7 +43,22 @@ public class ChangeFeedServices implements ILeaseSubscriber {
     }
 
     public void rescan() {
+        // get the current partitions
+        ResourcePartitionCollection latestSnapshot = partitionServices.listPartitions();
 
+        // calculate differences
+        ResourcePartitionCollection addedPartitions = latestSnapshot.minus(activePartitions);
+        ResourcePartitionCollection removedPartitions = activePartitions.minus(latestSnapshot);
+
+        // added partitions
+        for(ResourcePartition p : addedPartitions) {
+            leaseServices.register(p);
+        }
+
+        // removed partitions
+        for(ResourcePartition p : removedPartitions) {
+            leaseServices.unregister(p);
+        }
     }
 
     @Override
