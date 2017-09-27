@@ -41,17 +41,38 @@ public class ChangeFeedServicesTest {
         leaseServices.acquire("tp3");
 
         changeFeedServices.stop();
+    }
 
-        // create (again) additional partitions -- after changeFeedSetup
-        partitionServices.add("rscan1");
-        partitionServices.add("rscan2");
-        partitionServices.add("rscan3");
+
+    @Test
+    public void testPartitionAndLease2() {
+        JobFactory factory = new TestChangeFeedJobFactory();
+        TestPartitionServices partitionServices = new TestPartitionServices();
+        TestAutomaticLeaseServices leaseServices = new TestAutomaticLeaseServices(false);
+
+        // create additional partitions -- before changeFeedSetup
+        ResourcePartition p1 = partitionServices.add("p1");
+        ResourcePartition p2 = partitionServices.add("p2");
+        ResourcePartition p3 = partitionServices.add("p3");
+
+        // Setup Change Feed Services
+        ChangeFeedServices changeFeedServices = new ChangeFeedServices(factory, partitionServices, leaseServices);
+        changeFeedServices.start();
+
+        // no worker threads
+
+
+        // manually start the worker threads
+        leaseServices.acquire("tp1");
+        leaseServices.acquire("tp3");
 
         // rescan
         changeFeedServices.rescan();
 
         // acquired a non-existant partition (split?)
         leaseServices.acquire("tp-gone");
+
+        changeFeedServices.stop();
     }
 
     @Test

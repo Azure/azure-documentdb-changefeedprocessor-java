@@ -1,6 +1,7 @@
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
 import com.microsoft.azure.documentdb.Document;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.CFTestConfiguration;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentChangeFeedClient;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentChangeFeedException;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
@@ -16,7 +17,7 @@ public class DocumentServiceTest {
     public void testConnectionToCosmosChangeFeed() throws DocumentChangeFeedException {
 
         // retrieve test configuration
-        DocumentCollectionInfo docInfo = TestChangeFeedJobFactory.CFTestConfiguration.getDefaultDocumentCollectionInfo();
+        DocumentCollectionInfo docInfo = CFTestConfiguration.getDefaultDocumentCollectionInfo();
         Assert.assertNotNull(docInfo);
 
         // list the partitions
