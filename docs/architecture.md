@@ -51,20 +51,33 @@ Important Scenarios
     - observable processing x lease manager
     d. if lease is released, observable should close immediately
 
-    ? what if partition manager cannot find the collection?
-    ? what if partition manager cannot initialize?
     ? periodically scans for changes
-    ? load balance = orderly shutdown
+    - the infrastructure is ready
+
+    ? what if partition manager cannot find the collection?
+    - it should fail completely
+
+    ? what if partition manager cannot initialize?
+    - it should fail completely
+
+    ? what if partition manager cannot find the collection AFTER startup?
+    - it should fail if collection is gone
+    - network failures: how robust?
+    
+    ? load balance = orderly shutdown - how to implement?
 
 3. lease services
+    - partition manager integration
     a. test the basic communication with ILeaseEvents
+
     b. test renewer thread
     c. test keeper thread
     d. test pause event
 
+4. Handle split
+    a. continuation token for the splitted partition
+    b. handle merge 
+
+5. Verify thread safe
+
 machines with time difference
-
-
-Handle split
-
-
