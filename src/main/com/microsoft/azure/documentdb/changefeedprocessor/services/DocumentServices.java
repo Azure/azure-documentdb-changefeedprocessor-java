@@ -67,4 +67,8 @@ public class DocumentServices {
 
         return query;
     }
+
+    public DocumentChangeFeedClient createClient(String partitionId, String continuationToken) {
+        return new DocumentChangeFeedClient(this, partitionId, continuationToken);
+    }
 }
