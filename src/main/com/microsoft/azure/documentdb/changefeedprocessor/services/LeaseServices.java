@@ -18,9 +18,11 @@ public abstract class LeaseServices {
     }
 
     public void unregister(ResourcePartition partition) {
-        availablePartitions.remove(partition);
+        // check if it is currently in use, and release it
+        release(partition.getId());
 
-        // todo: verify partition is in available state
+        // unregister the partition
+        availablePartitions.remove(partition);
     }
 
     public void subscribe(ILeaseSubscriber subscriber) {
