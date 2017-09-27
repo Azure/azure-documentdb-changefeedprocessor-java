@@ -82,40 +82,41 @@ public class ChangeFeedServicesTest {
     }
 
     @Test
-    public void testPartitionAndLeaseMechanism2() {
+    public void testPartitionRescan() {
         TestChangeFeedJobFactory factory = new TestChangeFeedJobFactory();
         TestPartitionServices partitionServices = new TestPartitionServices();
         TestAutomaticLeaseServices leaseServices = new TestAutomaticLeaseServices(false);
-
-        // create additional partitions -- before changeFeedSetup
-        ResourcePartition p1 = partitionServices.add("p1");
-        ResourcePartition p2 = partitionServices.add("p2");
-        ResourcePartition p3 = partitionServices.add("p3");
 
         // Setup Change Feed Services
         ChangeFeedServices changeFeedServices = new ChangeFeedServices(factory, partitionServices, leaseServices);
         changeFeedServices.start();
 
-        // no worker threads
+        // create additional partitions -- after changeFeedSetup
+        partitionServices.add("tp1");
+        partitionServices.add("tp2");
+        partitionServices.add("tp3");
+
+        // lease manager should NOT see the changes
+        leaseServices.acquire("not-listed");
+        leaseServices.acquire("tp1");
+        leaseServices.acquire("tp3");
+
+        // acquire has no effect. thus, no worker threads
         int expectNoWorkerCount = factory.count();
         Assert.assertEquals(expectNoWorkerCount, 0);
 
-        // manually start the worker threads
-        leaseServices.acquire("p1");
-        leaseServices.acquire("p3");
-
-        // expect to have active workers
-        Assert.assertEquals( factory.isActive("p1"), true);
-        Assert.assertEquals( factory.isActive("p3"), true);
-
-        // however, partition p2 is still DISABLE
-        Assert.assertEquals( factory.isActive("p2"), false);
-
-        // rescan
+        // rescan: replicate partition changes to the lease manager
         changeFeedServices.rescan();
 
-        // acquired a non-existant partition (split?)
-        leaseServices.acquire("tp-gone");
+        // now acquire does work
+        leaseServices.acquire("tp1");
+        leaseServices.acquire("tp3");
+
+        // expect to have active workers
+        int expectWorkersCount = factory.count();
+        Assert.assertEquals( expectWorkersCount, 2);
+        Assert.assertEquals( factory.isActive("tp1"), true);
+        Assert.assertEquals( factory.isActive("tp3"), true);
 
         changeFeedServices.stop();
     }
