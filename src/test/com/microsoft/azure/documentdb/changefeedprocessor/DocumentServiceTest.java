@@ -1,17 +1,13 @@
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
 import com.microsoft.azure.documentdb.Document;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationException;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationFile;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentChangeFeedClient;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentChangeFeedException;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.TestChangeFeedJobFactory;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class DocumentServiceTest {
@@ -20,7 +16,7 @@ public class DocumentServiceTest {
     public void testConnectionToCosmosChangeFeed() throws DocumentChangeFeedException {
 
         // retrieve test configuration
-        DocumentCollectionInfo docInfo = CFTestConfiguration.getDefaultDocumentCollectionInfo();
+        DocumentCollectionInfo docInfo = TestChangeFeedJobFactory.CFTestConfiguration.getDefaultDocumentCollectionInfo();
         Assert.assertNotNull(docInfo);
 
         // list the partitions
