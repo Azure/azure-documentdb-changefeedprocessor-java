@@ -15,6 +15,15 @@ public class DocumentServices {
     private final DocumentClient client;
     private final String collectionLink;
 
+    protected DocumentServices() {
+        this.url = "";
+        this.database = "";
+        this.collection = "";
+        this.masterKey = "";
+        this.client = null;
+        this.collectionLink = null;
+    }
+
     public DocumentServices(DocumentCollectionInfo collectionLocation) {
         this.url = collectionLocation.getUri().toString();
         this.database = collectionLocation.getDatabaseName();
@@ -66,5 +75,13 @@ public class DocumentServices {
         FeedResponse<Document> query = client.queryDocumentChangeFeed(collectionLink, options);
 
         return query;
+    }
+
+    public DocumentChangeFeedClient createClient(String partitionId, String continuationToken) {
+        return new DocumentChangeFeedClient(this, partitionId, continuationToken, 100);
+    }
+
+    public DocumentChangeFeedClient createClient(String partitionId, String continuationToken, int pageSize) {
+        return new DocumentChangeFeedClient(this, partitionId, continuationToken, pageSize);
     }
 }
