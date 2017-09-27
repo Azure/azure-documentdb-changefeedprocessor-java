@@ -8,10 +8,23 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ResourcePartitionCollection implements Iterable<ResourcePartition> {
+
+    public static final ResourcePartitionCollection Empty = new ResourcePartitionCollection();
+
     private ConcurrentHashMap<String, ResourcePartition> resourcePartitions;
 
     public ResourcePartitionCollection() {
         resourcePartitions = new ConcurrentHashMap<>();
+    }
+
+    public void put(ResourcePartition resourcePartition) {
+        String partitionId = resourcePartition.getId();
+        resourcePartitions.put(partitionId, resourcePartition);
+    }
+
+    public void remove(ResourcePartition resourcePartition) {
+        String partitionId = resourcePartition.getId();
+        resourcePartitions.remove(partitionId);
     }
 
     public void put(String partitionId, ResourcePartition resourcePartition) {

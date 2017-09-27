@@ -1,44 +1,52 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
-import com.microsoft.azure.documentdb.DocumentClientException;
-import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserverFactory;
-
 /**
  * Controls the
  * - create jobs and start/stop jobs
  * - enumerate partitions in service
  * - lock mechanism for active workers
  */
-public class ChangeFeedServices {
-    private JobFactory changeFeedJobFactory;
-    private PartitionServices partitionServices;
-    private LeaseServices leaseServices;
+public class ChangeFeedServices implements ILeaseSubscriber {
+    private final JobFactory changeFeedJobFactory;
+    private final PartitionServices partitionServices;
+    private final LeaseServices leaseServices;
+    private ResourcePartitionCollection activePartitions;
 
     public ChangeFeedServices(JobFactory changeFeedJobFactory, PartitionServices partitionServices, LeaseServices leaseServices) {
         this.changeFeedJobFactory = changeFeedJobFactory;
         this.partitionServices = partitionServices;
         this.leaseServices = leaseServices;
+        this.activePartitions = ResourcePartitionCollection.Empty;
     }
 
     public void start() {
-        Job j = changeFeedJobFactory.create();
+        // get the current partitions
+        ResourcePartitionCollection partitions = partitionServices.listPartitions();
 
-        try {
-            j.start(0);
-
-        } catch (DocumentClientException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        // subscribe to lease services
+        leaseServices.subscribe(this);
+        
+        // register the partition in lease services
+        for(ResourcePartition p : partitions) {
+            leaseServices.register(p);
         }
 
-        // create changeFeedJob factory
-        // list partitions in services
-        // register leases
+        activePartitions = partitions;
     }
 
     public void stop() {
-        // stop lease manager
-        // stop active workers
+        for(ResourcePartition p : activePartitions) {
+            leaseServices.unregister(p);
+        }
+    }
+
+    @Override
+    public void onLeaseAcquired(ResourcePartition partition) {
+        System.out.println("run partition: " + partition.getId());
+    }
+
+    @Override
+    public void onLeaseReleased(ResourcePartition partition) {
+        System.out.println("stop partition: " + partition.getId());
     }
 }

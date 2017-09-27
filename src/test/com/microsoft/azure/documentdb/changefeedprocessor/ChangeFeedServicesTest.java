@@ -15,11 +15,13 @@ public class ChangeFeedServicesTest {
     public void test() {
         JobFactory factory = new TestChangeFeedJobFactory();
         PartitionServices partitionServices = new TestPartitionServices();
-        LeaseServices leaseServices = new LeaseServices();
+        TestLeaseServices leaseServices = new TestLeaseServices();
 
         ChangeFeedServices changeFeedServices = new ChangeFeedServices(factory, partitionServices, leaseServices);
 
         changeFeedServices.start();
+
+        leaseServices.acquire("2");
 
         changeFeedServices.stop();
     }
