@@ -25,21 +25,23 @@ public class ResourcePartition {
     }
 
     public void start(JobFactory factory, Object initialData) throws DocumentClientException, InterruptedException {
-        resourceJob = factory.create();
-        resourceJob.start(initialData);
+        this.resourceJob = factory.create();
+        this.resourceJob.start(initialData);
     }
 
     public void start(Object initialData) throws DocumentClientException, InterruptedException {
-        resourceJob.start(initialData);
+        this.resourceJob.start(initialData);
     }
 
     public void stop() {
         resourceJob.stop();
     }
 
-    public void startJob(Job resourceJob) throws DocumentClientException, InterruptedException {
+    public void startJob(Job job) throws DocumentClientException, InterruptedException {
         Object initialData = this.partitionId;
-        resourceJob.start(initialData);
+        job.start(initialData);
+
+        this.resourceJob = job;
     }
 
     public void stopJob() {
