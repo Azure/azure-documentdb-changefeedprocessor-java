@@ -56,17 +56,30 @@ public class ChangeFeedJob2 implements Job {
 
             try {
                 docs = client.read();
+
+                processChanges(docs);
+
+                hasMoreResults = (docs != null);
+
             } catch(DocumentChangeFeedException e) {
-
+                hasMoreResults = false; // force false for now
             }
-
-            hasMoreResults = (docs != null);
 
             if (hasMoreResults || this.stop)
                 continue;
 
             Thread.sleep(this.DEFAULT_THREAD_WAIT);
         }
+    }
+
+    void processChanges(List<Document> docs) {
+        // return null for feedresponse (temporarily)
+        // suggestion: remove from API
+        FeedResponse<Document> WRONG_BUT_WORKS = null;
+        ChangeFeedObserverContext context = new ChangeFeedObserverContext();
+        context.setPartitionKeyRangeId(partitionId);
+        context.setFeedResponse(WRONG_BUT_WORKS);
+        observer.processChanges(context, docs);
     }
 
     void checkpoint(Object data) throws DocumentClientException {
