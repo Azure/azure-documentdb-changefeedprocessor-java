@@ -11,6 +11,7 @@ import com.microsoft.azure.documentdb.DocumentClientException;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.*;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLeaseManager;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointDocDbServices;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartitionServices;
@@ -71,7 +72,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         // initiate services
         this.documentServices = new DocumentServices(this.collectionLocation);
-        this.checkpointSvcs = new CheckpointServices();
+        this.checkpointSvcs = new CheckpointDocDbServices();
 
         this.resourcePartitionSvcs = null;
 

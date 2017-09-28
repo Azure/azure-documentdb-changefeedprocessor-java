@@ -71,7 +71,7 @@ public class ChangeFeedJob2 implements Job {
 
     void checkpoint(Object data) throws DocumentClientException {
         String initialData = (String) (data == null ? "" : data);
-        checkpointSvcs.setCheckpointData(partitionId, initialData);
+        checkpointSvcs.setContinuationToken(partitionId, initialData);
     }
 
     @Override
