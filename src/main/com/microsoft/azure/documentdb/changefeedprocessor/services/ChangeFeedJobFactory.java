@@ -21,10 +21,8 @@ public class ChangeFeedJobFactory implements JobFactory {
     public Job create() {
         try {
             IChangeFeedObserver observer = observerFactory.createObserver();
-            return new ChangeFeedJobBase(documentServices, checkpointServices, observer, jobServices);
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InstantiationException e) {
+            return new ChangeFeedJob2(documentServices, checkpointServices, observer);
+        } catch (IllegalAccessException | InstantiationException e) {
             e.printStackTrace();
         }
 

@@ -65,11 +65,27 @@ public class ChangeFeedJob2 implements Job {
                 hasMoreResults = false; // force false for now
             }
 
-            if (hasMoreResults || this.stop)
+            if (this.stop)
+                break;
+
+            if (hasMoreResults)
                 continue;
 
-            Thread.sleep(this.DEFAULT_THREAD_WAIT);
+            sleep(DEFAULT_THREAD_WAIT);
         }
+
+        this.partitionId = null;
+    }
+
+    void sleep(int totalTime) throws InterruptedException {
+        int interval = 10;
+        for(int totalSleep=0; totalSleep < totalTime; totalSleep += interval ) {
+            // check if the stop is signaled
+            if( this.stop )
+                break;
+            Thread.sleep( interval );
+        }
+
     }
 
     void processChanges(List<Document> docs) {
@@ -92,4 +108,7 @@ public class ChangeFeedJob2 implements Job {
         stop = true;
     }
 
+    public boolean checkIsRunning() {
+        return this.partitionId != null;
+    }
 }
