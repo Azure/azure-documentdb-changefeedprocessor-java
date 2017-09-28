@@ -64,7 +64,8 @@ public class ChangeFeedEventHost2 {
         this.changeFeedOptions = changeFeedOptions;
         this.options = hostOptions;
 
-        if (this.changeFeedOptions.getPageSize() == 0)
+        // pageSize is Integer (not int), which can be null
+        if (this.changeFeedOptions.getPageSize() == null || this.changeFeedOptions.getPageSize() == 0)
             this.changeFeedOptions.setPageSize(this.DEFAULT_PAGE_SIZE);
     }
 
@@ -119,7 +120,10 @@ public class ChangeFeedEventHost2 {
         // setup the main components
         JobFactory changeFeedJobFactory = new ChangeFeedJobFactory(observerFactory, documentServices, jobServices, checkpointServices);
         PartitionServices partitionServices = new PartitionDocumentServices(documentServices);
-        LeaseServices leaseServices = new LeaseDocDbServices(leaseManager, partitionManager, options);
+
+        // FOR TESTING ONLY
+        // LeaseServices leaseServices = new LeaseDocDbServices(leaseManager, partitionManager, options);
+        LeaseServices leaseServices = new SimpleLeaseServices(true);
 
         return new ChangeFeedServices(changeFeedJobFactory, partitionServices, leaseServices);
     }

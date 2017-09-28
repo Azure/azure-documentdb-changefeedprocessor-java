@@ -52,7 +52,11 @@ public class Main {
         System.out.print("Collection: ");
         String collection = scanner.nextLine();
 
-        testChangeFeed("localhost", url, database, collection, masterKey);
+        // version 1: initial coding for Change Feed services
+        //testChangeFeed("localhost", url, database, collection, masterKey);
+
+        // version 2: use ChangeFeedServices with dependency injection
+        testChangeFeed2("localhost", url, database, collection, masterKey);
     }
 
     public static void testChangeFeed(String hostname, String url, String database, String collection, String masterKey) throws Exception{
@@ -74,4 +78,22 @@ public class Main {
         host.registerObserver(TestChangeFeedObserver.class);
     }
 
+    public static void testChangeFeed2(String hostname, String url, String database, String collection, String masterKey) throws Exception{
+        System.out.println("Test: ChangeFeed");
+
+        DocumentCollectionInfo docColInfo = new DocumentCollectionInfo();
+        docColInfo.setUri(new URI(url));
+        docColInfo.setDatabaseName(database);
+        docColInfo.setCollectionName(collection);
+        docColInfo.setMasterKey(masterKey);
+
+        ChangeFeedOptions defaultFeedOptions = new ChangeFeedOptions();
+        ChangeFeedHostOptions defaultHostOptions = new ChangeFeedHostOptions();
+
+        DocumentCollectionInfo docColInfoaux = new DocumentCollectionInfo(docColInfo);
+
+        ChangeFeedEventHost2 host = new ChangeFeedEventHost2(hostname, docColInfo, docColInfoaux, defaultFeedOptions, defaultHostOptions);
+
+        host.registerObserver(TestChangeFeedObserver.class);
+    }
 }

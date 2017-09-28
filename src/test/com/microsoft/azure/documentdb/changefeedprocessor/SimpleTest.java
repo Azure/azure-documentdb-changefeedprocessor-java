@@ -22,7 +22,7 @@ public class SimpleTest {
         String masterKey = config.get("COSMOSDB_SECRET");
         String auxCollection = config.get("COSMOSDB_AUX_COLLECTION");
 
-        Main.testChangeFeed("hostname", url, database, collection, masterKey);
+        Main.testChangeFeed2("hostname", url, database, collection, masterKey);
 
         Thread.sleep(10000);
     }

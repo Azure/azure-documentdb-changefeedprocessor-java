@@ -57,9 +57,12 @@ public class ChangeFeedJob2 implements Job {
             try {
                 docs = client.read();
 
+                if(docs == null)
+                    continue;
+
                 processChanges(docs);
 
-                hasMoreResults = (docs != null);
+                hasMoreResults = true;
 
             } catch(DocumentChangeFeedException e) {
                 hasMoreResults = false; // force false for now
