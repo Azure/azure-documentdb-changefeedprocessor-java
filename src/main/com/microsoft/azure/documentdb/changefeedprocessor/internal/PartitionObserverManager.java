@@ -5,6 +5,10 @@ import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverClos
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+*
+* @author rogirdh
+*/
 
 final class PartitionObserverManager<T extends Lease> {
     final PartitionManager<T> partitionManager;
@@ -21,19 +25,20 @@ final class PartitionObserverManager<T extends Lease> {
     if (!this.observers.contains(observer)){
         this.observers.add(observer);
 
-//        for (T lease : this.partitionManager.currentlyOwnedPartitions.values()){
-//            try{
-//              //  await observer.OnPartitionAcquiredAsync(lease);
-//            	observer.onPartitionAcquired(lease);
-//            }
-//            catch (Exception ex){
-//                // Eat any exceptions during notification of observers
-//                TraceLog.exception(ex);
-//            }
-//        }
+        for (T lease : this.partitionManager.currentlyOwnedPartitions.values()){
+            try{
+              //  await observer.OnPartitionAcquiredAsync(lease);
+            	observer.onPartitionAcquired(lease);
+            }
+            catch (Exception ex){
+                // Eat any exceptions during notification of observers
+                TraceLog.exception(ex);
+            }
+        }
     }
 
-    return new Unsubscriber(this.observers, observer);
+    IDisposable unsubscriber = new Unsubscriber(this.observers, observer);
+    return unsubscriber;
     }
 
     public void notifyPartitionAcquired(T lease){
