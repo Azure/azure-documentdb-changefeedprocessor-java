@@ -7,8 +7,14 @@ package com.microsoft.azure.documentdb.changefeedprocessor;
 
 
 import com.microsoft.azure.documentdb.ChangeFeedOptions;
+import com.microsoft.azure.documentdb.DocumentClientException;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.*;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLeaseManager;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.*;
+
+import java.util.List;
+import java.util.logging.Logger;
 
 public class ChangeFeedEventHost2 {
 
@@ -27,6 +33,10 @@ public class ChangeFeedEventHost2 {
     private IChangeFeedObserverFactory observerFactory;
 
     private ChangeFeedServices changeFeedHost;
+
+    //integration
+    private DocumentServiceLeaseManager leaseManager;
+    private PartitionManager<DocumentServiceLease> partitionManager;
 
     public ChangeFeedEventHost2(
             String hostName,
@@ -74,6 +84,31 @@ public class ChangeFeedEventHost2 {
         }
     }
 
+    void initializeIntegrations(DocumentServices documentServices) throws DocumentClientException, LeaseLostException {
+        // Grab the options-supplied prefix if present otherwise leave it empty.
+        String optionsPrefix = this.options.getLeasePrefix();
+        if( optionsPrefix == null ) {
+            optionsPrefix = "";
+        }
+
+        // Beyond this point all access to collection is done via this self link: if collection is removed, we won't access new one using same name by accident.
+        // this.leasePrefix = String.format("{%s}{%s}_{%s}_{%s}", optionsPrefix, this.collectionLocation.Uri.Host, docdb.DatabaseResourceId, docdb.CollectionResourceId);
+
+        DocumentServiceLeaseManager leaseManager = new DocumentServiceLeaseManager(
+                this.auxCollectionLocation,
+                this.leasePrefix,
+                this.options.getLeaseExpirationInterval(),
+                this.options.getLeaseRenewInterval());
+
+        List<String> range = documentServices.listPartitionRange();
+
+//        TraceLog.Informational(string.Format("Source collection: '{0}', {1} partition(s), {2} document(s)", docdb.CollectionName, range.Count, docdb.DocumentCount));
+
+//        this.CreateLeases(range);
+
+        this.partitionManager = new PartitionManager<DocumentServiceLease>(this.hostName, this.leaseManager, this.options);
+    }
+
     private ChangeFeedServices setupChangeFeedServices(DocumentCollectionInfo colInfo, Class type) throws Exception {
         // setup infrastructure components
         ChangeFeedObserverFactory observerFactory = new ChangeFeedObserverFactory(type);
@@ -83,8 +118,8 @@ public class ChangeFeedEventHost2 {
 
         // setup the main components
         JobFactory changeFeedJobFactory = new ChangeFeedJobFactory(observerFactory, documentServices, jobServices, checkpointServices);
-        PartitionServices partitionServices = null;
-        LeaseServices leaseServices = null;
+        PartitionServices partitionServices = new PartitionDocumentServices(documentServices);
+        LeaseServices leaseServices = new LeaseDocDbServices(leaseManager, partitionManager, options);
 
         return new ChangeFeedServices(changeFeedJobFactory, partitionServices, leaseServices);
     }
