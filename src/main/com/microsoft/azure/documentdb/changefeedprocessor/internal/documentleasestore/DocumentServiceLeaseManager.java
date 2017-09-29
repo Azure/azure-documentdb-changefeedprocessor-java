@@ -30,8 +30,10 @@ import com.microsoft.azure.documentdb.Document;
 import com.microsoft.azure.documentdb.DocumentClient;
 import com.microsoft.azure.documentdb.DocumentClientException;
 import com.microsoft.azure.documentdb.FeedOptions;
+import com.microsoft.azure.documentdb.FeedResponse;
 import com.microsoft.azure.documentdb.QueryIterable;
 import com.microsoft.azure.documentdb.RequestOptions;
+import com.microsoft.azure.documentdb.ResourceResponse;
 import com.microsoft.azure.documentdb.SqlParameter;
 import com.microsoft.azure.documentdb.SqlParameterCollection;
 import com.microsoft.azure.documentdb.SqlQuerySpec;
@@ -41,8 +43,11 @@ import com.microsoft.azure.documentdb.changefeedprocessor.internal.ILeaseManager
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.Lease;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.LeaseLostException;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.TraceLog;
+
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -93,23 +98,26 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     public void initialize() throws DocumentClientException { //    public Task InitializeAsync()
         //Create URI String
         String uri = String.format("/dbs/%s/colls/%s", leaseStoreCollectionInfo.getDatabaseName(), leaseStoreCollectionInfo.getCollectionName());
-
-        FeedOptions options = new FeedOptions();
-        //TODO : we need the confirmation when we test the options.
-        client.readDocuments(uri, options);
+        leaseStoreCollectionLink = client.readCollection(uri, new RequestOptions()).getResource().getSelfLink();
 
         Instant snapshot1 = Instant.now();
-        //TODO: Test is needed
         Document document = new Document();
         document.setId(getDocumentId() + UUID.randomUUID().toString());
         //final boolean is "disableAutomaticIdGeneration - the flag for disabling automatic id generation."
-        Document dummyDocument = client.createDocument(uri, document, new RequestOptions(), true).getResource();
-
+        Document dummyDocument = client.createDocument(leaseStoreCollectionLink, document, new RequestOptions(), true).getResource();
         Instant snapshot2 = Instant.now();
-        Duration between = Duration.between(snapshot1, snapshot2);
 
+        // Convert instant to nano
+        long time1 = snapshot1.getEpochSecond();
+        time1 *= 1000000000l;
+        time1 += snapshot1.getNano();
+        
+        long time2 = snapshot2.getEpochSecond();
+        time2 *= 1000000000l;
+        time2 += snapshot2.getNano(); 
+        
         Instant dummyTimestamp = dummyDocument.getTimestamp().toInstant();
-        int nanovalue = snapshot1.getNano() + snapshot2.getNano() / 2;
+        long nanovalue = time1 + time2 / 2;
         serverToLocalTimeDelta
                 = Duration.between(dummyTimestamp, Instant.ofEpochMilli(nanovalue));
         client.deleteDocument(dummyDocument.getSelfLink(), new RequestOptions());
@@ -127,7 +135,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     @Override
     public boolean createLeaseStoreIfNotExists() throws DocumentClientException { //    public  Task<bool> CreateLeaseStoreIfNotExistsAsync()
         boolean wasCreated = false;
-        if (leaseStoreExists()) {
+        if (!leaseStoreExists()) {
             Document containerDocumentnew = new Document();
             containerDocumentnew.setId(getDocumentId());
 
@@ -142,12 +150,11 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         return listDocuments(getPartitionLeasePrefix());
     }
 
-    /// <summary>
-    /// Checks whether lease exists and creates if does not exist.
-    /// </summary>
-    /// <returns>true if created, false otherwise.</returns>
+    /**
+     * Checks whether lease exists and creates if does not exist.
+     * @return true if created, false otherwise. */
     @Override
-    public boolean createLeaseIfNotExist(String partitionId, String continuationToken) throws DocumentClientException {//    public async Task<bool> CreateLeaseIfNotExistAsync(string partitionId, string continuationToken)
+    public boolean createLeaseIfNotExist(String partitionId, String continuationToken) throws DocumentClientException { // public async Task<bool> CreateLeaseIfNotExistAsync(string partitionId, string continuationToken)
         boolean wasCreated = false;
         String leaseDocId = getDocumentId(partitionId);
 
@@ -157,7 +164,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
             documentServiceLease.setPartitionId(partitionId);
             documentServiceLease.setContinuationToken(continuationToken);
 
-            client.createDocument(leaseStoreCollectionLink, documentServiceLease, new RequestOptions(), true);
+			client.createDocument(leaseStoreCollectionLink, documentServiceLease, new RequestOptions(), true).getResource();
             wasCreated = true;
         }
         return wasCreated;
@@ -292,13 +299,23 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
 
     private Document tryGetDocument(String documentId) throws DocumentClientException {//    private async Task<Document> TryGetDocument(string documentId)
         String uri = String.format("/dbs/%s/colls/%s/docs/%s", leaseStoreCollectionInfo.getDatabaseName(), leaseStoreCollectionInfo.getCollectionName(), documentId);
-        return  client.readDocument(uri, new RequestOptions()).getResource();
+        
+        Document doc = null;
+        try {
+        	doc = client.readDocument(uri, new RequestOptions()).getResource();
+        } catch (DocumentClientException ex) {
+        	if(HttpStatus.SC_NOT_FOUND != ex.getStatusCode()) {
+        		throw ex;
+        	}
+        }
+        
+        return doc;
     }
 
     private DocumentServiceLease tryGetLease(String documentId) throws DocumentClientException {//    private async Task<DocumentServiceLease> TryGetLease(string documentId)
         Document leaseDocument = tryGetDocument(documentId);
         if (leaseDocument != null) {
-            return new DocumentServiceLease(leaseDocument);
+        	return new DocumentServiceLease(leaseDocument);
         } else {
             return null;
         }
@@ -313,13 +330,15 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         SqlQuerySpec querySpec = new SqlQuerySpec(
                 String.format(Locale.ROOT, "SELECT * FROM c WHERE STARTSWITH(c.id, @PartitionLeasePrefix)"),
                 new SqlParameterCollection(new SqlParameter[] { param }));
-        QueryIterable<Document> queryIter = client.queryDocuments(leaseStoreCollectionLink, querySpec, new FeedOptions()).getQueryIterable(); // createDocumentQuery<DocumentServiceLease>(this.leaseStoreCollectionLink, querySpec);
-
-        List<DocumentServiceLease> list = queryIter.toList().stream().map((Document doc) -> {
-    	   return new DocumentServiceLease(doc);
-        }).collect(Collectors.toList());
         
-        return list;
+        FeedResponse<Document> queryResults = client.queryDocuments(leaseStoreCollectionLink, querySpec, null);
+        
+        List<DocumentServiceLease> docs = new ArrayList<DocumentServiceLease>();
+        queryResults.getQueryIterable().forEach((Document d) -> {	
+        	docs.add(new DocumentServiceLease(d));
+        });
+        
+        return docs;
     }
 
     /**
@@ -342,10 +361,8 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         return this.containerNamePrefix + CONTAINER_SEPARATOR + PARTITION_PREFIX;
     }
 
-    private DocumentServiceLease updateInternal(
-            DocumentServiceLease lease,
-            LeaseConflictResolver conflictResolver,
-            String owner) throws LeaseLostException, DocumentClientException {
+    private DocumentServiceLease updateInternal(DocumentServiceLease lease, LeaseConflictResolver conflictResolver, String owner) 
+    		throws LeaseLostException, DocumentClientException {
         assert lease != null : "lease";
         assert lease.getId() != null && !lease.getId().isEmpty() : "lease.Id";
 
