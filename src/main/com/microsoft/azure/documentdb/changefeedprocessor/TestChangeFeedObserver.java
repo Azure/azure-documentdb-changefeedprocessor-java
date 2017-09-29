@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.concurrent.Future;
 
 public class TestChangeFeedObserver implements IChangeFeedObserver {
+
+    int documentCount = 0;
+
     public void open(ChangeFeedObserverContext context) {
     }
 
@@ -17,6 +20,12 @@ public class TestChangeFeedObserver implements IChangeFeedObserver {
             String content = d.toJson();
 
             System.out.println("Received: " + content);
+
+            documentCount++;
         }
+    }
+
+    public int getDocumentCount() {
+        return documentCount;
     }
 }

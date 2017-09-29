@@ -17,6 +17,13 @@ public class DocumentChangeFeedClient {
     private final int pageSize;
     private String continuationToken;
 
+    protected DocumentChangeFeedClient() {
+        this.client = null;
+        this.partitionId = null;
+        this.pageSize = 0;
+        this.continuationToken = null;
+    }
+
     public DocumentChangeFeedClient(DocumentServices client, String partitionId, String continuationToken, int pageSize) {
         this.partitionId = partitionId;
         this.client = client;
