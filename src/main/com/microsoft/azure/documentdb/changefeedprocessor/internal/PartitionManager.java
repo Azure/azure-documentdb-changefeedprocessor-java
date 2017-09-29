@@ -37,8 +37,8 @@ public class PartitionManager<T extends Lease> {
     boolean shutdownComplete;
     Future<Void> renewTask;
     Future<Void> takerTask;
-    CancellationTokenSource leaseTakerCancellationTokenSource;
-    CancellationTokenSource leaseRenewerCancellationTokenSource;
+    CancellationTokenSource leaseTakerCancellationTokenSource;	  //Need CancellationTokenSource Java equivalent
+    CancellationTokenSource leaseRenewerCancellationTokenSource;  //Need CancellationTokenSource Java equivalent
 //    ExecutorService execService;
 
     public PartitionManager(String workerName, ILeaseManager<T> leaseManager, ChangeFeedHostOptions options)
@@ -74,8 +74,7 @@ public class PartitionManager<T extends Lease> {
 
             if (lease.getOwner().equalsIgnoreCase(this.workerName))
             {
-            	Future<T> renewedLease = execService.submit(this.renewLease(lease));
-            	T newLease = renewedLease.get();
+            	T newLease = this.renewLease(lease);
                 if (newLease != null)
                 {
                     leases.add(newLease);
@@ -172,28 +171,12 @@ public class PartitionManager<T extends Lease> {
         	try {
         		TraceLog.informational(String.format("Host '%s' starting renewal of Leases.", this.workerName));
         		
-        		ConcurrentHashMap<T> renewedLeases = new ConcurrentHashMap<T>();
+        		ConcurrentBag<T> renewedLeases = new ConcurrentBag<T>();
                 ConcurrentBag<T> failedToRenewLeases = new ConcurrentBag<T>();
                 
-                List<Task> renewTasks = new List<Task>(); //Copy stuff from below
-        	}
-        	catch (OperationsException ex){
-                TraceLog.informational(String.format("Host '%s' Renewer task canceled.", this.workerName));
-            }
-            catch (Exception ex){
-                TraceLog.exception(ex);
-            }
-        }
-        
-        while (this.isStarted.equals(1) || !this.shutdownComplete){
-            try{
-                
-
-                
                 List<Task> renewTasks = new List<Task>();
-
-                // Renew leases for all currently owned partitions in parallel
-                foreach (T lease in this.currentlyOwnedPartitions.Values)
+                
+                for (T lease : this.currentlyOwnedPartitions.values)
                 {
                     renewTasks.Add(this.RenewLeaseAsync(lease).ContinueWith(renewResult =>
                             {
@@ -253,17 +236,15 @@ public class PartitionManager<T extends Lease> {
                 }
 
                 await Task.Delay(this.options.LeaseRenewInterval, this.leaseRenewerCancellationTokenSource.Token);
+        	}
+        	catch (OperationsException ex){
+                TraceLog.informational(String.format("Host '%s' Renewer task canceled.", this.workerName));
             }
-            catch (OperationCanceledException)
-            {
-                TraceLog.Informational(String.Format("Host '{0}' Renewer task canceled.", this.workerName));
-            }
-            catch (Exception ex)
-            {
-                TraceLog.Exception(ex);
+            catch (Exception ex){
+                TraceLog.exception(ex);
             }
         }
-
+        
         this.currentlyOwnedPartitions.Clear();
         this.keepRenewingDuringClose.Clear();
         TraceLog.Informational(String.Format("Host '{0}' Renewer task completed.", this.workerName));
@@ -301,7 +282,7 @@ public class PartitionManager<T extends Lease> {
 
             try
             {
-                await Task.Delay(this.options.LeaseAcquireInterval, this.leaseTakerCancellationTokenSource.);
+                await Task.Delay(this.options.LeaseAcquireInterval, this.leaseTakerCancellationTokenSource.); //Need CancellationTokenSource Java equivalent
             }
             catch (OperationsException ex)
             {
@@ -313,7 +294,7 @@ public class PartitionManager<T extends Lease> {
     }
 
     //IDictionary<String, T>
-    Callable<HashMap<String, T>> takeLeases() // it RETURNS IDictionary
+    Future<HashMap<String, T>> takeLeases() // it RETURNS IDictionary
     {
 //        IDictionary<String, T> allPartitions = new Dictionary<String, T>();
 //        IDictionary<String, T> takenLeases = new Dictionary<String, T>();
@@ -469,132 +450,111 @@ public class PartitionManager<T extends Lease> {
 		}
     }
 
-    Callable<T> renewLease(T lease)
+    //Java
+    T renewLease(T lease)	//Might need to change the return type to be Future<T>
     {
-//        T renewedLease = null;
-//        try
-//        {
-//            TraceLog.Informational(String.Format("Host '{0}' renewing lease for PartitionId '{1}' with lease token '{2}'", this.workerName, lease.PartitionId, lease.ConcurrencyToken));
-//
-//            renewedLease = await this.leaseManager.RenewAsync(lease);
-//        }
-//        catch (LeaseLostException)
-//        {
-//            TraceLog.Informational(String.Format("Host '{0}' got LeaseLostException trying to renew lease for  PartitionId '{1}' with lease token '{2}'", this.workerName, lease.PartitionId, lease.ConcurrencyToken));
-//        }
-//        catch (Exception ex)
-//        {
-//            TraceLog.Exception(ex);
-//
-//            // Eat any exceptions during renew and keep going.
-//            // Consider the lease as renewed.  Maybe lease store outage is causing the lease to not get renewed.
-//            renewedLease = lease;
-//        }
-//        finally
-//        {
-//            TraceLog.Informational(String.Format("Host '{0}' attempted to renew lease for PartitionId '{1}' and lease token '{2}' with result: '{3}'", this.workerName, lease.PartitionId, lease.ConcurrencyToken, renewedLease != null));
-//        }
-//
-//        return renewedLease;
-        return null;
+        T renewedLease = null;
+        try{
+            TraceLog.informational(String.format("Host '%s' renewing lease for PartitionId '%d' with lease token '%s'", this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
+
+            renewedLease = this.leaseManager.renew(lease).get();
+        }
+        catch (LeaseLostException ex){
+            TraceLog.informational(String.format("Host '%s' got LeaseLostException trying to renew lease for  PartitionId '%d' with lease token '%s'", this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
+        }
+        catch (Exception ex){
+            TraceLog.exception(ex);
+
+            // Eat any exceptions during renew and keep going.
+            // Consider the lease as renewed.  Maybe lease store outage is causing the lease to not get renewed.
+            renewedLease = lease;
+        }
+        finally{
+            TraceLog.informational(String.format("Host '%s' attempted to renew lease for PartitionId '%d' and lease token '%s' with result: '%s'", this.workerName, lease.getPartitionId(), lease.getConcurrencyToken(), renewedLease != null));
+        }
+
+        return renewedLease;
     }
 
-    T tryAcquireLease(T lease)
-    {
-//        try
-//        {
-//            return await this.leaseManager.AcquireAsync(lease, this.workerName);
-//        }
-//        catch (LeaseLostException)
-//        {
-//            TraceLog.Informational(String.Format("Host '{0}' failed to acquire lease for PartitionId '{1}' due to conflict.", this.workerName, lease.PartitionId));
-//        }
-//        catch (Exception ex)
-//        {
-//            // Eat any exceptions during acquiring lease.
-//            TraceLog.Exception(ex);
-//        }
-//
-//        return null;
+    //Java
+    Future<T> tryAcquireLease(T lease){
+        try{
+            return this.leaseManager.acquire(lease, this.workerName);
+        }
+        catch (LeaseLostException ex){
+            TraceLog.informational(String.format("Host '%s' failed to acquire lease for PartitionId '%d' due to conflict.", this.workerName, lease.getPartitionId()));
+        }
+        catch (Exception ex){
+            // Eat any exceptions during acquiring lease.
+            TraceLog.exception(ex);
+        }
 
         return null;
     }
 
-    T tryStealLease(T lease)
-    {
-//        try
-//        {
-//            return await this.leaseManager.AcquireAsync(lease, this.workerName);
-//        }
-//        catch (LeaseLostException)
-//        {
-//            // Concurrency issue in stealing the lease, someone else got it before us
-//            TraceLog.Informational(String.Format("Host '{0}' failed to steal lease for PartitionId '{1}' due to conflict.", this.workerName, lease.PartitionId));
-//        }
-//        catch (Exception ex)
-//        {
-//            // Eat any exceptions during stealing
-//            TraceLog.Exception(ex);
-//        }
-//
-//        return null;
+    //Java
+    Future<T> tryStealLease(T lease){
+        try{
+            return this.leaseManager.acquire(lease, this.workerName);
+        }
+        catch (LeaseLostException ex){
+            // Concurrency issue in stealing the lease, someone else got it before us
+            TraceLog.informational(String.format("Host '%s' failed to steal lease for PartitionId '%d' due to conflict.", this.workerName, lease.getPartitionId()));
+        }
+        catch (Exception ex){
+            // Eat any exceptions during stealing
+            TraceLog.exception(ex);
+        }
 
         return null;
     }
 
-    Callable<Void> addLease(T lease)
-    {
-		return null;
-//        if (this.currentlyOwnedPartitions.TryAdd(lease.PartitionId, lease))
-//        {
-//            bool failedToInitialize = false;
-//            try
-//            {
-//                TraceLog.Informational(String.Format("Host '{0}' opening event processor for PartitionId '{1}' and lease token '{2}'", this.workerName, lease.PartitionId, lease.ConcurrencyToken));
-//
-//                await this.partitionObserverManager.NotifyPartitionAcquiredAsync(lease);
-//
-//                TraceLog.Informational(String.Format("Host '{0}' opened event processor for PartitionId '{1}' and lease token '{2}'", this.workerName, lease.PartitionId, lease.ConcurrencyToken));
-//            }
-//            catch (Exception ex)
-//            {
-//                TraceLog.Informational(String.Format("Host '{0}' failed to initialize processor for PartitionId '{1}' and lease token '{2}'", this.workerName, lease.PartitionId, lease.ConcurrencyToken));
-//
-//                failedToInitialize = true;
-//
-//                // Eat any exceptions during notification of observers
-//                TraceLog.Exception(ex);
-//            }
-//
-//            // We need to release the lease if we fail to initialize the processor, so some other node can pick up the parition
-//            if (failedToInitialize)
-//            {
-//                await this.RemoveLeaseAsync(lease, true, ChangeFeedObserverCloseReason.ObserverError);
-//            }
-//        }
-//        else
-//        {
-//            // We already acquired lease for this partition but it looks like we previously owned this partition
-//            // and haven't completed the shutdown process for it yet.  Release lease for possible others hosts to
-//            // pick it up.
-//            try
-//            {
-//                TraceLog.Warning(String.Format("Host '{0}' unable to add PartitionId '{1}' with lease token '{2}' to currently owned partitions.", this.workerName, lease.PartitionId, lease.ConcurrencyToken));
-//
-//                await this.leaseManager.ReleaseAsync(lease);
-//
-//                TraceLog.Informational(String.Format("Host '{0}' successfully released lease on PartitionId '{1}' with lease token '{2}'", this.workerName, lease.PartitionId, lease.ConcurrencyToken));
-//            }
-//            catch (LeaseLostException)
-//            {
-//                // We have already shutdown the processor so we can ignore any LeaseLost at this point
-//                TraceLog.Informational(String.Format("Host '{0}' failed to release lease for PartitionId '{1}' with lease token '{2}' due to conflict.", this.workerName, lease.PartitionId, lease.ConcurrencyToken));
-//            }
-//            catch (Exception ex)
-//            {
-//                TraceLog.Exception(ex);
-//            }
-//        }
+    //Java
+    Callable<Void> addLease(T lease){			
+        if (!this.currentlyOwnedPartitions.containsKey(lease.getPartitionId())) {	//Replacing TryAdd method for Dictionary in C#
+        	this.currentlyOwnedPartitions.put(lease.getPartitionId(), lease);
+            boolean failedToInitialize = false;
+            try{
+                TraceLog.informational(String.format("Host '%s' opening event processor for PartitionId '%d' and lease token '%s'", this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
+
+                this.partitionObserverManager.notifyPartitionAcquired(lease);	//TODO: Make notifyPartitionAcquired async and add await equivalent?
+
+                TraceLog.informational(String.format("Host '%s' opened event processor for PartitionId '%d' and lease token '%s'", this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
+            }
+            catch (Exception ex){
+                TraceLog.informational(String.format("Host '%s' failed to initialize processor for PartitionId '%d' and lease token '%s'", this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
+                failedToInitialize = true;
+
+                // Eat any exceptions during notification of observers
+                TraceLog.exception(ex);
+            }
+
+            // We need to release the lease if we fail to initialize the processor, so some other node can pick up the parition
+            if (failedToInitialize){
+                this.removeLease(lease, true, ChangeFeedObserverCloseReason.ObserverError);	//TODO: await equivalent
+            }
+        }
+        else{
+            // We already acquired lease for this partition but it looks like we previously owned this partition
+            // and haven't completed the shutdown process for it yet.  Release lease for possible others hosts to
+            // pick it up.
+            try{
+                TraceLog.warning(String.format("Host '%s' unable to add PartitionId '%d' with lease token '%s' to currently owned partitions.", this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
+
+                this.leaseManager.release(lease);	//TODO: await equivalent
+
+                TraceLog.informational(String.format("Host '%s' successfully released lease on PartitionId '%d' with lease token '%s'", this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
+            }
+            catch (LeaseLostException ex){
+                // We have already shutdown the processor so we can ignore any LeaseLost at this point
+                TraceLog.informational(String.format("Host '%s' failed to release lease for PartitionId '%d' with lease token '%s' due to conflict.", this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
+            }
+            catch (Exception ex) {
+                TraceLog.exception(ex);
+            }
+        }
+        
+        return null;
     }
 
     //Java

@@ -5,6 +5,9 @@
  */
 package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+
 import com.microsoft.azure.documentdb.DocumentClientException;
 
 /**
@@ -31,9 +34,9 @@ public interface ILeaseManager<T extends Lease> {
 
 	T getLease(String partitionId) throws DocumentClientException;
 
-	T acquire(T lease, String owner) throws DocumentClientException;
+	Future<T> acquire(T lease, String owner) throws DocumentClientException, LeaseLostException;
 
-	T renew(T lease) throws LeaseLostException, DocumentClientException;
+	Future<T> renew(T lease) throws LeaseLostException, DocumentClientException;
 
 	boolean release(T lease) throws DocumentClientException, LeaseLostException;
 
