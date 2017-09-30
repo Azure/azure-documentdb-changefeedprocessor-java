@@ -271,10 +271,22 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
 
     @Override
+    // TODO this function is broken, figure out nano math
     public boolean isExpired(DocumentServiceLease lease) {//    public Task<bool> IsExpired(DocumentServiceLease lease)        LOGGER.log(Level.FINEST, "{0} lease", Boolean.toString(lease != null));
-        long leaseIntvalCheck = lease.getTimestamp().getNano() + leaseInterval.getNano() + leaseIntervalAllowance.getNano();
-        long serverTime = Instant.now().getNano() + serverToLocalTimeDelta.toNanos();
-        //TODO :  There is something wrong: need to check the implementation at the test.
+        assert(lease != null);
+        
+        // Lease time converted to nanos
+        long leaseNanos = lease.getTimestamp().getEpochSecond();
+        leaseNanos *= 1000000000l;
+        leaseNanos += lease.getTimestamp().getNano();
+        
+        // Current time converted to nanos
+        long currentNanos = Instant.now().getEpochSecond();
+        currentNanos *= 1000000000l;
+        currentNanos += Instant.now().getNano();        
+        
+    	long leaseIntvalCheck = leaseNanos + leaseInterval.getNano() + leaseIntervalAllowance.getNano();
+        long serverTime = currentNanos + serverToLocalTimeDelta.toNanos();
         return leaseIntvalCheck < serverTime;
     }
 
