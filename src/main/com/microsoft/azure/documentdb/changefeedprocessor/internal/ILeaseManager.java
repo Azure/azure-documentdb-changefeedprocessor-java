@@ -5,9 +5,8 @@
  */
 package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
 
+import java.util.concurrent.Future;
 import com.microsoft.azure.documentdb.DocumentClientException;
 
 /**

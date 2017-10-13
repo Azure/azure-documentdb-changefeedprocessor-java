@@ -112,7 +112,7 @@ public class ChangeFeedHostOptions {
         this.minPartitionCount = _minPartitionCount;
     }
 
-    int getMaxPartitionCount() {
+    public int getMaxPartitionCount() {
         return maxPartitionCount;
     }
 

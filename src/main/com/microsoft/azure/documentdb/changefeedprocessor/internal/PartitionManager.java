@@ -37,8 +37,8 @@ public class PartitionManager<T extends Lease> {
     boolean shutdownComplete;
     Future<Void> renewTask;
     Future<Void> takerTask;
-    CancellationTokenSource leaseTakerCancellationTokenSource;	  //Need CancellationTokenSource Java equivalent
-    CancellationTokenSource leaseRenewerCancellationTokenSource;  //Need CancellationTokenSource Java equivalent
+  //  CancellationTokenSource leaseTakerCancellationTokenSource;	  //Need CancellationTokenSource Java equivalent
+  //  CancellationTokenSource leaseRenewerCancellationTokenSource;  //Need CancellationTokenSource Java equivalent
 //    ExecutorService execService;
 
     public PartitionManager(String workerName, ILeaseManager<T> leaseManager, ChangeFeedHostOptions options)
@@ -103,7 +103,7 @@ public class PartitionManager<T extends Lease> {
   }
 
     //Java
-    public void start()
+    public void startAsync()
     {
         if (!this.isStarted.compareAndSet(0, 1))
         {
@@ -120,7 +120,7 @@ public class PartitionManager<T extends Lease> {
     }
 
     //Java
-    public void stop(ChangeFeedObserverCloseReason reason) throws InterruptedException, ExecutionException
+    public void stopAsync(ChangeFeedObserverCloseReason reason) throws InterruptedException, ExecutionException
     {
         if (!this.isStarted.compareAndSet(1, 0))
         {
@@ -250,188 +250,184 @@ public class PartitionManager<T extends Lease> {
         TraceLog.Informational(String.Format("Host '{0}' Renewer task completed.", this.workerName));
   }
 
+   
+    private class LeaseTakerAsync implements Callable {
+		@Override
+		public Object call() throws Exception {
+			while (PartitionManager.this.isStarted.equals(1)){
+	            try
+	            {
+	                TraceLog.informational(String.format("Host '%s' starting to check for available leases.", this.workerName));
+	                HashMap<String, T> availableLeases = PartitionManager.this.takeLeases();	//TODO Change to Callable if synchronous doesn't work
+	                int i = availableLeases.size();
+	                if (i > 0) 
+	                	TraceLog.informational(String.format("Host '%s' adding %d leases...", PartitionManager.this.workerName, i));
+
+	                List<Callable<Void>> addLeaseTasks = new ArrayList<Callable<Void>>();
+	                for (T kvp : availableLeases.values())
+	                {
+	                    addLeaseTasks.add(PartitionManager.this.addLease(kvp));
+	                }
+
+	                try {
+	        			exec.invokeAll(addLeaseTasks);	//Waits till all tasks are finished
+	        		} catch (InterruptedException e) {
+	        			// TODO Auto-generated catch block
+	        			e.printStackTrace();
+	        		}
+	            }
+	            catch (Exception ex)
+	            {
+	                TraceLog.exception(ex);
+	            }
+
+	            try
+	            {
+	                await Task.Delay(this.options.LeaseAcquireInterval, this.leaseTakerCancellationTokenSource.); //Need CancellationTokenSource Java equivalent
+	            }
+	            catch (InterruptedException ex)
+	            {
+	                TraceLog.informational(String.format("Host '%s' AcquireLease task canceled.", PartitionManager.this.workerName));
+	            }
+	        }
+
+	        TraceLog.informational(String.format("Host '%s' AcquireLease task completed.", PartitionManager.this.workerName));
+			return null;
+		}
+    }
     
-    Callable<Void> leaseTaker()
-    {
-        while (this.isStarted.equals(1)){
-            try
-            {
-                TraceLog.informational(String.format("Host '%s' starting to check for available leases.", this.workerName));
-                HashMap<String, T> availableLeases = exec.submit(this.takeLeases()).get();	//TODO await equivalent?
-                int i = availableLeases.size();
-                if (i > 0) 
-                	TraceLog.informational(String.format("Host '%s' adding %d leases...", this.workerName, i));
 
-                List<Callable<Void>> addLeaseTasks = new ArrayList<Callable<Void>>();
-                for (T kvp : availableLeases.values())
-                {
-                    addLeaseTasks.add(this.addLease(kvp));
+
+    //IDictionary<String, T>
+    HashMap<String, T> takeLeases() { //Setting this method up to be sync, since it is being called from a thread that needs to await the result of this method. TODO: Test for performance
+    	HashMap<String, T> allPartitions = new HashMap<String, T>();
+        HashMap<String, T> takenLeases = new HashMap<String, T>();
+        HashMap<String, Integer> workerToPartitionCount = new HashMap<String, Integer>();
+        List<T> expiredLeases = new ArrayList<T>();
+
+        for (T lease : this.leaseManager.listLeases()) {
+            assert lease.getPartitionId() != null : "TakeLeasesAsync: lease.PartitionId cannot be null.";
+
+            allPartitions.put(lease.getPartitionId(), lease);
+            if (isNullOrWhitespace(lease.getOwner()) || this.leaseManager.isExpired(lease)){
+                TraceLog.verbose(String.format("Found unused or expired lease: %s", lease));
+                expiredLeases.add(lease);
+            }
+            else {
+                int count = 0;
+                String assignedTo = lease.getOwner();
+                Integer tempCount = workerToPartitionCount.get(assignedTo);
+                if (tempCount != null) {
+                	count = tempCount;
+                    workerToPartitionCount.put(assignedTo, new Integer(count + 1));
                 }
-
-                try {
-        			exec.invokeAll(addLeaseTasks);	//Waits till all tasks are finished
-        		} catch (InterruptedException e) {
-        			// TODO Auto-generated catch block
-        			e.printStackTrace();
-        		}
-            }
-            catch (Exception ex)
-            {
-                TraceLog.exception(ex);
-            }
-
-            try
-            {
-                await Task.Delay(this.options.LeaseAcquireInterval, this.leaseTakerCancellationTokenSource.); //Need CancellationTokenSource Java equivalent
-            }
-            catch (OperationsException ex)
-            {
-                TraceLog.informational(String.format("Host '%s' AcquireLease task canceled.", this.workerName));
+                else {
+                    workerToPartitionCount.put(assignedTo, 1);
+                }
             }
         }
 
-        TraceLog.informational(String.format("Host '%s' AcquireLease task completed.", this.workerName));
-    }
+        if (!workerToPartitionCount.containsKey(this.workerName)) {
+            workerToPartitionCount.put(this.workerName, 0);
+        }
 
-    //IDictionary<String, T>
-    Future<HashMap<String, T>> takeLeases() // it RETURNS IDictionary
-    {
-//        IDictionary<String, T> allPartitions = new Dictionary<String, T>();
-//        IDictionary<String, T> takenLeases = new Dictionary<String, T>();
-//        IDictionary<String, int> workerToPartitionCount = new Dictionary<String, int>();
-//        List<T> expiredLeases = new List<T>();
-//
-//        foreach (var lease in await this.leaseManager.ListLeases())
-//        {
-//            Debug.Assert(lease.PartitionId != null, "TakeLeasesAsync: lease.PartitionId cannot be null.");
-//
-//            allPartitions.Add(lease.PartitionId, lease);
-//            if (String.IsNullOrWhiteSpace(lease.Owner) || await this.leaseManager.IsExpired(lease))
-//            {
-//                TraceLog.Verbose(String.Format("Found unused or expired lease: {0}", lease));
-//                expiredLeases.Add(lease);
-//            }
-//                else
-//            {
-//                int count = 0;
-//                String assignedTo = lease.Owner;
-//                if (workerToPartitionCount.TryGetValue(assignedTo, out count))
-//                {
-//                    workerToPartitionCount[assignedTo] = count + 1;
-//                }
-//                else
-//                {
-//                    workerToPartitionCount.Add(assignedTo, 1);
-//                }
-//            }
-//        }
-//
-//        if (!workerToPartitionCount.ContainsKey(this.workerName))
-//        {
-//            workerToPartitionCount.Add(this.workerName, 0);
-//        }
-//
-//        int partitionCount = allPartitions.Count;
-//        int workerCount = workerToPartitionCount.Count;
-//
-//        if (partitionCount > 0)
-//        {
-//            int target = 1;
-//
-//            if (partitionCount > workerCount)
-//            {
-//                target = (int)Math.Ceiling((double)partitionCount / (double)workerCount);
-//            }
-//
-//            Debug.Assert(this.options.MinPartitionCount <= this.options.MaxPartitionCount);
-//
-//            if (this.options.MaxPartitionCount > 0 && target > this.options.MaxPartitionCount)
-//            {
-//                target = this.options.MaxPartitionCount;
-//            }
-//
-//            if (this.options.MinPartitionCount > 0 && target < this.options.MinPartitionCount)
-//            {
-//                target = this.options.MinPartitionCount;
-//            }
-//
-//            int myCount = workerToPartitionCount[this.workerName];
-//            int partitionsNeededForMe = target - myCount;
-//            TraceLog.Informational(
-//                    String.Format(
-//                            "Host '{0}' {1} partitions, {2} hosts, {3} available leases, target = {4}, min = {5}, max = {6}, mine = {7}, will try to take {8} lease(s) for myself'.",
-//                            this.workerName,
-//                            partitionCount,
-//                            workerCount,
-//                            expiredLeases.Count,
-//                            target,
-//                            this.options.MinPartitionCount,
-//                            this.options.MaxPartitionCount,
-//                            myCount,
-//                            Math.Max(partitionsNeededForMe, 0)));
-//
-//            if (partitionsNeededForMe > 0)
-//            {
-//                HashSet<T> partitionsToAcquire = new HashSet<T>();
-//                if (expiredLeases.Count > 0)
-//                {
-//                    foreach (T leaseToTake in expiredLeases)
-//                    {
-//                        if (partitionsNeededForMe == 0)
-//                        {
-//                            break;
-//                        }
-//
-//                        TraceLog.Informational(String.Format("Host '{0}' attempting to take lease for PartitionId '{1}'.", this.workerName, leaseToTake.PartitionId));
-//                        T acquiredLease = await this.TryAcquireLeaseAsync(leaseToTake);
-//                        if (acquiredLease != null)
-//                        {
-//                            TraceLog.Informational(String.Format("Host '{0}' successfully acquired lease for PartitionId '{1}': {2}", this.workerName, leaseToTake.PartitionId, acquiredLease));
-//                            takenLeases.Add(acquiredLease.PartitionId, acquiredLease);
-//
-//                            partitionsNeededForMe--;
-//                        }
-//                    }
-//                }
-//                else
-//                {
-//                    KeyValuePair<String, int> workerToStealFrom = default(KeyValuePair<String, int>);
-//                    foreach (var kvp in workerToPartitionCount)
-//                {
-//                    if (kvp.Equals(default(KeyValuePair<String, int>)) || workerToStealFrom.Value < kvp.Value)
-//                {
-//                    workerToStealFrom = kvp;
-//                }
-//                }
-//
-//                if (workerToStealFrom.Value > target - (partitionsNeededForMe > 1 ? 1 : 0))
-//                {
-//                    foreach (var kvp in allPartitions)
-//                    {
-//                        if (String.Equals(kvp.Value.Owner, workerToStealFrom.Key, StringComparison.OrdinalIgnoreCase))
-//                        {
-//                            T leaseToTake = kvp.Value;
-//                            TraceLog.Informational(String.Format("Host '{0}' attempting to steal lease from '{1}' for PartitionId '{2}'.", this.workerName, workerToStealFrom.Key, leaseToTake.PartitionId));
-//                            T stolenLease = await this.TryStealLeaseAsync(leaseToTake);
-//                            if (stolenLease != null)
-//                            {
-//                                TraceLog.Informational(String.Format("Host '{0}' stole lease from '{1}' for PartitionId '{2}'.", this.workerName, workerToStealFrom.Key, leaseToTake.PartitionId));
-//                                takenLeases.Add(stolenLease.PartitionId, stolenLease);
-//
-//                                partitionsNeededForMe--;
-//
-//                                // Only steal one lease at a time
-//                                break;
-//                            }
-//                        }
-//                    }
-//                }
-//                }
-//            }
-//        }
-//
-//        return takenLeases;
-        return null;
+        int partitionCount = allPartitions.size();
+        int workerCount = workerToPartitionCount.size();
+
+        if (partitionCount > 0) {
+            int target = 1;
+            if (partitionCount > workerCount) {
+                target = (int)Math.ceil((double)partitionCount / (double)workerCount);
+            }
+
+            assert this.options.getMinPartitionCount() <= this.options.getMaxPartitionCount();
+
+            if (this.options.getMaxPartitionCount() > 0 && target > this.options.getMaxPartitionCount()) {
+                target = this.options.getMaxPartitionCount();
+            }
+
+            if (this.options.getMinPartitionCount() > 0 && target < this.options.getMinPartitionCount()) {
+                target = this.options.getMinPartitionCount();
+            }
+
+            int myCount = workerToPartitionCount.get(this.workerName);
+            int partitionsNeededForMe = target - myCount;
+            
+            //TODO: Start Here
+            TraceLog.Informational(
+                    String.Format(
+                            "Host '{0}' {1} partitions, {2} hosts, {3} available leases, target = {4}, min = {5}, max = {6}, mine = {7}, will try to take {8} lease(s) for myself'.",
+                            this.workerName,
+                            partitionCount,
+                            workerCount,
+                            expiredLeases.Count,
+                            target,
+                            this.options.MinPartitionCount,
+                            this.options.MaxPartitionCount,
+                            myCount,
+                            Math.Max(partitionsNeededForMe, 0)));
+
+            if (partitionsNeededForMe > 0)
+            {
+                HashSet<T> partitionsToAcquire = new HashSet<T>();
+                if (expiredLeases.Count > 0)
+                {
+                    foreach (T leaseToTake in expiredLeases)
+                    {
+                        if (partitionsNeededForMe == 0)
+                        {
+                            break;
+                        }
+
+                        TraceLog.Informational(String.Format("Host '{0}' attempting to take lease for PartitionId '{1}'.", this.workerName, leaseToTake.PartitionId));
+                        T acquiredLease = await this.TryAcquireLeaseAsync(leaseToTake);
+                        if (acquiredLease != null)
+                        {
+                            TraceLog.Informational(String.Format("Host '{0}' successfully acquired lease for PartitionId '{1}': {2}", this.workerName, leaseToTake.PartitionId, acquiredLease));
+                            takenLeases.Add(acquiredLease.PartitionId, acquiredLease);
+
+                            partitionsNeededForMe--;
+                        }
+                    }
+               }
+                else
+                {
+                    KeyValuePair<String, int> workerToStealFrom = default(KeyValuePair<String, int>);
+                    foreach (var kvp in workerToPartitionCount)
+                {
+                    if (kvp.Equals(default(KeyValuePair<String, int>)) || workerToStealFrom.Value < kvp.Value)
+                {
+                    workerToStealFrom = kvp;
+                }
+                }
+
+                if (workerToStealFrom.Value > target - (partitionsNeededForMe > 1 ? 1 : 0))
+                {
+                    foreach (var kvp in allPartitions)
+                    {
+                        if (String.Equals(kvp.Value.Owner, workerToStealFrom.Key, StringComparison.OrdinalIgnoreCase))
+                        {
+                            T leaseToTake = kvp.Value;
+                            TraceLog.Informational(String.Format("Host '{0}' attempting to steal lease from '{1}' for PartitionId '{2}'.", this.workerName, workerToStealFrom.Key, leaseToTake.PartitionId));
+                            T stolenLease = await this.TryStealLeaseAsync(leaseToTake);
+                            if (stolenLease != null)
+                            {
+                                TraceLog.Informational(String.Format("Host '{0}' stole lease from '{1}' for PartitionId '{2}'.", this.workerName, workerToStealFrom.Key, leaseToTake.PartitionId));
+                                takenLeases.Add(stolenLease.PartitionId, stolenLease);
+
+                                partitionsNeededForMe--;
+
+                                // Only steal one lease at a time
+                                break;
+                            }
+                        }
+                    }
+                }
+                }
+            }
+        }
+
+        return takenLeases;
     }
 
     //Java
@@ -616,6 +612,23 @@ public class PartitionManager<T extends Lease> {
         
 		return null;
             
+    }
+    
+    public static boolean isNullOrWhitespace(String s) {
+        return s == null || isWhitespace(s);
+
+    }
+    private static boolean isWhitespace(String s) {
+        int length = s.length();
+        if (length > 0) {
+            for (int i = 0; i < length; i++) {
+                if (!Character.isWhitespace(s.charAt(i))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
     }
 
 }
