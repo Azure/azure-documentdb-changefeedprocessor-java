@@ -10,6 +10,8 @@ import com.microsoft.azure.documentdb.changefeedprocessor.DocumentCollectionInfo
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationException;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationFile;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.Lease;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.LeaseLostException;
+
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -248,11 +250,34 @@ public class DocumentServiceLeaseManagerTest {
      * @throws DocumentClientException 
      */
     @Test
-    public void testIsExpired() throws DocumentClientException {
+    // TODO: this test will sometimes fail when running all tests if deleteAll is before this one
+    // Delete all adds the leases back into the store and the lease won't yet be expired when this test is run within 1 min
+    public void testIsExpiredTrue() throws DocumentClientException {
         System.out.println("isExpired");
         
+        // This lease was previously added to the store and should be expired
         boolean result = instance.isExpired(instance.getLease("test"));
         assert(result);
+    }
+    
+    /**
+     * Test of isExpired method, of class DocumentServiceLeaseManager.
+     * @throws DocumentClientException 
+     * @throws LeaseLostException 
+     */
+    @Test
+    public void testIsExpiredFalse() throws DocumentClientException, LeaseLostException {
+        System.out.println("isExpired");
+        
+        // Create a new lease
+        instance.createLeaseIfNotExist("test4", "1234");
+        
+        // The new lease shouldn't be expired yet
+        boolean result = instance.isExpired(instance.getLease("test4"));
+        assertFalse(result);
+        
+        // Delete the lease to clean up for the next time this test is run
+        instance.delete(instance.getLease("test4"));
     }
 
     /**

@@ -100,29 +100,23 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         String uri = String.format("/dbs/%s/colls/%s", leaseStoreCollectionInfo.getDatabaseName(), leaseStoreCollectionInfo.getCollectionName());
         leaseStoreCollectionLink = client.readCollection(uri, new RequestOptions()).getResource().getSelfLink();
 
+        // Get the current time
         Instant snapshot1 = Instant.now();
+        
+        // Create and upload a new document
         Document document = new Document();
         document.setId(getDocumentId() + UUID.randomUUID().toString());
-        //final boolean is "disableAutomaticIdGeneration - the flag for disabling automatic id generation."
         Document dummyDocument = client.createDocument(leaseStoreCollectionLink, document, new RequestOptions(), true).getResource();
+        
+        // Get the new current time
         Instant snapshot2 = Instant.now();
-
-        // Convert instant to nano
-        long time1 = snapshot1.getEpochSecond();
-        time1 *= 1000000000l;
-        time1 += snapshot1.getNano();
         
-        long time2 = snapshot2.getEpochSecond();
-        time2 *= 1000000000l;
-        time2 += snapshot2.getNano(); 
+        Instant dummyTimestamp = Instant.ofEpochSecond(dummyDocument.getTimestamp().getTime()); // Instant defaults to UTC
+        Instant currentTimeDiff = Instant.ofEpochSecond(snapshot1.plusSeconds(snapshot2.getEpochSecond()).getEpochSecond() / 2); 
+        serverToLocalTimeDelta = Duration.between(currentTimeDiff, dummyTimestamp);
         
-        Instant dummyTimestamp = dummyDocument.getTimestamp().toInstant();
-        long nanovalue = time1 + time2 / 2;
-        serverToLocalTimeDelta
-                = Duration.between(dummyTimestamp, Instant.ofEpochMilli(nanovalue));
         client.deleteDocument(dummyDocument.getSelfLink(), new RequestOptions());
-
-        
+       
         TraceLog.informational(String.format("Server to local time delta: {0}", this.serverToLocalTimeDelta));
     }
 
@@ -271,23 +265,18 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
 
     @Override
-    // TODO this function is broken, figure out nano math
     public boolean isExpired(DocumentServiceLease lease) {//    public Task<bool> IsExpired(DocumentServiceLease lease)        LOGGER.log(Level.FINEST, "{0} lease", Boolean.toString(lease != null));
         assert(lease != null);
+            
+        // Lease time converted to seconds
+        long leaseSeconds = lease.getTimestamp().getEpochSecond();
         
-        // Lease time converted to nanos
-        long leaseNanos = lease.getTimestamp().getEpochSecond();
-        leaseNanos *= 1000000000l;
-        leaseNanos += lease.getTimestamp().getNano();
+        // Current time converted to seconds
+        long currentSeconds = Instant.now().getEpochSecond();        
         
-        // Current time converted to nanos
-        long currentNanos = Instant.now().getEpochSecond();
-        currentNanos *= 1000000000l;
-        currentNanos += Instant.now().getNano();        
-        
-    	long leaseIntvalCheck = leaseNanos + leaseInterval.getNano() + leaseIntervalAllowance.getNano();
-        long serverTime = currentNanos + serverToLocalTimeDelta.toNanos();
-        return leaseIntvalCheck < serverTime;
+    	Duration leaseExpiration = leaseInterval.plusSeconds(leaseSeconds).plus(leaseIntervalAllowance);
+        Duration serverTime = serverToLocalTimeDelta.plusSeconds(currentSeconds);
+        return leaseExpiration.getSeconds() < serverTime.getSeconds();
     }
 
     @Override
