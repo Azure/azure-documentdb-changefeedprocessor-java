@@ -1,6 +1,7 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
 import com.microsoft.azure.documentdb.DocumentClientException;
+import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverCloseReason;
 
 public class ResourcePartition {
     String partitionId;
@@ -11,12 +12,12 @@ public class ResourcePartition {
         this.resourceJob = resourceJob;
     }
 
-    public void start(Object initialData) throws DocumentClientException, InterruptedException {
+    public void start(String initialData) throws DocumentClientException, InterruptedException {
         resourceJob.start(initialData);
     }
 
     public void stop() {
-        resourceJob.stop();
+        resourceJob.stop(ChangeFeedObserverCloseReason.SHUTDOWN);
     }
 
     public Job getJob() {

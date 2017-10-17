@@ -71,7 +71,8 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         this.resourcePartitionSvcs = null;
 
-        if (this.changeFeedOptions.getPageSize() == 0)
+        if (this.changeFeedOptions.getPageSize() == null ||
+                this.changeFeedOptions.getPageSize() == 0)
             this.changeFeedOptions.setPageSize(this.DEFAULT_PAGE_SIZE);
     }
 

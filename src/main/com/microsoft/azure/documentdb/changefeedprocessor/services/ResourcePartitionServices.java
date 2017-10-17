@@ -47,7 +47,7 @@ public class ResourcePartitionServices {
     public void start(String partitionId) throws DocumentClientException {
         ResourcePartition resourcePartition = this.get(partitionId);
         Job job = resourcePartition.getJob();
-        Object initialData = checkpointSvcs.getCheckpointData(partitionId);
+        String initialData = checkpointSvcs.getCheckpointData(partitionId);
 
         jobServices.runAsync(job, initialData);
     }

@@ -5,9 +5,9 @@ import com.microsoft.azure.documentdb.DocumentClientException;
 public class JobRunnable implements Runnable {
 
     private final Job job;
-    private Object initialData;
+    private String initialData;
 
-    public JobRunnable(Job job, Object initialData) {
+    public JobRunnable(Job job, String initialData) {
         this.job = job;
         this.initialData = initialData;
     }

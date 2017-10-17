@@ -23,14 +23,14 @@ public class CheckpointServices {
         this.checkpoints = new ConcurrentHashMap<>();
     }
 
-    public Object getCheckpointData(String partitionId) throws DocumentClientException {
+    public String getCheckpointData(String partitionId) throws DocumentClientException {
         //return getCheckpoint(partitionId);
         return this.checkpoints.get(partitionId);
     }
 
-    public void setCheckpointData(String partitionId, Object data) throws DocumentClientException {
+    public void setCheckpointData(String partitionId, String data) throws DocumentClientException {
         //DocumentServiceLease lease = (DocumentServiceLease)leaseManager.getLease(partitionId);
-        String continuation = (String)data;
+        String continuation = data;
         //checkpoint(lease, continuation);
         this.checkpoints.put(partitionId, continuation);
     }
