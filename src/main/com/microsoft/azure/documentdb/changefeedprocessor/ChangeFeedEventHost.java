@@ -109,7 +109,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         //TODO: This is not the right place to have this code..
         this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, observerFactory, changeFeedOptions.getPageSize());
 
-        initializeIntegrations();
+        //initializeIntegrations();
         initializePartitions();
         initializeLeaseManager();
     }
@@ -181,6 +181,9 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
             } catch (DocumentClientException e) {
                 e.printStackTrace();
             }
+            catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         });
 
     }
@@ -200,6 +203,8 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         try {
             resourcePartitionSvcs.start(partitionId);
         } catch (DocumentClientException e) {
+            e.printStackTrace();
+        }catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
