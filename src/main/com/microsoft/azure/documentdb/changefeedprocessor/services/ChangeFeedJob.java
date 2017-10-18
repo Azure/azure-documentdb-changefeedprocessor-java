@@ -22,7 +22,6 @@ public class ChangeFeedJob implements Job {
     private final CheckpointServices checkpointSvcs;
     private final String partitionId;
     private final IChangeFeedObserver observer;
-    //private boolean stop = false;
     private ChangeFeedOptions feedOptions;
     private int pageSize;
     private final int DEFAULT_PAGE_SIZE = 100;
@@ -115,12 +114,13 @@ public class ChangeFeedJob implements Job {
         while(!(exec.isTerminated() || exec.isShutdown())) {
             do {
                 try {
-                    query = client.createDocumentChangeFeedQuery(partitionId, (String) checkpointSvcs.getCheckpointData(partitionId), this.pageSize);
+                    query = client.createDocumentChangeFeedQuery(partitionId, checkpointSvcs.getCheckpointData(partitionId), this.pageSize);
                     if (query != null) {
                         context.setFeedResponse(query);
                         List<Document> docs = query.getQueryIterable().fetchNextBlock();
                         HasMoreResults = query.getQueryIterator().hasNext();
                         if (docs != null) {
+                            logger.info(String.format("Docs Loaded #{0} - HasMoreResults: {}",docs.size(), HasMoreResults));
                             observer.processChanges(context, docs);
                             this.checkpoint(query.getResponseContinuation());
                         }
