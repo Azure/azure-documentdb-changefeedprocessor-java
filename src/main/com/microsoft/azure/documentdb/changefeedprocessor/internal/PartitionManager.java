@@ -64,7 +64,7 @@ public class PartitionManager<T extends Lease> {
 
     //Java
     public void initialize() throws Exception {
-    	exec = Executors.newFixedThreadPool(10);
+    	exec = Executors.newCachedThreadPool();
     	initialize(exec);
     }
     
@@ -226,7 +226,7 @@ public class PartitionManager<T extends Lease> {
                     
                     //TODO: Start here
                  // Trigger shutdown of all partitions we failed to renew leases
-                    failedToRenewLeases.forEach(lease -> exec.submit(PartitionManager.this.removeLease(lease, false, ChangeFeedObserverCloseReason.LeaseLost)));
+                    failedToRenewLeases.forEach(lease -> exec.submit(PartitionManager.this.removeLease(lease, false, ChangeFeedObserverCloseReason.LEASE_LOST)));
                     
 
                     // Now remove all failed renewals of shutdown leases from further renewals
@@ -534,7 +534,7 @@ public class PartitionManager<T extends Lease> {
 
     	            // We need to release the lease if we fail to initialize the processor, so some other node can pick up the parition
     	            if (failedToInitialize){
-    	            	PartitionManager.this.removeLease(lease, true, ChangeFeedObserverCloseReason.ObserverError);	//TODO: await equivalent
+    	            	PartitionManager.this.removeLease(lease, true, ChangeFeedObserverCloseReason.OBSERVER_ERROR);	//TODO: await equivalent
     	            }
     	        }
     	        else{
