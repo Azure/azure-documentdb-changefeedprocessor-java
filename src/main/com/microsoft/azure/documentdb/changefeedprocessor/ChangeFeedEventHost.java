@@ -109,10 +109,9 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
     void start() throws Exception{
         logger.info(String.format("Starting..."));
-        //TODO: This is not the right place to have this code..
-        this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, observerFactory, changeFeedOptions.getPageSize());
 
-        //initializeIntegrations();
+        initializeIntegrations();
+
         initializePartitions();
         initializeLeaseManager();
     }
@@ -125,7 +124,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         }
 
         // Beyond this point all access to collection is done via this self link: if collection is removed, we won't access new one using same name by accident.
-        // this.leasePrefix = String.format("{%s}{%s}_{%s}_{%s}", optionsPrefix, this.collectionLocation.Uri.Host, docdb.DatabaseResourceId, docdb.CollectionResourceId);
+        //this.leasePrefix = String.format("{%s}{%s}_{%s}_{%s}", optionsPrefix, this.collectionLocation.getUri().getHost(), this.collectionLocation.DatabaseResourceId, docdb.CollectionResourceId);
 
         DocumentServiceLeaseManager leaseManager = new DocumentServiceLeaseManager(
                 this.auxCollectionLocation,
@@ -151,7 +150,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         List<String> range = this.documentServices.listPartitionRange();
 
-//        TraceLog.Informational(string.Format("Source collection: '{0}', {1} partition(s), {2} document(s)", docdb.CollectionName, range.Count, docdb.DocumentCount));
+        logger.info(String.format("Source collection: '%s', %d partition(s), %s document(s)", collectionLocation.getCollectionName(), range.size(), documentServices.getDocumentCount()));
 
 //        this.CreateLeases(range);
 
@@ -162,6 +161,10 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
     void initializePartitions(){
         logger.info("Initializing partitions");
+
+        //TODO: This is not the right place to have this code..
+        this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, observerFactory, changeFeedOptions.getPageSize());
+
         // list partitions
         List<String> partitionIds = this.listPartition();
 

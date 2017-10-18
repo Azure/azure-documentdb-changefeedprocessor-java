@@ -48,6 +48,7 @@ public class CheckpointServices {
 
         return lease.getContinuationToken();
     }
+
     public void checkpoint(DocumentServiceLease lease, String continuation) {
         assert (lease != null);
         assert (continuation != null && continuation != "");

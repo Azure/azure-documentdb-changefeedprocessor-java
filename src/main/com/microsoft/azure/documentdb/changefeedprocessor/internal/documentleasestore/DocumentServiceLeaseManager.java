@@ -78,7 +78,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         try {
             leaseStoreCollectionLink = client.readCollection(uri, new RequestOptions()).getResource().getSelfLink();
         }catch (DocumentClientException ex){
-            if (createLeaseCollection && ex.getStatusCode() ==404 ) { //Collection Lease Not Found)
+            if (createLeaseCollection && ex.getStatusCode() == 404 ) { //Collection Lease Not Found)
                 logger.info("Parameter createLeaseCollection is true! Creating lease collection");
 
                 DocumentCollection leaseColl = new DocumentCollection();
