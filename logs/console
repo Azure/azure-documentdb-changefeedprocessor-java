@@ -1,0 +1,284 @@
+[main] INFO com.microsoft.azure.documentdb.DocumentClient - Initializing DocumentClient with serviceEndpoint [https://dxbrcosmosdb.documents.azure.com:443], ConnectionPolicy [ConnectionPolicy [requestTimeout=60, mediaRequestTimeout=300, connectionMode=Gateway, mediaReadMode=Buffered, maxPoolSize=100, idleConnectionTimeout=60, userAgentSuffix=, retryOptions=com.microsoft.azure.documentdb.RetryOptions@2286778, enableEndpointDiscovery=true, preferredLocations=null]], ConsistencyLevel [Session]
+out 18, 2017 1:19:31 PM com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedEventHost registerObserver
+INFO: Registering Observer of type class com.microsoft.azure.documentdb.changefeedprocessor.TestChangeFeedObserver
+out 18, 2017 1:19:31 PM com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedEventHost start
+INFO: Starting...
+out 18, 2017 1:19:31 PM com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedEventHost initializePartitions
+INFO: Initializing partitions
+[main] INFO com.microsoft.azure.documentdb.internal.ServiceJNIWrapper - Microsoft.Azure.Documents.ServiceInterop.dll exists in working directory.
+[main] INFO com.microsoft.azure.documentdb.internal.ServiceJNIWrapper - DocumentDB.Spatial.Sql.dll exists in working directory.
+[main] INFO com.microsoft.azure.documentdb.internal.ServiceJNIWrapper - ServiceJNI has loaded.
+out 18, 2017 1:19:32 PM com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedEventHost lambda$initializePartitions$0
+INFO: PartitionID 0
+out 18, 2017 1:19:32 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartitionServices create
+INFO: Creating job for Partition 0
+out 18, 2017 1:19:32 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob CreateExecutorService
+INFO: Creating ExecutorService CPUs: 4, numThreadPerCPU: 5, threadSuffixName: partition_0
+out 18, 2017 1:19:32 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartitionServices create
+INFO: Adding partition to the resourcePartitions dictionary
+out 18, 2017 1:19:32 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: 
+out 18, 2017 1:19:32 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartitionServices start
+INFO: Starting partition 0 - Checkpoint  
+out 18, 2017 1:19:32 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartition start
+INFO: Starting ResourceParition: PartitionID: 0 - InitialData 
+out 18, 2017 1:19:32 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob start
+INFO: Starting ChangeFeedJob 
+out 18, 2017 1:19:32 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob checkpoint
+INFO: Chekpoint - PartitionID: 0, InitialData 
+out 18, 2017 1:19:32 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices setCheckpointData
+INFO: Saving Checkpoint partitionId: 0, data: 
+out 18, 2017 1:19:32 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: 
+out 18, 2017 1:19:32 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, , 100)
+out 18, 2017 1:19:32 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: 
+out 18, 2017 1:19:32 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: 67bd1cf9-4876-4319-af79-56acfecb8e5b 
+out 18, 2017 1:19:32 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Docs Loaded #10 - HasMoreResults: false
+Received: {"_rid":"BRl0ANBP0QABAAAAAAAAAA==","_lsn":8,"subject":"teste 3","description":"","_attachments":"attachments/","month":6,"application":"audit","oldHash":"","newHash":"","action":"teste 7","id":"e0d93b93-0db8-484d-ad2c-201976cbd1ae","_self":"dbs/BRl0AA==/colls/BRl0ANBP0QA=/docs/BRl0ANBP0QABAAAAAAAAAA==/","user":"visouza","account":"localhost","epochTime":1497010046,"_etag":"\"0000f301-0000-0000-0000-593a8f7e0000\"","_ts":1497010046}
+Received: {"_rid":"BRl0ANBP0QADAAAAAAAAAA==","_lsn":10,"subject":"teste 6","description":"","_attachments":"attachments/","month":6,"application":"audit","oldHash":"","newHash":"","action":"teste 999","id":"e0d93b93-0db8-484d-ad2c-201976cbdfff","_self":"dbs/BRl0AA==/colls/BRl0ANBP0QA=/docs/BRl0ANBP0QADAAAAAAAAAA==/","user":"visouza","account":"localhost","epochTime":1497010046,"_etag":"\"01004943-0000-0000-0000-598c9b670000\"","_ts":1502387038}
+Received: {"_rid":"BRl0ANBP0QAEAAAAAAAAAA==","_lsn":11,"subject":"teste 6","description":"","_attachments":"attachments/","month":6,"application":"audit","oldHash":"","newHash":"","action":"teste 999","id":"e0d93b93-0db8-484d-ad2c-201976cbdfaf","_self":"dbs/BRl0AA==/colls/BRl0ANBP0QA=/docs/BRl0ANBP0QAEAAAAAAAAAA==/","user":"visouza","account":"localhost","epochTime":1497010046,"_etag":"\"01007643-0000-0000-0000-598c9bef0000\"","_ts":1502387174}
+Received: {"_rid":"BRl0ANBP0QACAAAAAAAAAA==","_lsn":12,"subject":"teste 30000","description":"","_attachments":"attachments/","month":6,"application":"audit","oldHash":"","newHash":"","action":"teste 7","id":"004b2d58-d6fa-475e-a2d5-663c2c8627aa","_self":"dbs/BRl0AA==/colls/BRl0ANBP0QA=/docs/BRl0ANBP0QACAAAAAAAAAA==/","user":"visouza","account":"localhost","epochTime":1497011253,"_etag":"\"01006b49-0000-0000-0000-598ca8820000\"","_ts":1502390392}
+Received: {"_rid":"BRl0ANBP0QAFAAAAAAAAAA==","_lsn":13,"subject":"teste 123","description":"","_attachments":"attachments/","month":6,"application":"audit","oldHash":"","newHash":"","action":"teste 999","id":"f0d93b93-0db8-484d-ad2c-201976cbdfaf","_self":"dbs/BRl0AA==/colls/BRl0ANBP0QA=/docs/BRl0ANBP0QAFAAAAAAAAAA==/","user":"visouza","account":"localhost","epochTime":1497010046,"_etag":"\"01009f51-0000-0000-0000-598cb9560000\"","_ts":1502394701}
+Received: {"_rid":"BRl0ANBP0QAGAAAAAAAAAA==","_lsn":14,"subject":"teste 123","description":"","_attachments":"attachments/","month":6,"application":"audit","oldHash":"","newHash":"","action":"teste 999","id":"f0d93b93-ffb8-484d-ad2c-201976cbdfaf","_self":"dbs/BRl0AA==/colls/BRl0ANBP0QA=/docs/BRl0ANBP0QAGAAAAAAAAAA==/","user":"visouza","account":"localhost","epochTime":1497010046,"_etag":"\"0100ea51-0000-0000-0000-598cba120000\"","_ts":1502394889}
+Received: {"_rid":"BRl0ANBP0QAHAAAAAAAAAA==","_lsn":15,"subject":"teste 123","description":"","_attachments":"attachments/","month":6,"application":"audit","oldHash":"","newHash":"","action":"teste 999","id":"a0d93b93-ffb8-484d-ad2c-201976cbdfaf","_self":"dbs/BRl0AA==/colls/BRl0ANBP0QA=/docs/BRl0ANBP0QAHAAAAAAAAAA==/","user":"visouza","account":"localhost","epochTime":1497010046,"_etag":"\"01003fee-0000-0000-0000-598e1cb20000\"","_ts":1502485668}
+Received: {"_rid":"BRl0ANBP0QAIAAAAAAAAAA==","_lsn":16,"subject":"teste Gafa agora vai","description":"","_attachments":"attachments/","month":6,"application":"audit","oldHash":"","newHash":"","action":"teste Gafa agora vai","id":"111913b93-ffb8-484d-ad2c-201976cbdfaf","_self":"dbs/BRl0AA==/colls/BRl0ANBP0QA=/docs/BRl0ANBP0QAIAAAAAAAAAA==/","user":"visouza","account":"Vini","epochTime":1497010046,"_etag":"\"02001977-0000-0000-0000-59932df30000\"","_ts":1502817773}
+Received: {"_rid":"BRl0ANBP0QAJAAAAAAAAAA==","_lsn":17,"subject":"teste Gafa agora vai","description":"","_attachments":"attachments/","month":6,"application":"audit","oldHash":"","newHash":"","action":"teste Gafa agora vai","id":"222913b93-ffb8-484d-ad2c-201976cbdfaf","_self":"dbs/BRl0AA==/colls/BRl0ANBP0QA=/docs/BRl0ANBP0QAJAAAAAAAAAA==/","user":"visouza","account":"Vini","epochTime":1497010046,"_etag":"\"02002a77-0000-0000-0000-59932e750000\"","_ts":1502817903}
+Received: {"_rid":"BRl0ANBP0QAKAAAAAAAAAA==","_lsn":18,"subject":"teste Gafa agora vai","description":"","_attachments":"attachments/","month":6,"application":"audit","oldHash":"","newHash":"","action":"teste Gafa agora vai","id":"333913b93-ffb8-484d-ad2c-201976cbdfaf","_self":"dbs/BRl0AA==/colls/BRl0ANBP0QA=/docs/BRl0ANBP0QAKAAAAAAAAAA==/","user":"visouza","account":"Vini","epochTime":1497010046,"_etag":"\"02008978-0000-0000-0000-599339710000\"","_ts":1502820715}
+out 18, 2017 1:19:32 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob checkpoint
+INFO: Chekpoint - PartitionID: 0, InitialData "18"
+out 18, 2017 1:19:32 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices setCheckpointData
+INFO: Saving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:33 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:33 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:33 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:33 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: 3dcbf43b-896c-4259-8497-0fdd282c9031 
+out 18, 2017 1:19:33 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 
+out 18, 2017 1:19:34 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:34 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:34 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:34 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: 6180882a-7e85-497b-988d-5dbb432e098c 
+out 18, 2017 1:19:34 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 
+out 18, 2017 1:19:35 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:35 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:35 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:35 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: 65ddd294-7b92-4a38-98d3-74792cb7b2bb 
+out 18, 2017 1:19:35 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 
+out 18, 2017 1:19:36 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:36 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:36 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:36 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: b7f8bb10-a396-4e48-bbca-2d77c601ecf4 
+out 18, 2017 1:19:36 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 
+out 18, 2017 1:19:37 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:37 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:37 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:37 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: e4258032-6b1e-472f-9bae-3f9e5ec6c7ee 
+out 18, 2017 1:19:37 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 
+out 18, 2017 1:19:38 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:38 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:38 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:38 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: 2b035f7a-dcf3-4fa3-8642-d0998d3adf4f 
+out 18, 2017 1:19:38 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 
+out 18, 2017 1:19:39 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:39 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:39 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:39 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: 45344c01-1e3c-4b23-b29f-0f217c84686c 
+out 18, 2017 1:19:39 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 
+out 18, 2017 1:19:40 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:40 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:40 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:40 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: 41856a1b-a45b-4fc8-b14a-8b5e5d0cc868 
+out 18, 2017 1:19:40 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 
+out 18, 2017 1:19:41 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:41 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:41 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:42 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: 2904d1be-4fe4-4e32-9da2-a22ebadb1277 
+out 18, 2017 1:19:42 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 
+out 18, 2017 1:19:43 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:43 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:43 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:43 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: a0503532-6879-47db-8cd4-8b68852ab8ac 
+out 18, 2017 1:19:43 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 
+out 18, 2017 1:19:44 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:44 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:44 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:44 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: 1c10cd1d-bac2-4e93-8ad2-d83b1b2f72a1 
+out 18, 2017 1:19:44 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 
+out 18, 2017 1:19:45 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:45 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:45 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:45 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: 1bb881b8-0763-4f7e-b5bd-33922112d883 
+out 18, 2017 1:19:45 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 
+out 18, 2017 1:19:46 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:46 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:46 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:46 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: b7a5ee98-0d79-4456-9195-944f66ac88a9 
+out 18, 2017 1:19:46 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 
+out 18, 2017 1:19:47 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:47 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:47 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:47 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: 5a8cd197-f29c-46ad-8353-7a7dfeddc2b4 
+out 18, 2017 1:19:47 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 
+out 18, 2017 1:19:48 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:48 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:48 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:48 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: 5c351305-ae18-42ac-8dc1-89c13ab2fc74 
+out 18, 2017 1:19:48 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 
+out 18, 2017 1:19:49 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:49 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:49 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:49 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: 322b2530-5f06-47e5-a5d8-ea0ad2303feb 
+out 18, 2017 1:19:49 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 
+out 18, 2017 1:19:50 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:50 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:50 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:50 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: 732fe977-221c-4ab4-be07-c1c391117f9c 
+out 18, 2017 1:19:50 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 
+out 18, 2017 1:19:51 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:51 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:51 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:51 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: 4f7d3c04-e364-452f-bf23-4fc622f436eb 
+out 18, 2017 1:19:51 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 
+out 18, 2017 1:19:52 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:52 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:52 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:52 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: cfc80f19-3836-46b0-8c45-73f4d4101ac2 
+out 18, 2017 1:19:52 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 
+out 18, 2017 1:19:53 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:53 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:53 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:53 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: 31175219-7dee-4c35-8db4-0c488a8416cb 
+out 18, 2017 1:19:53 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 
+out 18, 2017 1:19:54 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:54 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:54 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:54 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: b20d79a0-c8bb-4d96-ac37-e4cc9e929631 
+out 18, 2017 1:19:54 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 
+out 18, 2017 1:19:55 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:55 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:55 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:55 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: ea90a1e4-2d0e-4465-a29b-214f62664e77 
+out 18, 2017 1:19:55 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 
+out 18, 2017 1:19:56 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:56 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: client.createDocumentChangeFeedQuery(0, "18", 100)
+out 18, 2017 1:19:56 PM com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices getCheckpointData
+INFO: Retrieving Checkpoint partitionId: 0, data: "18"
+out 18, 2017 1:19:56 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+INFO: Query is not null query.getActivityId: 1ba1afae-7b54-4eda-b6b7-4747999bd422 
+out 18, 2017 1:19:56 PM com.microsoft.azure.documentdb.changefeedprocessor.services.ChangeFeedJob QueryChangeFeed
+SEVERE: Other exception not handled happened: null 

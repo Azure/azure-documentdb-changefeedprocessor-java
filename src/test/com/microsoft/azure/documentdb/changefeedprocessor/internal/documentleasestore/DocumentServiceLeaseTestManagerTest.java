@@ -25,12 +25,12 @@ import static org.junit.Assert.*;
  *
  * @author yoterada
  */
-public class DocumentServiceLeaseManagerTest {
+public class DocumentServiceLeaseTestManagerTest {
     DocumentServiceLeaseManager instance = null;
     static final Duration DEFAULT_EXPIRATION_INTERVAL = Duration.ofSeconds(60);
     static final Duration DEFAULT_RENEW_INTERVAL = Duration.ofSeconds(17);
     
-    public DocumentServiceLeaseManagerTest() {
+    public DocumentServiceLeaseTestManagerTest() {
     }
     
     // Setup before each test
@@ -59,7 +59,7 @@ public class DocumentServiceLeaseManagerTest {
         }
         
         instance = new DocumentServiceLeaseManager(docInfo, "leases", DEFAULT_EXPIRATION_INTERVAL, DEFAULT_RENEW_INTERVAL);
-        instance.initialize();
+        instance.initialize(true);
         
         // Clean up lease store before each test
 		instance.deleteAll();

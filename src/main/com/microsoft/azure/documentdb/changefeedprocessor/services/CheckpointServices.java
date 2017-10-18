@@ -9,26 +9,34 @@ import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentlease
 
 import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 
 public class CheckpointServices {
 
-    //TODO: We are using this dictonary to save the continuations tokens for test only.
+    //TODO: We are using this dictionary to save the continuations tokens for test only.
     ConcurrentHashMap<String, String> checkpoints;
 
     private CheckpointFrequency checkpointOptions;
     private ICheckpointManager checkpointManager;
     private ILeaseManager<DocumentServiceLease> leaseManager;
+    private Logger logger = Logger.getLogger(CheckpointServices.class.getName());
 
     public CheckpointServices(){
         this.checkpoints = new ConcurrentHashMap<>();
     }
 
     public String getCheckpointData(String partitionId) throws DocumentClientException {
-        //return getCheckpoint(partitionId);
-        return this.checkpoints.get(partitionId);
+        //String data = getCheckpoint(partitionId);
+        String data = this.checkpoints.get(partitionId);
+        if (data == null)
+            data = "";
+        logger.info(String.format("Retrieving Checkpoint partitionId: %s, data: %s",partitionId,data));
+
+        return data;
     }
 
     public void setCheckpointData(String partitionId, String data) throws DocumentClientException {
+        logger.info(String.format("Saving Checkpoint partitionId: %s, data: %s",partitionId,data));
         //DocumentServiceLease lease = (DocumentServiceLease)leaseManager.getLease(partitionId);
         String continuation = data;
         //checkpoint(lease, continuation);

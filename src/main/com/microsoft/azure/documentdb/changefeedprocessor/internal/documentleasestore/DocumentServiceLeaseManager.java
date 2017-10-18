@@ -22,41 +22,16 @@
  */
 package com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore;
 
-import com.microsoft.azure.documentdb.AccessCondition;
-import com.microsoft.azure.documentdb.AccessConditionType;
-
-import com.microsoft.azure.documentdb.ConsistencyLevel;
-import com.microsoft.azure.documentdb.Document;
-import com.microsoft.azure.documentdb.DocumentClient;
-import com.microsoft.azure.documentdb.DocumentClientException;
-import com.microsoft.azure.documentdb.FeedOptions;
-import com.microsoft.azure.documentdb.FeedResponse;
-import com.microsoft.azure.documentdb.QueryIterable;
-import com.microsoft.azure.documentdb.RequestOptions;
-import com.microsoft.azure.documentdb.ResourceResponse;
-import com.microsoft.azure.documentdb.SqlParameter;
-import com.microsoft.azure.documentdb.SqlParameterCollection;
-import com.microsoft.azure.documentdb.SqlQuerySpec;
+import com.microsoft.azure.documentdb.*;
 import com.microsoft.azure.documentdb.changefeedprocessor.DocumentCollectionInfo;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.ICheckpointManager;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.ILeaseManager;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.Lease;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.LeaseLostException;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.TraceLog;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.*;
+import org.apache.http.HttpStatus;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
-
-import org.apache.http.HttpStatus;
 
 /**
  *
@@ -76,6 +51,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
 
     private String leaseStoreCollectionLink;
     private Duration serverToLocalTimeDelta;
+    private Logger logger = Logger.getLogger(DocumentServiceLeaseManager.class.getName());
 
     DocumentClient client;
 
@@ -95,10 +71,26 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     public void dispose() {
     }
 
-    public void initialize() throws DocumentClientException { //    public Task InitializeAsync()
+    public void initialize(boolean createLeaseCollection) throws DocumentClientException { //    public Task InitializeAsync()
         //Create URI String
         String uri = String.format("/dbs/%s/colls/%s", leaseStoreCollectionInfo.getDatabaseName(), leaseStoreCollectionInfo.getCollectionName());
-        leaseStoreCollectionLink = client.readCollection(uri, new RequestOptions()).getResource().getSelfLink();
+
+        try {
+            leaseStoreCollectionLink = client.readCollection(uri, new RequestOptions()).getResource().getSelfLink();
+        }catch (DocumentClientException ex){
+            if (createLeaseCollection && ex.getStatusCode() ==404 ) { //Collection Lease Not Found)
+                logger.info("Parameter createLeaseCollection is true! Creating lease collection");
+
+                DocumentCollection leaseColl = new DocumentCollection();
+                leaseColl.setId(leaseStoreCollectionInfo.getCollectionName());
+
+                leaseStoreCollectionLink = client.createCollection(String.format("/dbs/%s", leaseStoreCollectionInfo.getDatabaseName()),leaseColl,new RequestOptions()).getResource().getSelfLink();
+            }else{
+                if (!createLeaseCollection)
+                    logger.info("Parameter createLeaseCollection is false! Creating lease collection");
+                throw ex;
+            }
+        }
 
         // Get the current time
         Instant snapshot1 = Instant.now();
@@ -342,13 +334,15 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         return docs;
     }
 
+
+    private String getDocumentId() { //    private string GetDocumentId(string partitionId = null)    
+        return getDocumentId(null);
+    }
+
     /**
      * Creates id either for container (if partitionId parameter is empty) or for lease otherwise.
      * @param partitionId, the lease partition id.
      * @return Document id for container or lease. */
-    private String getDocumentId() { //    private string GetDocumentId(string partitionId = null)    
-        return getDocumentId(null);
-    }
 
     private String getDocumentId(String partitionId) {//    private string GetDocumentId(string partitionId = null)
         if (partitionId == null || partitionId.equals("")) {

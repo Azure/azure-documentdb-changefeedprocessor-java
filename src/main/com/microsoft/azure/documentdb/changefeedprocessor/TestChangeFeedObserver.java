@@ -3,9 +3,7 @@ package com.microsoft.azure.documentdb.changefeedprocessor;
 import com.microsoft.azure.documentdb.Document;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class TestChangeFeedObserver implements IChangeFeedObserver {
 
@@ -48,12 +46,20 @@ public class TestChangeFeedObserver implements IChangeFeedObserver {
             throw new NullPointerException("Exec is null, initiate the class properly before using it!");
 
         if (!(exec.isShutdown() || exec.isTerminated())) {
-            exec.submit(() -> {
+            Future future = exec.submit(() -> {
                 for (Document d : docs) {
                     String content = d.toJson();
                     System.out.println("Received: " + content);
                 }
             });
+
+            try {
+                future.get();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            }
         }
 
     }

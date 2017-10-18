@@ -18,6 +18,7 @@ import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourceParti
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Logger;
 
 public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLease> {
 
@@ -41,6 +42,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
     private IChangeFeedObserverFactory observerFactory;
     private final int DEFAULT_PAGE_SIZE = 100;
+    private Logger logger = Logger.getLogger(ChangeFeedEventHost.class.getName());
 
     public ChangeFeedEventHost( String hostName, DocumentCollectionInfo documentCollectionLocation, DocumentCollectionInfo auxCollectionLocation){
         this(hostName, documentCollectionLocation, auxCollectionLocation, new ChangeFeedOptions(), new ChangeFeedHostOptions());
@@ -94,6 +96,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
      */
     public void registerObserver(Class type) throws Exception
     {
+        logger.info(String.format("Registering Observer of type %s", type));
         ChangeFeedObserverFactory factory = new ChangeFeedObserverFactory(type);
 
         registerObserverFactory(factory);
@@ -105,7 +108,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     }
 
     void start() throws Exception{
-
+        logger.info(String.format("Starting..."));
         //TODO: This is not the right place to have this code..
         this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, observerFactory, changeFeedOptions.getPageSize());
 
@@ -130,7 +133,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
                 this.options.getLeaseExpirationInterval(),
                 this.options.getLeaseRenewInterval());
 
-        leaseManager.initialize();
+        leaseManager.initialize(true);
 
         this.leaseManager = leaseManager;
 
@@ -158,10 +161,12 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     }
 
     void initializePartitions(){
+        logger.info("Initializing partitions");
         // list partitions
         List<String> partitionIds = this.listPartition();
 
         partitionIds.stream().forEach((id) -> {
+            logger.info(String.format("PartitionID %s", id));
             resourcePartitionSvcs.create(id);
         });
 
