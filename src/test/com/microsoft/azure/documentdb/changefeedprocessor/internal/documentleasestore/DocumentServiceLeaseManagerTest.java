@@ -11,16 +11,15 @@ import com.microsoft.azure.documentdb.changefeedprocessor.internal.Configuration
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationFile;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.Lease;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.LeaseLostException;
-
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
 
-import org.junit.Assert;
-import org.junit.Before;
+import static org.junit.Assert.*;
 
 /**
  *
@@ -197,7 +196,7 @@ public class DocumentServiceLeaseManagerTest {
         
         // Ensure the owner was set properly
         assertEquals(expOwner, result.getOwner());
-        assertEquals(LeaseState.Leased, result.getState());
+        assertEquals(LeaseState.LEASED, result.getState());
     }
 
     /**
@@ -223,7 +222,7 @@ public class DocumentServiceLeaseManagerTest {
         
         // Check timestamp was updated and that the lease state is still leased
         assert result.getTs() > previousTimestamp : "timestamp not updated";
-        assertEquals(LeaseState.Leased, result.getState());
+        assertEquals(LeaseState.LEASED, result.getState());
         assertEquals(expOwner, result.getOwner());
     }
 
@@ -252,7 +251,7 @@ public class DocumentServiceLeaseManagerTest {
         DocumentServiceLease leaseAfterRelease = instance.getLease(partitionId);
         
         assert(result);
-        assertEquals(LeaseState.Available, leaseAfterRelease.getState());
+        assertEquals(LeaseState.AVAILABLE, leaseAfterRelease.getState());
     }
 
     /**

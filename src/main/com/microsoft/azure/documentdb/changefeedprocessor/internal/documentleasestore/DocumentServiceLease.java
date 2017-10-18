@@ -22,24 +22,21 @@
  */
 package com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.microsoft.azure.documentdb.Document;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.Lease;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.util.Locale;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.microsoft.azure.documentdb.Document;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.Lease;
-
-import lombok.Getter;
-import lombok.Setter;
 
 /**
  *
@@ -94,7 +91,6 @@ public class DocumentServiceLease extends Lease {
     	ts = Duration.between(value, unixStartTime).getSeconds(); 
     }    
 
-    @Override
     public String getConcurrencyToken() {
     	return eTag;
     }
@@ -106,8 +102,8 @@ public class DocumentServiceLease extends Lease {
             "{0} {1} Owner='{2}' Continuation={3} Timestamp(local)={4}",
             id,
             state,
-            getOwner(),
-            getContinuationToken(),
+            this.getOwner(),
+            this.getContinuationToken(),
             LocalTime.from(timestamp));
     }
 
