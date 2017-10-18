@@ -7,10 +7,13 @@ import com.microsoft.azure.documentdb.FeedResponse;
 import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverCloseReason;
 import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverContext;
 import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserver;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.ChangeFeedThreadFactory;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.StatusCode;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.SubStatusCode;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 public class ChangeFeedJob implements Job {
@@ -19,14 +22,14 @@ public class ChangeFeedJob implements Job {
     private final CheckpointServices checkpointSvcs;
     private final String partitionId;
     private final IChangeFeedObserver observer;
-    private boolean stop = false;
     private ChangeFeedOptions feedOptions;
     private int pageSize;
     private final int DEFAULT_PAGE_SIZE = 100;
     private final int DEFAULT_THREAD_WAIT = 1000;
-
+    private ExecutorService exec;
+    private final int CPUs = Runtime.getRuntime().availableProcessors();
+    private final int NumThreadsPerCpu = 5;
     private static Logger logger = Logger.getLogger("com.microsoft.azure.documentdb.changefeedprocessor");
-
 
     /***
      *
@@ -46,6 +49,8 @@ public class ChangeFeedJob implements Job {
         this.partitionId = partitionId;
         this.observer = observer;
         this.pageSize = pageSize;
+
+        exec = CreateExecutorService(NumThreadsPerCpu, "partition_" + partitionId);
     }
 
     /**
@@ -64,11 +69,38 @@ public class ChangeFeedJob implements Job {
         this.partitionId = partitionId;
         this.observer = observer;
         this.pageSize = DEFAULT_PAGE_SIZE;
+
+        exec = CreateExecutorService(NumThreadsPerCpu, "partition_" + partitionId);
+    }
+
+
+    private ExecutorService CreateExecutorService(int numThreadPerCPU, String threadSuffixName ){
+
+        if (numThreadPerCPU <= 0) throw new IllegalArgumentException("The parameter numThreadPerCPU must be greater them 0");
+        if (threadSuffixName == null || threadSuffixName.isEmpty()) throw new IllegalArgumentException("The parameter threadSuffixName is null or empty");
+
+        ChangeFeedThreadFactory threadFactory = new ChangeFeedThreadFactory(threadSuffixName);
+        ExecutorService exec = Executors.newFixedThreadPool(numThreadPerCPU * CPUs, threadFactory);
+        return exec;
     }
 
     @Override
-    public void start(Object initialData) throws DocumentClientException, InterruptedException {
+    public void start(String initialData) throws DocumentClientException, InterruptedException {
 
+        if (!exec.isShutdown() && !exec.isTerminated()) {
+            exec.submit(() -> {
+                try {
+                    QueryChangeFeed(initialData);
+                } catch (DocumentClientException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+    }
+
+    private void QueryChangeFeed(String initialData) throws DocumentClientException, InterruptedException{
         ChangeFeedObserverContext context = new ChangeFeedObserverContext();
         context.setPartitionKeyRangeId(partitionId);
         FeedResponse<Document> query = null;
@@ -78,17 +110,17 @@ public class ChangeFeedJob implements Job {
             e.printStackTrace();
         }
         boolean HasMoreResults = false;
-        ChangeFeedObserverCloseReason closeReason = null;
 
-        while(!this.stop) {
+        while(!(exec.isTerminated() || exec.isShutdown())) {
             do {
                 try {
-                    query = client.createDocumentChangeFeedQuery(partitionId, (String) checkpointSvcs.getCheckpointData(partitionId), this.pageSize);
+                    query = client.createDocumentChangeFeedQuery(partitionId, checkpointSvcs.getCheckpointData(partitionId), this.pageSize);
                     if (query != null) {
                         context.setFeedResponse(query);
                         List<Document> docs = query.getQueryIterable().fetchNextBlock();
                         HasMoreResults = query.getQueryIterator().hasNext();
                         if (docs != null) {
+                            logger.info(String.format("Docs Loaded #{0} - HasMoreResults: {}",docs.size(), HasMoreResults));
                             observer.processChanges(context, docs);
                             this.checkpoint(query.getResponseContinuation());
                         }
@@ -97,8 +129,8 @@ public class ChangeFeedJob implements Job {
                     int subStatusCode = getSubStatusCode(dce);
                     if (dce.getStatusCode() == StatusCode.NOTFOUND.Value() &&
                             SubStatusCode.ReadSessionNotAvailable.Value() != subStatusCode){
-                        closeReason = ChangeFeedObserverCloseReason.RESOURCE_GONE;
-                        this.stop();
+                        this.stop(ChangeFeedObserverCloseReason.RESOURCE_GONE);
+                        observer.close(context,ChangeFeedObserverCloseReason.RESOURCE_GONE );
                     }else if(dce.getStatusCode() == StatusCode.CODE.Value()){
                         //TODO: handle partition split
                     }
@@ -108,28 +140,39 @@ public class ChangeFeedJob implements Job {
                     }
                     else
                     {
-                        dce.printStackTrace();
                         throw dce;
                     }
                 }
-            }while (HasMoreResults && !this.stop );
+            }while (HasMoreResults && !(exec.isTerminated() || exec.isShutdown()) );
 
-            if (!this.stop)
+            if (!(exec.isTerminated() || exec.isShutdown()))
             {
-                Thread.sleep(this.DEFAULT_THREAD_WAIT);
+                exec.wait(this.DEFAULT_THREAD_WAIT);
             }
 
-        }// while(!this.stop)
+        }// while(!(exec.isTerminated() || exec.isShutdown()))
     }
 
-    void checkpoint(Object data) throws DocumentClientException {
+    void checkpoint(String data) throws DocumentClientException {
         String initialData = (String) (data == null ? "" : data);
         checkpointSvcs.setCheckpointData(partitionId, initialData);
     }
 
     @Override
-    public void stop() {
-        stop = true;
+    public void stop(ChangeFeedObserverCloseReason CloseReason) {
+
+        switch (CloseReason){
+            case SHUTDOWN:
+            case RESOURCE_GONE:
+                logger.warning(String.format("CloseReason{0} Shutting down executor", CloseReason));
+                exec.shutdown();
+                break;
+            default:
+                logger.warning(String.format("CloseReason{0} Shutting down executor NOW", CloseReason));
+                exec.shutdownNow();
+                break;
+        }
+
     }
 
     private int getSubStatusCode(DocumentClientException exception)
@@ -142,6 +185,7 @@ public class ChangeFeedJob implements Job {
             try {
                 return Integer.parseInt(valueSubStatus);
             }catch (Exception e){
+                logger.severe(String.format("Not able to parse the error code {0} to int", valueSubStatus));
                 //TODO:Log the error
             }
         }

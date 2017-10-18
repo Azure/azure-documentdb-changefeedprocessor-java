@@ -6,7 +6,6 @@ import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserverFac
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ResourcePartitionServices {
-    private JobServices jobServices;
     private CheckpointServices checkpointSvcs;
     private ConcurrentHashMap<String, ResourcePartition> resourcePartitions;
     private DocumentServices client;
@@ -20,7 +19,6 @@ public class ResourcePartitionServices {
         this.client = client;
         this.checkpointSvcs = checkpointSvcs;
         this.factory = factory;
-        this.jobServices = new JobServices();
         this.pageSize = pageSize;
     }
 
@@ -44,12 +42,10 @@ public class ResourcePartitionServices {
         return resourcePartitions.get(partitionId);
     }
 
-    public void start(String partitionId) throws DocumentClientException {
+    public void start(String partitionId) throws DocumentClientException, InterruptedException {
         ResourcePartition resourcePartition = this.get(partitionId);
-        Job job = resourcePartition.getJob();
-        Object initialData = checkpointSvcs.getCheckpointData(partitionId);
-
-        jobServices.runAsync(job, initialData);
+        String initialData = checkpointSvcs.getCheckpointData(partitionId);
+        resourcePartition.start(initialData);
     }
 
     public void stop(String partitionId) {
