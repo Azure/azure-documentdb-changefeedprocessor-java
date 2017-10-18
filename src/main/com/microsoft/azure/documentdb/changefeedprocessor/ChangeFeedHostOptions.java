@@ -60,32 +60,32 @@ public class ChangeFeedHostOptions {
         return leaseRenewInterval;
     }
 
-    public void setLeaseRenewInterval(Duration leaseRenewInterval) {
-        this.leaseRenewInterval = leaseRenewInterval;
+    public void setLeaseRenewInterval(Duration _leaseRenewInterval) {
+        this.leaseRenewInterval = _leaseRenewInterval;
     }
 
     public Duration getLeaseAcquireInterval() {
         return leaseAcquireInterval;
     }
 
-    public void setLeaseAcquireInterval(Duration leaseAcquireInterval) {
-        this.leaseAcquireInterval = leaseAcquireInterval;
+    public void setLeaseAcquireInterval(Duration _leaseAcquireInterval) {
+        this.leaseAcquireInterval = _leaseAcquireInterval;
     }
 
     public Duration getLeaseExpirationInterval() {
         return leaseExpirationInterval;
     }
 
-    public void setLeaseExpirationInterval(Duration leaseExpirationInterval) {
-        this.leaseExpirationInterval = leaseExpirationInterval;
+    public void setLeaseExpirationInterval(Duration _leaseExpirationInterval) {
+        this.leaseExpirationInterval = _leaseExpirationInterval;
     }
 
     public Duration getFeedPollDelay() {
         return feedPollDelay;
     }
 
-    public void setFeedPollDelay(Duration feedPollDelay) {
-        this.feedPollDelay = feedPollDelay;
+    public void setFeedPollDelay(Duration _feedPollDelay) {
+        this.feedPollDelay = _feedPollDelay;
     }
 
     public CheckpointFrequency getCheckpointFrequency() {
@@ -112,7 +112,7 @@ public class ChangeFeedHostOptions {
         this.minPartitionCount = minPartitionCount;
     }
 
-    int getMaxPartitionCount() {
+    public int getMaxPartitionCount() {
         return maxPartitionCount;
     }
 

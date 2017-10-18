@@ -2,7 +2,12 @@ package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
 import java.util.List;
 
-final class Unsubscriber<T> implements IDisposable {
+/**
+*
+* @author rogirdh
+*/
+
+final class Unsubscriber<T extends Lease> implements IDisposable {
 
         final List<IPartitionObserver<T>> observers;
         final IPartitionObserver<T> observer;

@@ -27,10 +27,14 @@ package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
 import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverCloseReason;
 
-public interface IPartitionObserver<T> {
-        void onPartitionAcquired(T lease);
+/**
+*
+* @author rogirdh
+*/
+public interface IPartitionObserver<T extends Lease> {
+        Runnable onPartitionAcquired(T lease);
         //void onPatitionAcquiredAsync(T lease);
-        void onPartitionReleased(T lease, ChangeFeedObserverCloseReason reason);
+        Runnable onPartitionReleased(T lease, ChangeFeedObserverCloseReason reason);
        // void onPartitionReleasedAsync(T lease, ChangeFeedObserverCloseReason reason);
 }
 
