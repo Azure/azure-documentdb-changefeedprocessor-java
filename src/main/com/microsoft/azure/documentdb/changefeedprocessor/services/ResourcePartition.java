@@ -1,22 +1,27 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
 import com.microsoft.azure.documentdb.DocumentClientException;
+import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverCloseReason;
+
+import java.util.logging.Logger;
 
 public class ResourcePartition {
-    String partitionId;
-    Job resourceJob;
+    private String partitionId;
+    private Job resourceJob;
+    private Logger logger = Logger.getLogger(ResourcePartition.class.getName());
 
     public ResourcePartition(String partitionId, Job resourceJob) {
         this.partitionId = partitionId;
         this.resourceJob = resourceJob;
     }
 
-    public void start(Object initialData) throws DocumentClientException {
+    public void start(String initialData) throws DocumentClientException, InterruptedException {
+        logger.info(String.format("Starting ResourceParition: PartitionID: %s - InitialData %S", this.partitionId, initialData));
         resourceJob.start(initialData);
     }
 
     public void stop() {
-        resourceJob.stop();
+        resourceJob.stop(ChangeFeedObserverCloseReason.SHUTDOWN);
     }
 
     public Job getJob() {

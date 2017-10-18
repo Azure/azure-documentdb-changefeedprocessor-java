@@ -3,39 +3,41 @@ package com.microsoft.azure.documentdb.changefeedprocessor.services;
 import com.microsoft.azure.documentdb.DocumentClientException;
 import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserverFactory;
 
-import java.util.Dictionary;
-import java.util.Hashtable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 
 public class ResourcePartitionServices {
-    private JobServices jobServices;
     private CheckpointServices checkpointSvcs;
-    private Dictionary<String, ResourcePartition> resourcePartitions;
+    private ConcurrentHashMap<String, ResourcePartition> resourcePartitions;
     private DocumentServices client;
     private IChangeFeedObserverFactory factory;
     private int pageSize;
-
+    private Logger logger = Logger.getLogger(ResourcePartitionServices.class.getName());
 
     public ResourcePartitionServices(DocumentServices client, CheckpointServices checkpointSvcs, IChangeFeedObserverFactory factory, int pageSize) {
 
-        resourcePartitions = new Hashtable<>();
+        resourcePartitions = new ConcurrentHashMap<>();
         this.client = client;
         this.checkpointSvcs = checkpointSvcs;
         this.factory = factory;
-        this.jobServices = new JobServices();
         this.pageSize = pageSize;
     }
 
     public ResourcePartition create(String partitionId) {
+        logger.info(String.format("Creating job for Partition %s", partitionId));
         Job job = null;
         try {
             job = new ChangeFeedJob(partitionId, client, checkpointSvcs, factory.createObserver(), pageSize);
         } catch (IllegalAccessException e) {
+            logger.severe(e.getMessage());
             e.printStackTrace();
         } catch (InstantiationException e) {
+            logger.severe(e.getMessage());
             e.printStackTrace();
         }
         ResourcePartition resourcePartition = new ResourcePartition(partitionId, job);
 
+        logger.info("Adding partition to the resourcePartitions dictionary");
         resourcePartitions.put(partitionId, resourcePartition);
 
         return resourcePartition;
@@ -45,12 +47,11 @@ public class ResourcePartitionServices {
         return resourcePartitions.get(partitionId);
     }
 
-    public void start(String partitionId) throws DocumentClientException {
+    public void start(String partitionId) throws DocumentClientException, InterruptedException {
         ResourcePartition resourcePartition = this.get(partitionId);
-        Job job = resourcePartition.getJob();
-        Object initialData = checkpointSvcs.getCheckpointData(partitionId);
-
-        jobServices.runAsync(job, initialData);
+        String initialData = checkpointSvcs.getCheckpointData(partitionId);
+        logger.info(String.format("Starting partition %s - Checkpoint %s ",partitionId,initialData));
+        resourcePartition.start(initialData);
     }
 
     public void stop(String partitionId) {

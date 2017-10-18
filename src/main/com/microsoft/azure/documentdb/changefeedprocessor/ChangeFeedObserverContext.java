@@ -35,8 +35,8 @@ public class ChangeFeedObserverContext {
         return partitionKeyRangeId;
     }
 
-    public void setPartitionKeyRangeId(String _partitionKeyRangeId) {
-        this.partitionKeyRangeId = _partitionKeyRangeId;
+    public void setPartitionKeyRangeId(String partitionKeyRangeId) {
+        this.partitionKeyRangeId = partitionKeyRangeId;
     }
 
 

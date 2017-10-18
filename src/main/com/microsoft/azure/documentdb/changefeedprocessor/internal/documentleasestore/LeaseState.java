@@ -30,16 +30,16 @@ public enum LeaseState {
     /**
      * The lease is in unknown state.
      */
-    Unspecified,
+    UNSPECIFIED,
 
     /**
      * The lease is available in the sense that it is not own, or leased, by any host.
      */
-    Available,
+    AVAILABLE,
 
     /**
      * The lease is leased to, or owned by some host.
      */
-    Leased,
+    LEASED,
 
 }

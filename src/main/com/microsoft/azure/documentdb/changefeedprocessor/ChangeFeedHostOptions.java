@@ -29,10 +29,10 @@ import java.time.Duration;
 
 public class ChangeFeedHostOptions {
 
-    static Duration DefaultRenewInterval =  Duration.ofSeconds(17);
-    static Duration DefaultAcquireInterval = Duration.ofSeconds(13);
-    static Duration DefaultExpirationInterval = Duration.ofSeconds(60);
-    static Duration DefaultFeedPollDelay = Duration.ofSeconds(5);
+    static Duration DefaultRenewInterval =  Duration.ofMillis(0).plusSeconds(17);
+    static Duration DefaultAcquireInterval = Duration.ofMillis(0).plusSeconds(13);
+    static Duration DefaultExpirationInterval = Duration.ofMillis(0).plusSeconds(60);
+    static Duration DefaultFeedPollDelay = Duration.ofMillis(0).plusSeconds(5);
 
     public ChangeFeedHostOptions(){
         leaseRenewInterval = DefaultRenewInterval;
@@ -92,40 +92,40 @@ public class ChangeFeedHostOptions {
         return checkpointFrequency;
     }
 
-    public void setCheckpointFrequency(CheckpointFrequency _checkpointFrequency) {
-        this.checkpointFrequency = _checkpointFrequency;
+    public void setCheckpointFrequency(CheckpointFrequency checkpointFrequency) {
+        this.checkpointFrequency = checkpointFrequency;
     }
 
     public String getLeasePrefix() {
         return leasePrefix;
     }
 
-    public void setLeasePrefix(String _leasePrefix) {
-        this.leasePrefix = _leasePrefix;
+    public void setLeasePrefix(String leasePrefix) {
+        this.leasePrefix = leasePrefix;
     }
 
     public int getMinPartitionCount() {
         return minPartitionCount;
     }
 
-    void setMinPartitionCount(int _minPartitionCount) {
-        this.minPartitionCount = _minPartitionCount;
+    void setMinPartitionCount(int minPartitionCount) {
+        this.minPartitionCount = minPartitionCount;
     }
 
     public int getMaxPartitionCount() {
         return maxPartitionCount;
     }
 
-    void setMaxPartitionCount(int _maxPartitionCount) {
-        this.maxPartitionCount = _maxPartitionCount;
+    void setMaxPartitionCount(int maxPartitionCount) {
+        this.maxPartitionCount = maxPartitionCount;
     }
 
     boolean isDiscardExistingLeases() {
         return discardExistingLeases;
     }
 
-    void setDiscardExistingLeases(boolean _discardExistingLeases) {
-        this.discardExistingLeases = _discardExistingLeases;
+    void setDiscardExistingLeases(boolean discardExistingLeases) {
+        this.discardExistingLeases = discardExistingLeases;
     }
 
     boolean getDiscardExistingLeases() {

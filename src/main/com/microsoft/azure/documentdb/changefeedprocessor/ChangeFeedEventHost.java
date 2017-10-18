@@ -18,12 +18,13 @@ import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourceParti
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Logger;
 
 public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLease> {
 
-    final String DefaultUserAgentSuffix = "changefeed-0.2";
-    final String LeaseContainerName = "docdb-changefeed";
-    final String LSNPropertyName = "_lsn";
+    private final String DefaultUserAgentSuffix = "changefeed-0.2";
+    private final String LeaseContainerName = "docdb-changefeed";
+    private final String LSNPropertyName = "_lsn";
 
     private DocumentCollectionInfo collectionLocation;
     private ChangeFeedOptions changeFeedOptions;
@@ -32,7 +33,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     private String leasePrefix;
     DocumentCollectionInfo auxCollectionLocation;
     ConcurrentMap<String, WorkerData> partitionKeyRangeIdToWorkerMap;
-    PartitionManager<DocumentServiceLease> _partitionManager;
+    PartitionManager<DocumentServiceLease> partitionManager;
     ILeaseManager<DocumentServiceLease> leaseManager;
 
     DocumentServices documentServices;
@@ -41,6 +42,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
     private IChangeFeedObserverFactory observerFactory;
     private final int DEFAULT_PAGE_SIZE = 100;
+    private Logger logger = Logger.getLogger(ChangeFeedEventHost.class.getName());
 
     public ChangeFeedEventHost( String hostName, DocumentCollectionInfo documentCollectionLocation, DocumentCollectionInfo auxCollectionLocation){
         this(hostName, documentCollectionLocation, auxCollectionLocation, new ChangeFeedOptions(), new ChangeFeedHostOptions());
@@ -64,14 +66,15 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         this.options = hostOptions;
         this.hostName = hostName;
         this.auxCollectionLocation = CanoninicalizeCollectionInfo(auxCollectionLocation);
-        this.partitionKeyRangeIdToWorkerMap = new ConcurrentHashMap<String, WorkerData>();
+        this.partitionKeyRangeIdToWorkerMap = new ConcurrentHashMap<>();
 
         this.documentServices = new DocumentServices(documentCollectionLocation);
         this.checkpointSvcs = new CheckpointServices();
 
         this.resourcePartitionSvcs = null;
 
-        if (this.changeFeedOptions.getPageSize() == 0)
+        if (this.changeFeedOptions.getPageSize() == null ||
+                this.changeFeedOptions.getPageSize() == 0)
             this.changeFeedOptions.setPageSize(this.DEFAULT_PAGE_SIZE);
     }
 
@@ -93,6 +96,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
      */
     public void registerObserver(Class type) throws Exception
     {
+        logger.info(String.format("Registering Observer of type %s", type));
         ChangeFeedObserverFactory factory = new ChangeFeedObserverFactory(type);
 
         registerObserverFactory(factory);
@@ -104,11 +108,10 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     }
 
     void start() throws Exception{
-
-        //TODO: This is not the right place to have this code..
-        this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, observerFactory, changeFeedOptions.getPageSize());
+        logger.info(String.format("Starting..."));
 
         initializeIntegrations();
+
         initializePartitions();
         initializeLeaseManager();
     }
@@ -121,7 +124,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         }
 
         // Beyond this point all access to collection is done via this self link: if collection is removed, we won't access new one using same name by accident.
-        // this.leasePrefix = String.format("{%s}{%s}_{%s}_{%s}", optionsPrefix, this.collectionLocation.Uri.Host, docdb.DatabaseResourceId, docdb.CollectionResourceId);
+        //this.leasePrefix = String.format("{%s}{%s}_{%s}_{%s}", optionsPrefix, this.collectionLocation.getUri().getHost(), this.collectionLocation.DatabaseResourceId, docdb.CollectionResourceId);
 
         DocumentServiceLeaseManager leaseManager = new DocumentServiceLeaseManager(
                 this.auxCollectionLocation,
@@ -129,7 +132,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
                 this.options.getLeaseExpirationInterval(),
                 this.options.getLeaseRenewInterval());
 
-        leaseManager.initialize();
+        leaseManager.initialize(true);
 
         this.leaseManager = leaseManager;
 
@@ -147,7 +150,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         List<String> range = this.documentServices.listPartitionRange();
 
-//        TraceLog.Informational(string.Format("Source collection: '{0}', {1} partition(s), {2} document(s)", docdb.CollectionName, range.Count, docdb.DocumentCount));
+        logger.info(String.format("Source collection: '%s', %d partition(s), %s document(s)", collectionLocation.getCollectionName(), range.size(), documentServices.getDocumentCount()));
 
 //        this.CreateLeases(range);
 
@@ -157,12 +160,19 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     }
 
     void initializePartitions(){
+        logger.info("Initializing partitions");
+
+        //TODO: This is not the right place to have this code..
+        this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, observerFactory, changeFeedOptions.getPageSize());
+
         // list partitions
         List<String> partitionIds = this.listPartition();
 
-        for(String id : partitionIds) {
+        partitionIds.stream().forEach((id) -> {
+            logger.info(String.format("PartitionID %s", id));
             resourcePartitionSvcs.create(id);
-        }
+        });
+
     }
 
     void initializeLeaseManager() {
@@ -173,13 +183,17 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     void hackStartSinglePartition() {
         List<String> partitionIds = this.listPartition();
 
-        for(String id : partitionIds) {
+        partitionIds.stream().forEach((id) -> {
             try {
                 resourcePartitionSvcs.start(id);
             } catch (DocumentClientException e) {
                 e.printStackTrace();
             }
-        }
+            catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+
     }
 
     private List listPartition(){
@@ -197,6 +211,8 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         try {
             resourcePartitionSvcs.start(partitionId);
         } catch (DocumentClientException e) {
+            e.printStackTrace();
+        }catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
