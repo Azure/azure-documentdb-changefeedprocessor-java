@@ -17,35 +17,101 @@ import java.util.concurrent.Callable;
 /// TODO: All of these functions used to be async
 public interface ILeaseManager<T extends Lease> {
 
+	/***
+	 * Initialize the LeaseManager properties creating the LeaseCollection if the parameter createLeaseCollection is equal to true.
+	 * @param createLeaseCollection - If true it will create the LeaseCollection, if the collection is not present.
+	 * @return Nothing to return
+	 * @throws DocumentClientException
+	 */
 	Callable<Void> initialize(boolean createLeaseCollection) throws DocumentClientException;
 
+	/***
+	 * Checks whether lease store exists
+	 * @return return true if exists and false it not
+	 * @throws DocumentClientException
+	 */
 	Callable<Boolean> leaseStoreExists() throws DocumentClientException;
 
-	/// <summary>
-	/// Checks whether lease store exists and creates if does not exist.
-	/// </summary>
-	/// <returns>true if created, false otherwise.</returns>
+	/***
+	 * Checks whether lease store exists and creates if does not exist.
+	 * @return true if created, false otherwise.
+	 * @throws DocumentClientException
+	 */
 	Callable<Boolean> createLeaseStoreIfNotExists() throws DocumentClientException;
 
+	/***
+	 * List the Leases present in the LeaseCollection
+	 * @return Iterable object of the DocumentServiceLease
+	 */
 	Callable<Iterable<T>> listLeases();
 
-	/// <summary>
-	/// Checks whether lease exists and creates if does not exist.
-	/// </summary>
-	/// <returns>true if created, false otherwise.</returns>
+
+	/***
+	 * Checks whether lease exists and creates if does not exist.
+	 * @param partitionId: The ID of the partition
+	 * @param continuationToken: the continuation token used to create the record.
+	 * @return true if created, false otherwise.
+	 * @throws DocumentClientException
+	 */
 	Callable<Boolean> createLeaseIfNotExist(String partitionId, String continuationToken) throws DocumentClientException;
 
+	/***
+	 *
+	 * @param partitionId
+	 * @return
+	 * @throws DocumentClientException
+	 */
 	Callable<T> getLease(String partitionId) throws DocumentClientException;
 
+	/***
+	 *
+	 * @param lease
+	 * @param owner
+	 * @return
+	 * @throws DocumentClientException
+	 * @throws LeaseLostException
+	 */
 	Callable<T> acquire(T lease, String owner) throws DocumentClientException, LeaseLostException;
 
+	/***
+	 *
+	 * @param lease
+	 * @return
+	 * @throws LeaseLostException
+	 * @throws DocumentClientException
+	 */
 	Callable<T> renew(T lease) throws LeaseLostException, DocumentClientException;
 
+	/***
+	 *
+	 * @param lease
+	 * @return
+	 * @throws DocumentClientException
+	 * @throws LeaseLostException
+	 */
 	Callable<Boolean> release(T lease) throws DocumentClientException, LeaseLostException;
 
+	/***
+	 *
+	 * @param lease
+	 * @return
+	 * @throws DocumentClientException
+	 * @throws LeaseLostException
+	 */
 	Callable<Void> delete(T lease) throws DocumentClientException, LeaseLostException;
 
+	/***
+	 *
+	 * @return
+	 * @throws DocumentClientException
+	 * @throws LeaseLostException
+	 */
 	Callable<Void> deleteAll() throws DocumentClientException, LeaseLostException;
 
+	/***
+	 *
+	 * @param lease
+	 * @return
+	 */
 	Callable<Boolean> isExpired(T lease);
 }
