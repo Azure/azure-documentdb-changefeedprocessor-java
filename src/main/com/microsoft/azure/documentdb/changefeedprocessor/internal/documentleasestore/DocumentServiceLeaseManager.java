@@ -114,7 +114,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
 
                 client.deleteDocument(dummyDocument.getSelfLink(), new RequestOptions());
 
-                TraceLog.informational(String.format("Server to local time delta: {0}", serverToLocalTimeDelta));
+                logger.info(String.format("Server to local time delta: {0}", serverToLocalTimeDelta));
 
                 return null;
             }
@@ -261,12 +261,12 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
                 DocumentServiceLease refreshedLease = tryGetLease(getDocumentId(lease.getPartitionId()));
                 if (refreshedLease == null)
                 {
-                    TraceLog.informational(String.format("Failed to renew lease for partition id {0}! The lease is gone already.", lease.getPartitionId()));
+                    logger.info(String.format("Failed to renew lease for partition id {0}! The lease is gone already.", lease.getPartitionId()));
                     throw new LeaseLostException(lease);
                 }
                 else if (!refreshedLease.getOwner().equals(lease.getOwner()))
                 {
-                    TraceLog.informational(String.format("Failed to renew lease for partition id {0}! The lease was already taken by another host.", lease.getPartitionId()));
+                    logger.info(String.format("Failed to renew lease for partition id {0}! The lease was already taken by another host.", lease.getPartitionId()));
                     throw new LeaseLostException(lease);
                 }
                 return updateInternal(refreshedLease, (DocumentServiceLease serverLease) -> serverLease, null);
@@ -286,10 +286,10 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
             public Boolean call() throws Exception {
                 DocumentServiceLease refreshedLease = tryGetLease(getDocumentId(lease.getPartitionId()));
                 if (refreshedLease == null) {
-                    TraceLog.informational(String.format("Failed to release lease for partition id %s! The lease is gone already.", lease.getPartitionId()));
+                    logger.info(String.format("Failed to release lease for partition id %s! The lease is gone already.", lease.getPartitionId()));
                     return false;
                 } else if (!refreshedLease.getOwner().equals(lease.getOwner())) {
-                    TraceLog.informational(String.format("No need to release lease for partition id %s! The lease was already taken by another host.", lease.getPartitionId()));
+                    logger.info(String.format("No need to release lease for partition id %s! The lease was already taken by another host.", lease.getPartitionId()));
                     return true;
                 } else {
                     String oldOwner = lease.getOwner();
@@ -303,7 +303,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
                     if (refreshedLease != null) {
                         return true;
                     } else {
-                        TraceLog.informational(String.format("Failed to release lease for partition id {0}! Probably the lease was stolen by another host.", lease.getPartitionId()));
+                        logger.info(String.format("Failed to release lease for partition id {0}! Probably the lease was stolen by another host.", lease.getPartitionId()));
                         return false;
                     }
                 }
@@ -502,7 +502,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
                 }
 
                 if (retryCount-- > 0) {
-                    TraceLog.informational(String.format("Partition '{0}' update failed because the lease with token '{1}' was updated by same/this host with token '{2}'. Will retry, {3} retry(s) left.", lease.getPartitionId(), lease.getConcurrencyToken(), serverLease.getConcurrencyToken(), retryCount));
+                    logger.info(String.format("Partition '{0}' update failed because the lease with token '{1}' was updated by same/this host with token '{2}'. Will retry, {3} retry(s) left.", lease.getPartitionId(), lease.getConcurrencyToken(), serverLease.getConcurrencyToken(), retryCount));
 
                     lease = conflictResolver.run(serverLease);
                 } else {
@@ -529,7 +529,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         assert lease != null : "lease";
         assert dcex != null : "dispatchInfo";
 
-        TraceLog.warning(String.format("Lease operation exception, status code: ", dcex.getStatusCode()));
+        logger.warning(String.format("Lease operation exception, status code: ", dcex.getStatusCode()));
 
         if (HttpStatus.SC_PRECONDITION_FAILED == dcex.getStatusCode()
                 || HttpStatus.SC_CONFLICT == dcex.getStatusCode()

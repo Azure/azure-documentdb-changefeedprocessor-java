@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Logger;
 
 /**
 *
@@ -16,6 +17,7 @@ import java.util.concurrent.Executors;
 final class PartitionObserverManager<T extends Lease> {
     final PartitionManager<T> partitionManager;
     final List<IPartitionObserver<T>> observers;
+    private Logger logger = Logger.getLogger(PartitionObserverManager.class.getName());
 
     public PartitionObserverManager(PartitionManager<T> partitionManager){
         this.partitionManager = partitionManager;
@@ -37,12 +39,10 @@ final class PartitionObserverManager<T extends Lease> {
     		            	observer.onPartitionAcquired(lease).wait();
     		            } catch (Exception ex) {
     		                // Eat any exceptions during notification of observers
-    		                TraceLog.exception(ex);
+							logger.warning(ex.getMessage());
     		            }
     		        }
     		    }
-
-    		    
 				IDisposable unsubscriber = new Unsubscriber(PartitionObserverManager.this.observers, observer);
     		    return unsubscriber;
     		}
