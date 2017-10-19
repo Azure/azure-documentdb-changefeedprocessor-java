@@ -26,16 +26,12 @@ public class PartitionManager<T extends Lease> {
     final ConcurrentHashMap<String, T> currentlyOwnedPartitions;
     final ConcurrentHashMap<String, T> keepRenewingDuringClose;
     final PartitionObserverManager partitionObserverManager;
-
-    AtomicInteger isStarted;
+    private AtomicInteger isStarted;
     boolean shutdownComplete;
-    Future<Void> renewTask;
-    Future<Void> takerTask;
-  //  CancellationTokenSource leaseTakerCancellationTokenSource;	  //Need CancellationTokenSource Java equivalent
-  //  CancellationTokenSource leaseRenewerCancellationTokenSource;  //Need CancellationTokenSource Java equivalent
-//    ExecutorService execService;
+	private Future<Void> renewTask;
+	private Future<Void> takerTask;
 	private Logger logger = Logger.getLogger(PartitionManager.class.getName());
-
+	private ExecutorService exec ;
 
     public PartitionManager(String workerName, ILeaseManager<T> leaseManager, ChangeFeedHostOptions options)
     {
@@ -47,8 +43,6 @@ public class PartitionManager<T extends Lease> {
         this.keepRenewingDuringClose = new ConcurrentHashMap<String, T>();
         this.partitionObserverManager = new PartitionObserverManager(this);
     }
-    
-    private ExecutorService exec ;
 
     //Java
     public void initialize() throws Exception {
@@ -280,11 +274,10 @@ public class PartitionManager<T extends Lease> {
 			return null;
 		}
     }
-    
 
 
     //Java
-    HashMap<String, T> takeLeases() throws Exception { //Setting this method up to be sync, since it is being called from a thread that needs to await the result of this method. TODO: Test for performance
+    private HashMap<String, T> takeLeases() throws Exception { //Setting this method up to be sync, since it is being called from a thread that needs to await the result of this method. TODO: Test for performance
     	HashMap<String, T> allPartitions = new HashMap<String, T>();
         HashMap<String, T> takenLeases = new HashMap<String, T>();
         HashMap<String, Integer> workerToPartitionCount = new HashMap<String, Integer>();
@@ -414,7 +407,7 @@ public class PartitionManager<T extends Lease> {
     }
 
     //Java
-    void shutdown(ChangeFeedObserverCloseReason reason)
+    private void shutdown(ChangeFeedObserverCloseReason reason)
     {
         List<Callable<Object>> shutdownTasks = new ArrayList<Callable<Object>>();
         for(T value : this.currentlyOwnedPartitions.values()) {
