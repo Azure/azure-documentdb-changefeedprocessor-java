@@ -109,8 +109,8 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         initializeIntegrations();
 
-        initializePartitions();
-        initializeLeaseManager();
+        //initializePartitions();
+        //initializeLeaseManager();
     }
 
     private void initializeIntegrations() throws DocumentClientException, LeaseLostException {
@@ -133,7 +133,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         this.leaseManager = leaseManager;
 
-//        this.checkpointSvcs = new Refactor.CheckpointServices((ICheckpointManager)leaseManager, this.options.CheckpointFrequency);
+        this.checkpointSvcs = new CheckpointServices((ICheckpointManager)leaseManager, this.options.getCheckpointFrequency());
 
         if (this.options.getDiscardExistingLeases()) {
             //TraceLog.Warning(string.Format("Host '{0}': removing all leases, as requested by ChangeFeedHostOptions", this.HostName));
@@ -151,9 +151,15 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
 //        this.CreateLeases(range);
 
-//        this.partitionManager = new PartitionManager<DocumentServiceLease>(this.HostName, this.leaseManager, this.options);
-//        await this.partitionManager.SubscribeAsync(this);
-//        await this.partitionManager.InitializeAsync();
+        logger.info("Initializing partition manager");
+        partitionManager = new PartitionManager<DocumentServiceLease>(this.hostName, this.leaseManager, this.options);
+        partitionManager.subscribe(this);
+        try {
+            partitionManager.initialize();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
     }
 
     private void initializePartitions(){
