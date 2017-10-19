@@ -207,26 +207,41 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
     @Override
     public Callable<Void> onPartitionAcquired(DocumentServiceLease documentServiceLease) {
-        String partitionId = documentServiceLease.id;
 
-        try {
-            resourcePartitionSvcs.start(partitionId);
-        } catch (DocumentClientException e) {
-            e.printStackTrace();
-        }catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        Callable<Void> callable = new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+                String partitionId = documentServiceLease.id;
+                try {
+                    resourcePartitionSvcs.start(partitionId);
+                } catch (DocumentClientException e) {
+                    e.printStackTrace();
+                }catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                return null;
+            }
+        };
+        return callable;
+
     }
 
     @Override
     public Callable<Void> onPartitionReleased(DocumentServiceLease documentServiceLease, ChangeFeedObserverCloseReason reason) {
-        String partitionId = documentServiceLease.id;
 
-        System.out.println("Partition finished");
+        Callable<Void> callable = new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+                String partitionId = documentServiceLease.id;
+                logger.info(String.format("Partition id %s finished", partitionId));
+                resourcePartitionSvcs.stop(partitionId);
+                //TODO:Implement return of callable object
+                return null;
+            }
+        };
 
-        resourcePartitionSvcs.stop(partitionId);
+        return callable;
 
-        //TODO:Implement return of callable object
-        return null;
     }
 }

@@ -54,9 +54,9 @@ final class PartitionObserverManager<T extends Lease> {
     	Runnable notifyPartitionAcquiredRunnable = new Runnable() {
     		public void run() {
     			ExecutorService execSvc = Executors.newFixedThreadPool(PartitionObserverManager.this.observers.size());
-    			List<Callable<Object>> oPA = new ArrayList<Callable<Object>>();
+    			List<Callable<Void>> oPA = new ArrayList<>();
     			for (IPartitionObserver<T> obs : PartitionObserverManager.this.observers) {
-    				oPA.add(Executors.callable(obs.onPartitionAcquired(lease)));  //TODO: Check if this works as expected. If not, change the return type of onPartitionAcquired to callable
+    				oPA.add(obs.onPartitionAcquired(lease));  //TODO: Check if this works as expected. If not, change the return type of onPartitionAcquired to callable
     	        }
     			try {
 					execSvc.invokeAll(oPA);	//TODO: Ensure this waits for executors to finish
@@ -73,9 +73,9 @@ final class PartitionObserverManager<T extends Lease> {
     	Runnable notifyPartitionReleasedRunnable = new Runnable() {
     		public void run() {
     			ExecutorService execSvc = Executors.newFixedThreadPool(PartitionObserverManager.this.observers.size());
-    			List<Callable<Object>> oPR = new ArrayList<Callable<Object>>();
+    			List<Callable<Void>> oPR = new ArrayList<>();
     			for (IPartitionObserver<T> obs : PartitionObserverManager.this.observers) {
-    				oPR.add(Executors.callable(obs.onPartitionReleased(lease, reason)));  //TODO: Check if this works as expected. If not, change the return type of onPartitionAcquired to callable
+    				oPR.add(obs.onPartitionReleased(lease, reason));  //TODO: Check if this works as expected. If not, change the return type of onPartitionAcquired to callable
     	        }
     			try {
 					execSvc.invokeAll(oPR);	//TODO: Ensure this waits for executors to finish
