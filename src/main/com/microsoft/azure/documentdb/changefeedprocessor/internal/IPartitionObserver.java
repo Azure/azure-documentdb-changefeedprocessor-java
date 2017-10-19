@@ -27,14 +27,16 @@ package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
 import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverCloseReason;
 
+import java.util.concurrent.Callable;
+
 /**
 *
 * @author rogirdh
 */
 public interface IPartitionObserver<T extends Lease> {
-        Runnable onPartitionAcquired(T lease);
+        Callable<Void> onPartitionAcquired(T lease);
         //void onPatitionAcquiredAsync(T lease);
-        Runnable onPartitionReleased(T lease, ChangeFeedObserverCloseReason reason);
+        Callable<Void> onPartitionReleased(T lease, ChangeFeedObserverCloseReason reason);
        // void onPartitionReleasedAsync(T lease, ChangeFeedObserverCloseReason reason);
 }
 

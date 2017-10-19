@@ -16,6 +16,7 @@ import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServi
 import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartitionServices;
 
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Logger;
@@ -205,7 +206,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     }
 
     @Override
-    public void onPartitionAcquired(DocumentServiceLease documentServiceLease) {
+    public Callable<Void> onPartitionAcquired(DocumentServiceLease documentServiceLease) {
         String partitionId = documentServiceLease.id;
 
         try {
@@ -218,11 +219,14 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     }
 
     @Override
-    public void onPartitionReleased(DocumentServiceLease documentServiceLease, ChangeFeedObserverCloseReason reason) {
+    public Callable<Void> onPartitionReleased(DocumentServiceLease documentServiceLease, ChangeFeedObserverCloseReason reason) {
         String partitionId = documentServiceLease.id;
 
         System.out.println("Partition finished");
 
         resourcePartitionSvcs.stop(partitionId);
+
+        //TODO:Implement return of callable object
+        return null;
     }
 }

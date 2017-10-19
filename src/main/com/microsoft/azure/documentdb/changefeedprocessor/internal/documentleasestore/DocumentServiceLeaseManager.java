@@ -30,6 +30,7 @@ import org.apache.http.HttpStatus;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -53,7 +54,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     private Duration serverToLocalTimeDelta;
     private Logger logger = Logger.getLogger(DocumentServiceLeaseManager.class.getName());
 
-    DocumentClient client;
+    private DocumentClient client;
 
     @FunctionalInterface
     private interface LeaseConflictResolver {
@@ -113,162 +114,263 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
 
     @Override
-    public boolean leaseStoreExists() throws DocumentClientException { //    public async Task<bool> LeaseStoreExistsAsync()
-        DocumentServiceLease containerDocument = tryGetLease(getDocumentId());
-        return containerDocument != null;
+    public Callable<Boolean> leaseStoreExists() throws DocumentClientException { //    public async Task<bool> LeaseStoreExistsAsync()
+
+        Callable<Boolean> callable = new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                //TODO: Fix with callable
+                DocumentServiceLease containerDocument = tryGetLease(getDocumentId());
+                return new Boolean(containerDocument != null);
+            }
+        };
+
+        return callable;
     }
 
     @Override
-    public boolean createLeaseStoreIfNotExists() throws DocumentClientException { //    public  Task<bool> CreateLeaseStoreIfNotExistsAsync()
-        boolean wasCreated = false;
-        if (!leaseStoreExists()) {
-            Document containerDocumentnew = new Document();
-            containerDocumentnew.setId(getDocumentId());
+    public Callable<Boolean> createLeaseStoreIfNotExists() throws DocumentClientException { //    public  Task<bool> CreateLeaseStoreIfNotExistsAsync()
 
-            client.createDocument(leaseStoreCollectionLink, containerDocumentnew, new RequestOptions(), true);
-            wasCreated = true;
-        }
-        return wasCreated;
+        Callable<Boolean> callable = new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                Boolean wasCreated = false;
+                try {
+                    if (!leaseStoreExists().call().booleanValue()) {
+                        Document containerDocumentnew = new Document();
+                        containerDocumentnew.setId(getDocumentId());
+
+                        client.createDocument(leaseStoreCollectionLink, containerDocumentnew, new RequestOptions(), true);
+                        wasCreated = true;
+                    }
+                }catch (Exception e){
+
+                }
+                return wasCreated;
+            }
+        };
+
+        return callable;
     }
 
     @Override
-    public Iterable<DocumentServiceLease> listLeases() {//    public Task<IEnumerable<DocumentServiceLease>> ListLeases()
-        return listDocuments(getPartitionLeasePrefix());
+    public Callable<Iterable<DocumentServiceLease>> listLeases() {//    public Task<IEnumerable<DocumentServiceLease>> ListLeases()
+
+        Callable<Iterable<DocumentServiceLease>> callable = new Callable<Iterable<DocumentServiceLease>>() {
+            @Override
+            public Iterable<DocumentServiceLease> call() throws Exception {
+                return listDocuments(getPartitionLeasePrefix());
+            }
+        };
+
+        return callable;
     }
 
     /**
      * Checks whether lease exists and creates if does not exist.
      * @return true if created, false otherwise. */
     @Override
-    public boolean createLeaseIfNotExist(String partitionId, String continuationToken) throws DocumentClientException { // public async Task<bool> CreateLeaseIfNotExistAsync(string partitionId, string continuationToken)
-        boolean wasCreated = false;
-        String leaseDocId = getDocumentId(partitionId);
+    public Callable<Boolean> createLeaseIfNotExist(String partitionId, String continuationToken) throws DocumentClientException { // public async Task<bool> CreateLeaseIfNotExistAsync(string partitionId, string continuationToken)
 
-        if (tryGetLease(leaseDocId) == null) {
-            DocumentServiceLease documentServiceLease = new DocumentServiceLease();
-            documentServiceLease.setId(leaseDocId);
-            documentServiceLease.setPartitionId(partitionId);
-            documentServiceLease.setContinuationToken(continuationToken);
+        Callable<Boolean> callable = new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                Boolean wasCreated = false;
+                String leaseDocId = getDocumentId(partitionId);
 
-			client.createDocument(leaseStoreCollectionLink, documentServiceLease, new RequestOptions(), true).getResource();
-            wasCreated = true;
-        }
-        return wasCreated;
+                if (tryGetLease(leaseDocId) == null) {
+                    DocumentServiceLease documentServiceLease = new DocumentServiceLease();
+                    documentServiceLease.setId(leaseDocId);
+                    documentServiceLease.setPartitionId(partitionId);
+                    documentServiceLease.setContinuationToken(continuationToken);
+
+                    client.createDocument(leaseStoreCollectionLink, documentServiceLease, new RequestOptions(), true).getResource();
+                    wasCreated = true;
+                }
+                return wasCreated;
+            }
+        };
+
+        return callable;
     }
 
     @Override
-    public DocumentServiceLease getLease(String partitionId) throws DocumentClientException {//    public async Task<DocumentServiceLease> GetLeaseAsync(string partitionId)
-        return tryGetLease(getDocumentId(partitionId));
+    public Callable<DocumentServiceLease> getLease(String partitionId) throws DocumentClientException {//    public async Task<DocumentServiceLease> GetLeaseAsync(string partitionId)
+
+        Callable<DocumentServiceLease> callable = new Callable<DocumentServiceLease>() {
+            @Override
+            public DocumentServiceLease call() throws Exception {
+                return tryGetLease(getDocumentId(partitionId));
+            }
+        };
+
+        return callable;
     }
 
     @Override
-    public DocumentServiceLease acquire(DocumentServiceLease lease, String owner) throws DocumentClientException {//    public async Task<DocumentServiceLease> AcquireAsync(DocumentServiceLease lease, string owner)
+    public Callable<DocumentServiceLease> acquire(DocumentServiceLease lease, String owner) throws DocumentClientException {//    public async Task<DocumentServiceLease> AcquireAsync(DocumentServiceLease lease, string owner)
+
         if (lease == null || lease.getPartitionId() == null) {
             throw new IllegalArgumentException("lease");
         }
 
-        if (owner == null || owner.equals("")) {
+        if (owner == null || owner.isEmpty()) {
             throw new IllegalArgumentException("owner");
         }
-        DocumentServiceLease currentLease = tryGetLease(getDocumentId(lease.getPartitionId()));
-        currentLease.setOwner(owner);
-        currentLease.setState(LeaseState.LEASED);
 
-        try {
-            return updateInternal(currentLease, (DocumentServiceLease serverLease) -> {
-                serverLease.setOwner(currentLease.getOwner());
-                serverLease.setState(currentLease.getState());
-                return serverLease;
-            }, owner);
-        } catch (LeaseLostException | DocumentClientException ex) {
-            Logger.getLogger(DocumentServiceLeaseManager.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return null;
-    }
+        Callable<DocumentServiceLease> callable = new Callable<DocumentServiceLease>() {
+            @Override
+            public DocumentServiceLease call() throws Exception {
+                DocumentServiceLease currentLease = tryGetLease(getDocumentId(lease.getPartitionId()));
+                currentLease.setOwner(owner);
+                currentLease.setState(LeaseState.LEASED);
 
-    @Override
-    public DocumentServiceLease renew(DocumentServiceLease lease) throws LeaseLostException, DocumentClientException {  //    public async Task<DocumentServiceLease> RenewAsync(DocumentServiceLease lease)
-        assert lease != null : "lease";
-
-        DocumentServiceLease refreshedLease = tryGetLease(getDocumentId(lease.getPartitionId()));
-        if (refreshedLease == null)
-        {
-            TraceLog.informational(String.format("Failed to renew lease for partition id {0}! The lease is gone already.", lease.getPartitionId()));
-            throw new LeaseLostException(lease);
-        }
-        else if (!refreshedLease.getOwner().equals(lease.getOwner()))
-        {
-            TraceLog.informational(String.format("Failed to renew lease for partition id {0}! The lease was already taken by another host.", lease.getPartitionId()));
-            throw new LeaseLostException(lease);
-        }
-        return updateInternal(refreshedLease, (DocumentServiceLease serverLease) -> serverLease, null);
-    }
-
-    @Override
-    public boolean release(DocumentServiceLease lease) throws DocumentClientException, LeaseLostException {//    public async Task<bool> ReleaseAsync(DocumentServiceLease lease)
-        DocumentServiceLease refreshedLease = tryGetLease(getDocumentId(lease.getPartitionId()));
-        if (refreshedLease == null) {
-            TraceLog.informational(String.format("Failed to release lease for partition id {0}! The lease is gone already.", lease.getPartitionId()));
-            return false;
-        } else if (!refreshedLease.getOwner().equals(lease.getOwner())) {
-            TraceLog.informational(String.format("No need to release lease for partition id {0}! The lease was already taken by another host.", lease.getPartitionId()));
-            return true;
-        } else {
-            String oldOwner = lease.getOwner();
-            refreshedLease.setOwner(null);
-            refreshedLease.setState(LeaseState.AVAILABLE);
-            refreshedLease = updateInternal(refreshedLease, (DocumentServiceLease serverLease) -> {
-                serverLease.setOwner(null); // In the lambda expression of Java, only access effective final value;
-                serverLease.setState(LeaseState.AVAILABLE); // In the lambda expression of Java, only access effective final value;
-                return serverLease;
-            }, oldOwner);
-            if (refreshedLease != null) {
-                return true;
-            } else {
-                TraceLog.informational(String.format("Failed to release lease for partition id {0}! Probably the lease was stolen by another host.", lease.getPartitionId()));
-                return false;
+                try {
+                    return updateInternal(currentLease, (DocumentServiceLease serverLease) -> {
+                        serverLease.setOwner(currentLease.getOwner());
+                        serverLease.setState(currentLease.getState());
+                        return serverLease;
+                    }, owner);
+                } catch (LeaseLostException | DocumentClientException ex) {
+                    Logger.getLogger(DocumentServiceLeaseManager.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                return null;
             }
-        }
+        };
+
+        return callable;
     }
 
     @Override
-    public void delete(DocumentServiceLease lease) throws DocumentClientException, LeaseLostException {//    public async Task DeleteAsync(DocumentServiceLease lease)
+    public Callable<DocumentServiceLease> renew(DocumentServiceLease lease) throws LeaseLostException, DocumentClientException {  //    public async Task<DocumentServiceLease> RenewAsync(DocumentServiceLease lease)
+
+        if (lease == null) throw new AssertionError("lease");
+
+        Callable<DocumentServiceLease> callable = new Callable<DocumentServiceLease>() {
+            @Override
+            public DocumentServiceLease call() throws Exception {
+                DocumentServiceLease refreshedLease = tryGetLease(getDocumentId(lease.getPartitionId()));
+                if (refreshedLease == null)
+                {
+                    TraceLog.informational(String.format("Failed to renew lease for partition id {0}! The lease is gone already.", lease.getPartitionId()));
+                    throw new LeaseLostException(lease);
+                }
+                else if (!refreshedLease.getOwner().equals(lease.getOwner()))
+                {
+                    TraceLog.informational(String.format("Failed to renew lease for partition id {0}! The lease was already taken by another host.", lease.getPartitionId()));
+                    throw new LeaseLostException(lease);
+                }
+                return updateInternal(refreshedLease, (DocumentServiceLease serverLease) -> serverLease, null);
+            }
+        };
+
+        return callable;
+
+    }
+
+    @Override
+    public Callable<Boolean> release(DocumentServiceLease lease) throws DocumentClientException, LeaseLostException {//    public async Task<bool> ReleaseAsync(DocumentServiceLease lease)
+
+
+        Callable<Boolean> callable = new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                DocumentServiceLease refreshedLease = tryGetLease(getDocumentId(lease.getPartitionId()));
+                if (refreshedLease == null) {
+                    TraceLog.informational(String.format("Failed to release lease for partition id %s! The lease is gone already.", lease.getPartitionId()));
+                    return false;
+                } else if (!refreshedLease.getOwner().equals(lease.getOwner())) {
+                    TraceLog.informational(String.format("No need to release lease for partition id %s! The lease was already taken by another host.", lease.getPartitionId()));
+                    return true;
+                } else {
+                    String oldOwner = lease.getOwner();
+                    refreshedLease.setOwner(null);
+                    refreshedLease.setState(LeaseState.AVAILABLE);
+                    refreshedLease = updateInternal(refreshedLease, (DocumentServiceLease serverLease) -> {
+                        serverLease.setOwner(null); // In the lambda expression of Java, only access effective final value;
+                        serverLease.setState(LeaseState.AVAILABLE); // In the lambda expression of Java, only access effective final value;
+                        return serverLease;
+                    }, oldOwner);
+                    if (refreshedLease != null) {
+                        return true;
+                    } else {
+                        TraceLog.informational(String.format("Failed to release lease for partition id {0}! Probably the lease was stolen by another host.", lease.getPartitionId()));
+                        return false;
+                    }
+                }
+            }
+        };
+
+        return callable;
+    }
+
+    @Override
+    public Callable<Void> delete(DocumentServiceLease lease) throws DocumentClientException, LeaseLostException {//    public async Task DeleteAsync(DocumentServiceLease lease)
         if (lease == null || lease.getId() == null) {
             throw new IllegalArgumentException("lease");
         }
-        //Create URI String
-        String uri = String.format("/dbs/%s/colls/%s/docs/%s", leaseStoreCollectionInfo.getDatabaseName(), leaseStoreCollectionInfo.getCollectionName(), lease.getId());
-        try {
-            client.deleteDocument(uri, new RequestOptions());
-        } catch (DocumentClientException ex) {
-            if (HttpStatus.SC_NOT_FOUND != ex.getStatusCode())
-            {
-            	handleLeaseOperationException(lease, ex);
+
+        Callable<Void> callable = new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+
+                //Create URI String
+                String uri = String.format("/dbs/%s/colls/%s/docs/%s", leaseStoreCollectionInfo.getDatabaseName(), leaseStoreCollectionInfo.getCollectionName(), lease.getId());
+                try {
+                    client.deleteDocument(uri, new RequestOptions());
+                } catch (DocumentClientException ex) {
+                    if (HttpStatus.SC_NOT_FOUND != ex.getStatusCode())
+                    {
+                        handleLeaseOperationException(lease, ex);
+                    }
+                }
+                return null;
             }
-        } 
+        };
+
+        return callable;
     }
 
     @Override
-    public void deleteAll() throws DocumentClientException, LeaseLostException { //    public async Task DeleteAllAsync()
-        Iterable<DocumentServiceLease> listDocuments = listDocuments(containerNamePrefix);
-        for (DocumentServiceLease lease : listDocuments) {
-            delete(lease);
-        }
+    public Callable<Void> deleteAll() throws DocumentClientException, LeaseLostException { //    public async Task DeleteAllAsync()
+
+        Callable<Void> callable = new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+                Iterable<DocumentServiceLease> listDocuments = listDocuments(containerNamePrefix);
+                for (DocumentServiceLease lease : listDocuments) {
+                    delete(lease);
+                }
+                return null;
+            }
+        };
+
+        return callable;
     }
 
     @Override
-    public boolean isExpired(DocumentServiceLease lease) {//    public Task<bool> IsExpired(DocumentServiceLease lease)        LOGGER.log(Level.FINEST, "{0} lease", Boolean.toString(lease != null));
-        assert(lease != null);
-            
-        // Lease time converted to seconds
-        long leaseSeconds = lease.getTimestamp().getEpochSecond();
-        
-        // Current time converted to seconds
-        long currentSeconds = Instant.now().getEpochSecond();        
-        
-    	Duration leaseExpiration = leaseInterval.plusSeconds(leaseSeconds).plus(leaseIntervalAllowance);
-        Duration serverTime = serverToLocalTimeDelta.plusSeconds(currentSeconds);
-        return leaseExpiration.getSeconds() < serverTime.getSeconds();
+    public Callable<Boolean> isExpired(DocumentServiceLease lease) {//    public Task<bool> IsExpired(DocumentServiceLease lease)        LOGGER.log(Level.FINEST, "{0} lease", Boolean.toString(lease != null));
+        if ((lease == null)) throw new AssertionError();
+
+        Callable<Boolean> callable = new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+
+                // Lease time converted to seconds
+                long leaseSeconds = lease.getTimestamp().getEpochSecond();
+
+                // Current time converted to seconds
+                long currentSeconds = Instant.now().getEpochSecond();
+
+                Duration leaseExpiration = leaseInterval.plusSeconds(leaseSeconds).plus(leaseIntervalAllowance);
+                Duration serverTime = serverToLocalTimeDelta.plusSeconds(currentSeconds);
+                return leaseExpiration.getSeconds() < serverTime.getSeconds();
+            }
+        };
+
+        return callable;
+
+
     }
 
     @Override

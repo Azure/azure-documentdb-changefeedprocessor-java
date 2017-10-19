@@ -6,9 +6,9 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
 import com.microsoft.azure.documentdb.DocumentClientException;
+
+import java.util.concurrent.Callable;
 
 /**
  *
@@ -40,9 +40,9 @@ public interface ILeaseManager<T extends Lease> {
 
 	Callable<Boolean> release(T lease) throws DocumentClientException, LeaseLostException;
 
-	Runnable delete(T lease) throws DocumentClientException, LeaseLostException;
+	Callable<Void> delete(T lease) throws DocumentClientException, LeaseLostException;
 
-	Runnable deleteAll() throws DocumentClientException, LeaseLostException;
+	Callable<Void> deleteAll() throws DocumentClientException, LeaseLostException;
 
 	Callable<Boolean> isExpired(T lease);
 }
