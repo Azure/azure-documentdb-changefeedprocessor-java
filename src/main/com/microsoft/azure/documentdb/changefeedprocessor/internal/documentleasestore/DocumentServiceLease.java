@@ -99,7 +99,7 @@ public class DocumentServiceLease extends Lease {
     public String toString() {
         return String.format(
             Locale.ROOT,
-            "{0} {1} Owner='{2}' Continuation={3} Timestamp(local)={4}",
+            "%d %s Owner='%s' Continuation=%s Timestamp(local)=%s",
             id,
             state,
             this.getOwner(),

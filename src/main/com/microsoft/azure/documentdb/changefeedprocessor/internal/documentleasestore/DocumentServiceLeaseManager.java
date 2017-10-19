@@ -257,12 +257,12 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
                 DocumentServiceLease refreshedLease = tryGetLease(getDocumentId(lease.getPartitionId()));
                 if (refreshedLease == null)
                 {
-                    logger.info(String.format("Failed to renew lease for partition id {0}! The lease is gone already.", lease.getPartitionId()));
+                    logger.info(String.format("Failed to renew lease for partition id %s! The lease is gone already.", lease.getPartitionId()));
                     throw new LeaseLostException(lease);
                 }
-                else if (!refreshedLease.getOwner().equals(lease.getOwner()))
+                else if (refreshedLease.getOwner()!= null && !refreshedLease.getOwner().equals(lease.getOwner()))
                 {
-                    logger.info(String.format("Failed to renew lease for partition id {0}! The lease was already taken by another host.", lease.getPartitionId()));
+                    logger.info(String.format("Failed to renew lease for partition id $s! The lease was already taken by another host.", lease.getPartitionId()));
                     throw new LeaseLostException(lease);
                 }
                 return updateInternal(refreshedLease, (DocumentServiceLease serverLease) -> serverLease, null);
@@ -394,10 +394,11 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         }
 
         HashSet<String> gonePartitionIds = new HashSet<>();
-        while (existingLeases.keys().hasMoreElements()){
-            String partitionID = (String)existingLeases.keys().nextElement();
+        existingLeases.keySet().forEach((key)->{
+            String partitionID = (String)key;
             if(!ranges.contains(partitionID))gonePartitionIds.add(partitionID);
-        }
+        });
+
 
         ArrayList<String> addedPartitionIds = new ArrayList<>();
         ranges.stream().forEach((range) ->{

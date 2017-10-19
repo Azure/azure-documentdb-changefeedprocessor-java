@@ -39,6 +39,8 @@ public abstract class Lease {
     @Getter @Setter private String concurrencyToken;
 
     public Lease() {
+        partitionId = null;
+        owner = "";
     }
 
     public Lease(Lease source) {

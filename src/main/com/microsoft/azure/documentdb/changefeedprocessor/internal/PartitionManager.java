@@ -59,7 +59,7 @@ public class PartitionManager<T extends Lease> {
 
         for (T lease : this.leaseManager.listLeases().call()) {
             allLeases.add(lease);
-            if (lease.getOwner().equalsIgnoreCase(this.workerName)) {
+            if (lease.getOwner() == null || lease.getOwner().equalsIgnoreCase(this.workerName)) {
             	Future<T> newLeaseFuture = execService.submit(this.renewLease(lease));
             	T newLease = newLeaseFuture.get();		//TODO: Ensure that this is not blocking other threads in the for loop
                 if (newLease != null) {
@@ -429,12 +429,12 @@ public class PartitionManager<T extends Lease> {
     		public T call() {
     			T renewedLease = null;
     	        try{
-					logger.info(String.format("Host '%s' renewing lease for PartitionId '%d' with lease token '%s'", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
+					logger.info(String.format("Host '%s' renewing lease for PartitionId '%s' with lease token '%s'", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
 
     	            renewedLease = exec.submit(PartitionManager.this.leaseManager.renew(lease)).get();
     	        }
     	        catch (LeaseLostException ex){
-					logger.info(String.format("Host '%s' got LeaseLostException trying to renew lease for  PartitionId '%d' with lease token '%s'", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
+					logger.info(String.format("Host '%s' got LeaseLostException trying to renew lease for  PartitionId '%s' with lease token '%s'", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
     	        }
     	        catch (Exception ex){
 					logger.warning(ex.getMessage());
@@ -444,7 +444,7 @@ public class PartitionManager<T extends Lease> {
     	            renewedLease = lease;
     	        }
     	        finally{
-					logger.info(String.format("Host '%s' attempted to renew lease for PartitionId '%d' and lease token '%s' with result: '%s'", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken(), renewedLease != null));
+					logger.info(String.format("Host '%s' attempted to renew lease for PartitionId '%s' and lease token '%s' with result: '%s'", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken(), renewedLease != null));
     	        }
 
     	        return renewedLease;
@@ -461,7 +461,7 @@ public class PartitionManager<T extends Lease> {
         		try{
                     return exec.submit(PartitionManager.this.leaseManager.acquire(lease, PartitionManager.this.workerName)).get() ;
                 } catch (LeaseLostException ex) {
-					logger.info(String.format("Host '%s' failed to acquire lease for PartitionId '%d' due to conflict.", PartitionManager.this.workerName, lease.getPartitionId()));
+					logger.info(String.format("Host '%s' failed to acquire lease for PartitionId '%s' due to conflict.", PartitionManager.this.workerName, lease.getPartitionId()));
                 } catch (Exception ex) {
                     // Eat any exceptions during acquiring lease.
 					logger.warning(ex.getMessage());
@@ -480,7 +480,7 @@ public class PartitionManager<T extends Lease> {
                     return exec.submit(PartitionManager.this.leaseManager.acquire(lease, PartitionManager.this.workerName)).get() ;
                 } catch (LeaseLostException ex){
 		            // Concurrency issue in stealing the lease, someone else got it before us
-					logger.info(String.format("Host '%s' failed to steal lease for PartitionId '%d' due to conflict.", PartitionManager.this.workerName, lease.getPartitionId()));
+					logger.info(String.format("Host '%s' failed to steal lease for PartitionId '%s' due to conflict.", PartitionManager.this.workerName, lease.getPartitionId()));
 		        } catch (Exception ex){
 		            // Eat any exceptions during stealing
 					logger.warning(ex.getMessage());
@@ -500,14 +500,14 @@ public class PartitionManager<T extends Lease> {
     				PartitionManager.this.currentlyOwnedPartitions.put(lease.getPartitionId(), lease);
     	            boolean failedToInitialize = false;
     	            try{
-						logger.info(String.format("Host '%s' opening event processor for PartitionId '%d' and lease token '%s'", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
+						logger.info(String.format("Host '%s' opening event processor for PartitionId '%s' and lease token '%s'", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
 
-    	                PartitionManager.this.partitionObserverManager.notifyPartitionAcquired(lease);	//TODO: Make notifyPartitionAcquired async and add await equivalent?
+    	                PartitionManager.this.partitionObserverManager.notifyPartitionAcquired(lease).run();	//TODO: Make notifyPartitionAcquired async and add await equivalent?
 
-						logger.info(String.format("Host '%s' opened event processor for PartitionId '%d' and lease token '%s'", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
+						logger.info(String.format("Host '%s' opened event processor for PartitionId '%s' and lease token '%s'", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
     	            }
     	            catch (Exception ex){
-						logger.info(String.format("Host '%s' failed to initialize processor for PartitionId '%d' and lease token '%s'", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
+						logger.info(String.format("Host '%s' failed to initialize processor for PartitionId '%s' and lease token '%s'", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
     	                failedToInitialize = true;
 
     	                // Eat any exceptions during notification of observers
@@ -524,15 +524,15 @@ public class PartitionManager<T extends Lease> {
     	            // and haven't completed the shutdown process for it yet.  Release lease for possible others hosts to
     	            // pick it up.
     	            try{
-						logger.warning(String.format("Host '%s' unable to add PartitionId '%d' with lease token '%s' to currently owned partitions.", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
+						logger.warning(String.format("Host '%s' unable to add PartitionId '%s' with lease token '%s' to currently owned partitions.", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
 
     	                PartitionManager.this.leaseManager.release(lease);	//TODO: await equivalent
 
-						logger.info(String.format("Host '%s' successfully released lease on PartitionId '%d' with lease token '%s'", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
+						logger.info(String.format("Host '%s' successfully released lease on PartitionId '%s' with lease token '%s'", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
     	            }
     	            catch (LeaseLostException ex){
     	                // We have already shutdown the processor so we can ignore any LeaseLost at this point
-						logger.info(String.format("Host '%s' failed to release lease for PartitionId '%d' with lease token '%s' due to conflict.", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
+						logger.info(String.format("Host '%s' failed to release lease for PartitionId '%s' with lease token '%s' due to conflict.", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
     	            }
     	            catch (Exception ex) {
 						logger.warning(ex.getMessage());
