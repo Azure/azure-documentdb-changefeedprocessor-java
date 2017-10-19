@@ -66,7 +66,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         this.partitionKeyRangeIdToWorkerMap = new ConcurrentHashMap<>();
 
         this.documentServices = new DocumentServices(documentCollectionLocation);
-        this.checkpointSvcs = new CheckpointServices();
+        this.checkpointSvcs = null;
 
         this.resourcePartitionSvcs = null;
 
@@ -123,7 +123,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         // Beyond this point all access to collection is done via this self link: if collection is removed, we won't access new one using same name by accident.
         //this.leasePrefix = String.format("{%s}{%s}_{%s}_{%s}", optionsPrefix, this.collectionLocation.getUri().getHost(), this.collectionLocation.DatabaseResourceId, docdb.CollectionResourceId);
 
-        DocumentServiceLeaseManager leaseManager = new DocumentServiceLeaseManager(
+        this.leaseManager = new DocumentServiceLeaseManager(
                 this.auxCollectionLocation,
                 this.leasePrefix,
                 this.options.getLeaseExpirationInterval(),
@@ -131,12 +131,10 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         leaseManager.initialize(true);
 
-        this.leaseManager = leaseManager;
-
-        this.checkpointSvcs = new CheckpointServices((ICheckpointManager)leaseManager, this.options.getCheckpointFrequency());
+        this.checkpointSvcs = new CheckpointServices(this.leaseManager, this.options.getCheckpointFrequency());
 
         if (this.options.getDiscardExistingLeases()) {
-            //TraceLog.Warning(string.Format("Host '{0}': removing all leases, as requested by ChangeFeedHostOptions", this.HostName));
+            logger.warning(String.format("Host '%s': removing all leases, as requested by ChangeFeedHostOptions", this.hostName));
             this.leaseManager.deleteAll();
         }
 
