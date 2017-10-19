@@ -14,7 +14,6 @@ import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentlease
 import com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartitionServices;
-
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,21 +25,18 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     private final String DefaultUserAgentSuffix = "changefeed-0.2";
     private final String LeaseContainerName = "docdb-changefeed";
     private final String LSNPropertyName = "_lsn";
-
+    private String hostName;
+    private String leasePrefix;
+    private ConcurrentMap<String, WorkerData> partitionKeyRangeIdToWorkerMap;
+    private PartitionManager<DocumentServiceLease> partitionManager;
     private DocumentCollectionInfo collectionLocation;
     private ChangeFeedOptions changeFeedOptions;
     private ChangeFeedHostOptions options;
-    private String hostName;
-    private String leasePrefix;
-    DocumentCollectionInfo auxCollectionLocation;
-    ConcurrentMap<String, WorkerData> partitionKeyRangeIdToWorkerMap;
-    PartitionManager<DocumentServiceLease> partitionManager;
-    ILeaseManager<DocumentServiceLease> leaseManager;
-
-    DocumentServices documentServices;
-    ResourcePartitionServices resourcePartitionSvcs;
-    CheckpointServices checkpointSvcs;
-
+    private DocumentCollectionInfo auxCollectionLocation;
+    private ILeaseManager<DocumentServiceLease> leaseManager;
+    private DocumentServices documentServices;
+    private ResourcePartitionServices resourcePartitionSvcs;
+    private CheckpointServices checkpointSvcs;
     private IChangeFeedObserverFactory observerFactory;
     private final int DEFAULT_PAGE_SIZE = 100;
     private Logger logger = Logger.getLogger(ChangeFeedEventHost.class.getName());
@@ -104,11 +100,11 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         start();
     }
 
-    void registerObserverFactory(ChangeFeedObserverFactory factory) {
+    private void registerObserverFactory(ChangeFeedObserverFactory factory) {
         this.observerFactory = factory;
     }
 
-    void start() throws Exception{
+    private void start() throws Exception{
         logger.info(String.format("Starting..."));
 
         initializeIntegrations();
@@ -117,7 +113,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         initializeLeaseManager();
     }
 
-    void initializeIntegrations() throws DocumentClientException, LeaseLostException {
+    private void initializeIntegrations() throws DocumentClientException, LeaseLostException {
         // Grab the options-supplied prefix if present otherwise leave it empty.
         String optionsPrefix = this.options.getLeasePrefix();
         if( optionsPrefix == null ) {
@@ -160,7 +156,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 //        await this.partitionManager.InitializeAsync();
     }
 
-    void initializePartitions(){
+    private void initializePartitions(){
         logger.info("Initializing partitions");
 
         //TODO: This is not the right place to have this code..
@@ -176,12 +172,12 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
     }
 
-    void initializeLeaseManager() {
+    private void initializeLeaseManager() {
         // simulate a callback from partitionManager
         hackStartSinglePartition();
     }
 
-    void hackStartSinglePartition() {
+    private void hackStartSinglePartition() {
         List<String> partitionIds = this.listPartition();
 
         partitionIds.stream().forEach((id) -> {
