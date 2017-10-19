@@ -62,11 +62,11 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         if (documentCollectionLocation.getCollectionName() == null || documentCollectionLocation.getCollectionName().isEmpty()) throw new IllegalArgumentException("documentCollectionLocation.getCollectionName() is null or empty");
         if (hostOptions.getMinPartitionCount() > hostOptions.getMaxPartitionCount()) throw new IllegalArgumentException("hostOptions.MinPartitionCount cannot be greater than hostOptions.MaxPartitionCount");
 
-        this.collectionLocation = CanoninicalizeCollectionInfo(documentCollectionLocation);
+        this.collectionLocation = canonicalizeCollectionInfo(documentCollectionLocation);
         this.changeFeedOptions = changeFeedOptions;
         this.options = hostOptions;
         this.hostName = hostName;
-        this.auxCollectionLocation = CanoninicalizeCollectionInfo(auxCollectionLocation);
+        this.auxCollectionLocation = canonicalizeCollectionInfo(auxCollectionLocation);
         this.partitionKeyRangeIdToWorkerMap = new ConcurrentHashMap<>();
 
         this.documentServices = new DocumentServices(documentCollectionLocation);
@@ -79,7 +79,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
             this.changeFeedOptions.setPageSize(this.DEFAULT_PAGE_SIZE);
     }
 
-    private DocumentCollectionInfo CanoninicalizeCollectionInfo(DocumentCollectionInfo collectionInfo)
+    private DocumentCollectionInfo canonicalizeCollectionInfo(DocumentCollectionInfo collectionInfo)
     {
         DocumentCollectionInfo result = collectionInfo;
         if (result.getConnectionPolicy().getUserAgentSuffix() == null ||

@@ -72,45 +72,54 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     public void dispose() {
     }
 
-    public void initialize(boolean createLeaseCollection) throws DocumentClientException { //    public Task InitializeAsync()
-        //Create URI String
-        String uri = String.format("/dbs/%s/colls/%s", leaseStoreCollectionInfo.getDatabaseName(), leaseStoreCollectionInfo.getCollectionName());
+    public Callable<Void> initialize(boolean createLeaseCollection) throws DocumentClientException { //    public Task InitializeAsync()
 
-        try {
-            leaseStoreCollectionLink = client.readCollection(uri, new RequestOptions()).getResource().getSelfLink();
-        }catch (DocumentClientException ex){
-            if (createLeaseCollection && ex.getStatusCode() == 404 ) { //Collection Lease Not Found)
-                logger.info("Parameter createLeaseCollection is true! Creating lease collection");
+        Callable<Void> callable = new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+                //Create URI String
+                String uri = String.format("/dbs/%s/colls/%s", leaseStoreCollectionInfo.getDatabaseName(), leaseStoreCollectionInfo.getCollectionName());
 
-                DocumentCollection leaseColl = new DocumentCollection();
-                leaseColl.setId(leaseStoreCollectionInfo.getCollectionName());
+                try {
+                    leaseStoreCollectionLink = client.readCollection(uri, new RequestOptions()).getResource().getSelfLink();
+                }catch (DocumentClientException ex){
+                    if (createLeaseCollection && ex.getStatusCode() == 404 ) { //Collection Lease Not Found)
+                        logger.info("Parameter createLeaseCollection is true! Creating lease collection");
 
-                leaseStoreCollectionLink = client.createCollection(String.format("/dbs/%s", leaseStoreCollectionInfo.getDatabaseName()),leaseColl,new RequestOptions()).getResource().getSelfLink();
-            }else{
-                if (!createLeaseCollection)
-                    logger.info("Parameter createLeaseCollection is false! Creating lease collection");
-                throw ex;
+                        DocumentCollection leaseColl = new DocumentCollection();
+                        leaseColl.setId(leaseStoreCollectionInfo.getCollectionName());
+
+                        leaseStoreCollectionLink = client.createCollection(String.format("/dbs/%s", leaseStoreCollectionInfo.getDatabaseName()),leaseColl,new RequestOptions()).getResource().getSelfLink();
+                    }else{
+                        if (!createLeaseCollection)
+                            logger.info("Parameter createLeaseCollection is false! Creating lease collection");
+                        throw ex;
+                    }
+                }
+
+                // Get the current time
+                Instant snapshot1 = Instant.now();
+
+                // Create and upload a new document
+                Document document = new Document();
+                document.setId(getDocumentId() + UUID.randomUUID().toString());
+                Document dummyDocument = client.createDocument(leaseStoreCollectionLink, document, new RequestOptions(), true).getResource();
+
+                // Get the new current time
+                Instant snapshot2 = Instant.now();
+
+                Instant dummyTimestamp = Instant.ofEpochSecond(dummyDocument.getTimestamp().getTime()); // Instant defaults to UTC
+                Instant currentTimeDiff = Instant.ofEpochSecond(snapshot1.plusSeconds(snapshot2.getEpochSecond()).getEpochSecond() / 2);
+                serverToLocalTimeDelta = Duration.between(currentTimeDiff, dummyTimestamp);
+
+                client.deleteDocument(dummyDocument.getSelfLink(), new RequestOptions());
+
+                TraceLog.informational(String.format("Server to local time delta: {0}", serverToLocalTimeDelta));
+
+                return null;
             }
-        }
-
-        // Get the current time
-        Instant snapshot1 = Instant.now();
-        
-        // Create and upload a new document
-        Document document = new Document();
-        document.setId(getDocumentId() + UUID.randomUUID().toString());
-        Document dummyDocument = client.createDocument(leaseStoreCollectionLink, document, new RequestOptions(), true).getResource();
-        
-        // Get the new current time
-        Instant snapshot2 = Instant.now();
-        
-        Instant dummyTimestamp = Instant.ofEpochSecond(dummyDocument.getTimestamp().getTime()); // Instant defaults to UTC
-        Instant currentTimeDiff = Instant.ofEpochSecond(snapshot1.plusSeconds(snapshot2.getEpochSecond()).getEpochSecond() / 2); 
-        serverToLocalTimeDelta = Duration.between(currentTimeDiff, dummyTimestamp);
-        
-        client.deleteDocument(dummyDocument.getSelfLink(), new RequestOptions());
-       
-        TraceLog.informational(String.format("Server to local time delta: {0}", this.serverToLocalTimeDelta));
+        };
+        return callable;
     }
 
     @Override

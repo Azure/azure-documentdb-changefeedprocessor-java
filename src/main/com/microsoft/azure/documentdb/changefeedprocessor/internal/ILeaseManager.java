@@ -16,6 +16,9 @@ import java.util.concurrent.Callable;
  */
 /// TODO: All of these functions used to be async
 public interface ILeaseManager<T extends Lease> {
+
+	Callable<Void> initialize(boolean createLeaseCollection) throws DocumentClientException;
+
 	Callable<Boolean> leaseStoreExists() throws DocumentClientException;
 
 	/// <summary>
