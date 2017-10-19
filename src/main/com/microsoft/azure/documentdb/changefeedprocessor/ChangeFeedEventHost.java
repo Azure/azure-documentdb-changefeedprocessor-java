@@ -121,7 +121,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         }
 
         // Beyond this point all access to collection is done via this self link: if collection is removed, we won't access new one using same name by accident.
-        //this.leasePrefix = String.format("{%s}{%s}_{%s}_{%s}", optionsPrefix, this.collectionLocation.getUri().getHost(), this.collectionLocation.DatabaseResourceId, docdb.CollectionResourceId);
+        this.leasePrefix = String.format("%s%s_%s_%s", optionsPrefix, this.collectionLocation.getUri().getHost(), documentServices.getDatabaseID(), documentServices.getCollectionID());
 
         this.leaseManager = new DocumentServiceLeaseManager(
                 this.auxCollectionLocation,
@@ -135,19 +135,28 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         if (this.options.getDiscardExistingLeases()) {
             logger.warning(String.format("Host '%s': removing all leases, as requested by ChangeFeedHostOptions", this.hostName));
-            this.leaseManager.deleteAll();
+            try {
+                this.leaseManager.deleteAll().call();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
-        // Note: lease store is never stale as we use monitored colleciton Rid as id prefix for aux collection.
+        // Note: lease store is never stale as we use monitored collection Rid as id prefix for aux collection.
         // Collection was removed and re-created, the rid would change.
         // If it's not deleted, it's not stale. If it's deleted, it's not stale as it doesn't exist.
-        this.leaseManager.createLeaseStoreIfNotExists();
+        try {
+            this.leaseManager.createLeaseStoreIfNotExists().call();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         List<String> range = this.documentServices.listPartitionRange();
 
-        logger.info(String.format("Source collection: '%s', %d partition(s), %s document(s)", collectionLocation.getCollectionName(), range.size(), documentServices.getDocumentCount()));
-
 //        this.CreateLeases(range);
+        this.leaseManager.createLeases(range);
+
+        logger.info(String.format("Source collection: '%s', %d partition(s), %s document(s)", collectionLocation.getCollectionName(), range.size(), documentServices.getDocumentCount()));
 
         logger.info("Initializing partition manager");
         partitionManager = new PartitionManager<DocumentServiceLease>(this.hostName, this.leaseManager, this.options);

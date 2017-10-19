@@ -2,6 +2,7 @@ package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
 import com.microsoft.azure.documentdb.*;
 import com.microsoft.azure.documentdb.changefeedprocessor.*;
+import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,9 +16,19 @@ public class DocumentServices {
     private final String masterKey;
     private final DocumentClient client;
     private final String collectionLink;
-    private String collectionSelfLink;
+    private final String databaseLink;
     private DocumentCollection documentCollection;
     private ResourceResponse<DocumentCollection> collectionResponse;
+
+    @Getter
+    private String collectionSelfLink;
+    @Getter
+    private String collectionID;
+    @Getter
+    private String databaseSelfLink;
+    @Getter
+    private String databaseID;
+
     private Logger logger = Logger.getLogger(DocumentServices.class.getName());
 
     public DocumentServices(DocumentCollectionInfo collectionLocation) {
@@ -27,7 +38,7 @@ public class DocumentServices {
         this.masterKey = collectionLocation.getMasterKey();
         this.client = new DocumentClient(url, masterKey, new ConnectionPolicy(), ConsistencyLevel.Session);
         this.collectionLink = String.format("/dbs/%s/colls/%s", database, collection);
-
+        this.databaseLink = String.format("/dbs/%s", database);
         Initialize();
 
     }
@@ -38,6 +49,15 @@ public class DocumentServices {
      * It also update the collection selflink info.
      */
     private void Initialize() {
+
+        try {
+            ResourceResponse databaseResponse = client.readDatabase(databaseLink, new RequestOptions());
+            databaseID = databaseResponse.getResource().getId();
+            databaseSelfLink = databaseResponse.getResource().getSelfLink();
+        } catch (DocumentClientException e) {
+            e.printStackTrace();
+        }
+
         RequestOptions options = new RequestOptions();
         options.setPopulateQuotaInfo(true);
 
@@ -52,6 +72,7 @@ public class DocumentServices {
             collectionResponse = response;
             documentCollection = collectionResponse.getResource();
             collectionSelfLink = documentCollection.getSelfLink();
+            collectionID = documentCollection.getId();
         }
 
     }

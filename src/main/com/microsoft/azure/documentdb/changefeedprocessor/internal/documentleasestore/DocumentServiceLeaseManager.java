@@ -31,6 +31,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -72,54 +74,48 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     public void dispose() {
     }
 
-    public Callable<Void> initialize(boolean createLeaseCollection) throws DocumentClientException { //    public Task InitializeAsync()
+    public void initialize(boolean createLeaseCollection) throws DocumentClientException { //    public Task InitializeAsync()
 
-        Callable<Void> callable = new Callable<Void>() {
-            @Override
-            public Void call() throws Exception {
-                //Create URI String
-                String uri = String.format("/dbs/%s/colls/%s", leaseStoreCollectionInfo.getDatabaseName(), leaseStoreCollectionInfo.getCollectionName());
+        //Create URI String
+        String uri = String.format("/dbs/%s/colls/%s", leaseStoreCollectionInfo.getDatabaseName(), leaseStoreCollectionInfo.getCollectionName());
 
-                try {
-                    leaseStoreCollectionLink = client.readCollection(uri, new RequestOptions()).getResource().getSelfLink();
-                }catch (DocumentClientException ex){
-                    if (createLeaseCollection && ex.getStatusCode() == 404 ) { //Collection Lease Not Found)
-                        logger.info("Parameter createLeaseCollection is true! Creating lease collection");
+        try {
+            leaseStoreCollectionLink = client.readCollection(uri, new RequestOptions()).getResource().getSelfLink();
+        }catch (DocumentClientException ex){
+            if (createLeaseCollection && ex.getStatusCode() == 404 ) { //Collection Lease Not Found)
+                logger.info("Parameter createLeaseCollection is true! Creating lease collection");
 
-                        DocumentCollection leaseColl = new DocumentCollection();
-                        leaseColl.setId(leaseStoreCollectionInfo.getCollectionName());
+                DocumentCollection leaseColl = new DocumentCollection();
+                leaseColl.setId(leaseStoreCollectionInfo.getCollectionName());
 
-                        leaseStoreCollectionLink = client.createCollection(String.format("/dbs/%s", leaseStoreCollectionInfo.getDatabaseName()),leaseColl,new RequestOptions()).getResource().getSelfLink();
-                    }else{
-                        if (!createLeaseCollection)
-                            logger.info("Parameter createLeaseCollection is false! Creating lease collection");
-                        throw ex;
-                    }
-                }
-
-                // Get the current time
-                Instant snapshot1 = Instant.now();
-
-                // Create and upload a new document
-                Document document = new Document();
-                document.setId(getDocumentId() + UUID.randomUUID().toString());
-                Document dummyDocument = client.createDocument(leaseStoreCollectionLink, document, new RequestOptions(), true).getResource();
-
-                // Get the new current time
-                Instant snapshot2 = Instant.now();
-
-                Instant dummyTimestamp = Instant.ofEpochSecond(dummyDocument.getTimestamp().getTime()); // Instant defaults to UTC
-                Instant currentTimeDiff = Instant.ofEpochSecond(snapshot1.plusSeconds(snapshot2.getEpochSecond()).getEpochSecond() / 2);
-                serverToLocalTimeDelta = Duration.between(currentTimeDiff, dummyTimestamp);
-
-                client.deleteDocument(dummyDocument.getSelfLink(), new RequestOptions());
-
-                logger.info(String.format("Server to local time delta: {0}", serverToLocalTimeDelta));
-
-                return null;
+                leaseStoreCollectionLink = client.createCollection(String.format("/dbs/%s", leaseStoreCollectionInfo.getDatabaseName()),leaseColl,new RequestOptions()).getResource().getSelfLink();
+            }else{
+                if (!createLeaseCollection)
+                    logger.info("Parameter createLeaseCollection is false! Creating lease collection");
+                throw ex;
             }
-        };
-        return callable;
+        }
+
+        // Get the current time
+        Instant snapshot1 = Instant.now();
+
+        // Create and upload a new document
+        Document document = new Document();
+        document.setId(getDocumentId() + UUID.randomUUID().toString());
+        Document dummyDocument = client.createDocument(leaseStoreCollectionLink, document, new RequestOptions(), true).getResource();
+
+        // Get the new current time
+        Instant snapshot2 = Instant.now();
+
+        Instant dummyTimestamp = Instant.ofEpochSecond(dummyDocument.getTimestamp().getTime()); // Instant defaults to UTC
+        Instant currentTimeDiff = Instant.ofEpochSecond(snapshot1.plusSeconds(snapshot2.getEpochSecond()).getEpochSecond() / 2);
+        serverToLocalTimeDelta = Duration.between(currentTimeDiff, dummyTimestamp);
+
+        client.deleteDocument(dummyDocument.getSelfLink(), new RequestOptions());
+
+        logger.info(String.format("Server to local time delta: {0}", serverToLocalTimeDelta));
+
+
     }
 
     @Override
@@ -383,6 +379,55 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
 
     @Override
+    public void createLeases(List<String> ranges) {
+        logger.info("Creating Leases");
+
+
+        // Get leases after getting ranges, to make sure that no other hosts checked in continuation for split partition after we got leases.
+        ConcurrentHashMap existingLeases = new ConcurrentHashMap<String, DocumentServiceLease>();
+        try {
+            listLeases().call().forEach((lease) -> {
+                existingLeases.put(lease.getPartitionId(), lease);
+            });
+        }catch (Exception e){
+            logger.severe(e.getMessage());
+        }
+
+        HashSet<String> gonePartitionIds = new HashSet<>();
+        while (existingLeases.keys().hasMoreElements()){
+            String partitionID = (String)existingLeases.keys().nextElement();
+            if(!ranges.contains(partitionID))gonePartitionIds.add(partitionID);
+        }
+
+        ArrayList<String> addedPartitionIds = new ArrayList<>();
+        ranges.stream().forEach((range) ->{
+            if (!existingLeases.containsKey(range)) addedPartitionIds.add(range);
+        });
+
+        ConcurrentHashMap<String, ConcurrentLinkedQueue<DocumentServiceLease>> parentIdToChildLeases = new ConcurrentHashMap<>();
+
+        addedPartitionIds.forEach((addedRangeId)->{
+            String continuationToken = null;
+            String parentIds = "";
+
+
+            //TODO: Handle Split
+            try {
+
+                continuationToken = "";
+                if (existingLeases != null && existingLeases.get(addedRangeId) != null)
+                    continuationToken = ((DocumentServiceLease)existingLeases.get(addedRangeId)).getContinuationToken();
+                    createLeaseIfNotExist(addedRangeId, continuationToken).call();
+            } catch (DocumentClientException e) {
+                logger.severe(String.format("Error creating lease %s", e.getMessage()));
+            }catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        } );
+    }
+
+    @Override
     public Lease checkpoint(Lease lease, String continuationToken, long sequenceNumber) {
         DocumentServiceLease documentLease = (DocumentServiceLease) lease;
         assert documentLease != null : "documentLease";
@@ -400,6 +445,8 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         }
         return null;
     }
+
+
 
     private Document tryGetDocument(String documentId) throws DocumentClientException {//    private async Task<Document> TryGetDocument(string documentId)
         String uri = String.format("/dbs/%s/colls/%s/docs/%s", leaseStoreCollectionInfo.getDatabaseName(), leaseStoreCollectionInfo.getCollectionName(), documentId);
@@ -464,7 +511,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
     
     private String getPartitionLeasePrefix() {
-        return this.containerNamePrefix + CONTAINER_SEPARATOR + PARTITION_PREFIX;
+        return containerNamePrefix + CONTAINER_SEPARATOR + CONTAINER_NAME_SUFFIX + PARTITION_PREFIX;
     }
 
     private DocumentServiceLease updateInternal(DocumentServiceLease lease, LeaseConflictResolver conflictResolver, String owner) 
@@ -581,6 +628,7 @@ class PartitionInfo implements Partition {
     public String key() {
         return String.format("%s,%s,%s", this.DatabaseName, this.CollName, this.ID);
     }
+
 
     public enum PartitionStatus {
         COMPLETED, SYNCING;

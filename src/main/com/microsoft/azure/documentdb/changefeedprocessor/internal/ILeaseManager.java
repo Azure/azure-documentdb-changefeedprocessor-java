@@ -8,6 +8,7 @@ package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
 import com.microsoft.azure.documentdb.DocumentClientException;
 
+import java.util.List;
 import java.util.concurrent.Callable;
 
 /**
@@ -23,7 +24,7 @@ public interface ILeaseManager<T extends Lease> {
 	 * @return Nothing to return
 	 * @throws DocumentClientException
 	 */
-	Callable<Void> initialize(boolean createLeaseCollection) throws DocumentClientException;
+	void initialize(boolean createLeaseCollection) throws DocumentClientException;
 
 	/***
 	 * Checks whether lease store exists
@@ -114,4 +115,6 @@ public interface ILeaseManager<T extends Lease> {
 	 * @return
 	 */
 	Callable<Boolean> isExpired(T lease);
+
+	void createLeases(List<String> range);
 }
