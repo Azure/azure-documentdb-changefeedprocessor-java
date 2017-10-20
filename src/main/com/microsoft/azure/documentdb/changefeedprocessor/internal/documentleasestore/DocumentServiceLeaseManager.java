@@ -451,7 +451,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
 
     private Document tryGetDocument(String documentId) throws DocumentClientException {//    private async Task<Document> TryGetDocument(string documentId)
         String uri = String.format("/dbs/%s/colls/%s/docs/%s", leaseStoreCollectionInfo.getDatabaseName(), leaseStoreCollectionInfo.getCollectionName(), documentId);
-        
+        logger.info(String.format("getting document uri %s", uri));
         Document doc = null;
         try {
         	doc = client.readDocument(uri, new RequestOptions()).getResource();

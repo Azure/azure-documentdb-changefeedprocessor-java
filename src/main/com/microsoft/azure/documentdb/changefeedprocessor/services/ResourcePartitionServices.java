@@ -50,7 +50,7 @@ public class ResourcePartitionServices {
     public void start(String partitionId) throws DocumentClientException, InterruptedException {
         ResourcePartition resourcePartition = this.get(partitionId);
         String initialData = checkpointSvcs.getCheckpointData(partitionId);
-        logger.info(String.format("Starting partition %s - Checkpoint %s ",partitionId,initialData));
+        logger.info(String.format("Starting partition %s - Checkpoint %s ",partitionId, initialData));
         resourcePartition.start(initialData);
     }
 

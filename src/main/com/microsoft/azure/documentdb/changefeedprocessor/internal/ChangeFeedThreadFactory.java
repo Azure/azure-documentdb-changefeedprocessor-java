@@ -16,7 +16,7 @@ public class ChangeFeedThreadFactory implements ThreadFactory {
     public Thread newThread(Runnable r) {
         Thread thread = new Thread(r);
         thread.setName(String.format("%s_%s",thread.getId(),this.ThreadSuffixName));
-        thread.setDaemon(false);
+        thread.setDaemon(true);
 
         logger.info(String.format("Thread Created Name: %s, ID: %s, Daemon: %s", thread.getName(), thread.getId(), thread.isDaemon()));
 

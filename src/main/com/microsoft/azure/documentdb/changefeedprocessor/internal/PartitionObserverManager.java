@@ -5,6 +5,7 @@ import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverClos
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
@@ -59,7 +60,15 @@ final class PartitionObserverManager<T extends Lease> {
     				oPA.add(obs.onPartitionAcquired(lease));  //TODO: Check if this works as expected. If not, change the return type of onPartitionAcquired to callable
     	        }
     			try {
-					execSvc.invokeAll(oPA);	//TODO: Ensure this waits for executors to finish
+					execSvc.invokeAll(oPA).stream().forEach((f) -> {
+						try {
+							f.get();
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						} catch (ExecutionException e) {
+							e.printStackTrace();
+						}
+					});	//TODO: Ensure this waits for executors to finish
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -78,7 +87,15 @@ final class PartitionObserverManager<T extends Lease> {
     				oPR.add(obs.onPartitionReleased(lease, reason));  //TODO: Check if this works as expected. If not, change the return type of onPartitionAcquired to callable
     	        }
     			try {
-					execSvc.invokeAll(oPR);	//TODO: Ensure this waits for executors to finish
+					execSvc.invokeAll(oPR).stream().forEach((f)->{
+						try {
+							f.get();
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						} catch (ExecutionException e) {
+							e.printStackTrace();
+						}
+					});	//TODO: Ensure this waits for executors to finish
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}

@@ -160,8 +160,9 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         logger.info("Initializing partition manager");
         partitionManager = new PartitionManager<DocumentServiceLease>(this.hostName, this.leaseManager, this.options);
-        partitionManager.subscribe(this);
         try {
+            this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, observerFactory, changeFeedOptions.getPageSize());
+            partitionManager.subscribe(this).call();
             partitionManager.initialize();
         } catch (Exception e) {
             e.printStackTrace();

@@ -39,7 +39,13 @@ public class CheckpointServices {
     }
 
     String getCheckpoint(String partitionId) throws DocumentClientException {
-        DocumentServiceLease lease = (DocumentServiceLease) this.leaseManager.getLease(partitionId);
+        DocumentServiceLease lease = null;
+        try {
+            lease = (DocumentServiceLease) this.leaseManager.getLease(partitionId).call();
+        } catch (Exception e) {
+            logger.severe(String.format("Error!! %s", e.getMessage()));
+            e.printStackTrace();
+        }
         return lease.getContinuationToken();
     }
 
