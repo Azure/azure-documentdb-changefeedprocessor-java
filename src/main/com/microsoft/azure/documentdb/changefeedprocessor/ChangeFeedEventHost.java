@@ -19,6 +19,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLease> {
 
@@ -169,51 +170,51 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         }
 
     }
-
-    private void initializePartitions(){
-        logger.info("Initializing partitions");
-
-        //TODO: This is not the right place to have this code..
-        this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, observerFactory, changeFeedOptions.getPageSize());
-
-        // list partitions
-        List<String> partitionIds = this.listPartition();
-
-        partitionIds.stream().forEach((id) -> {
-            logger.info(String.format("PartitionID %s", id));
-            resourcePartitionSvcs.create(id);
-        });
-
-    }
-
-    private void initializeLeaseManager() {
-        // simulate a callback from partitionManager
-        hackStartSinglePartition();
-    }
-
-    private void hackStartSinglePartition() {
-        List<String> partitionIds = this.listPartition();
-
-        partitionIds.stream().forEach((id) -> {
-            try {
-                resourcePartitionSvcs.start(id);
-            } catch (DocumentClientException e) {
-                e.printStackTrace();
-            }
-            catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        });
-
-    }
-
-    private List listPartition(){
-        DocumentServices client = this.documentServices;
-
-        List list = (List)client.listPartitionRange();
-
-        return list;
-    }
+//
+//    private void initializePartitions(){
+//        logger.info("Initializing partitions");
+//
+//        //TODO: This is not the right place to have this code..
+//        this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, observerFactory, changeFeedOptions.getPageSize());
+//
+//        // list partitions
+//        List<String> partitionIds = this.listPartition();
+//
+//        partitionIds.stream().forEach((id) -> {
+//            logger.info(String.format("PartitionID %s", id));
+//            resourcePartitionSvcs.create(id);
+//        });
+//
+//    }
+//
+//    private void initializeLeaseManager() {
+//        // simulate a callback from partitionManager
+//        hackStartSinglePartition();
+//    }
+//
+//    private void hackStartSinglePartition() {
+//        List<String> partitionIds = this.listPartition();
+//
+//        partitionIds.stream().forEach((id) -> {
+//            try {
+//                resourcePartitionSvcs.start(id);
+//            } catch (DocumentClientException e) {
+//                e.printStackTrace();
+//            }
+//            catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        });
+//
+//    }
+//
+//    private List listPartition(){
+//        DocumentServices client = this.documentServices;
+//
+//        List list = (List)client.listPartitionRange();
+//
+//        return list;
+//    }
 
     @Override
     public Callable<Void> onPartitionAcquired(DocumentServiceLease documentServiceLease) {
@@ -221,8 +222,10 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         Callable<Void> callable = new Callable<Void>() {
             @Override
             public Void call() throws Exception {
-                String partitionId = documentServiceLease.id;
+                String[] parts = documentServiceLease.id.split(Pattern.quote("."));
+                String partitionId = parts[parts.length-1];
                 try {
+                    resourcePartitionSvcs.create(partitionId);
                     resourcePartitionSvcs.start(partitionId);
                 } catch (DocumentClientException e) {
                     e.printStackTrace();

@@ -33,7 +33,12 @@ public class CheckpointServices {
 
     public void setCheckpointData(String partitionId, String data) throws DocumentClientException {
         logger.info(String.format("Saving Checkpoint partitionId: %s, data: %s",partitionId,data));
-        DocumentServiceLease lease = (DocumentServiceLease)leaseManager.getLease(partitionId);
+        DocumentServiceLease lease = null;
+        try {
+            lease = (DocumentServiceLease)leaseManager.getLease(partitionId).call();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         String continuation = data;
         checkpoint(lease, continuation);
     }
@@ -50,8 +55,8 @@ public class CheckpointServices {
     }
 
     public void checkpoint(DocumentServiceLease lease, String continuation) {
-        assert (lease != null);
-        assert (continuation != null && continuation != "");
+        if ((lease == null)) throw new AssertionError();
+        if ((continuation == null || continuation == "")) throw new AssertionError();
 
         DocumentServiceLease result = null;
         try

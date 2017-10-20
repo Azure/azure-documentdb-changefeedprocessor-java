@@ -121,15 +121,6 @@ public class ChangeFeedJob implements Job {
         ChangeFeedObserverContext context = new ChangeFeedObserverContext();
         context.setPartitionKeyRangeId(partitionId);
         FeedResponse<Document> query = null;
-        try {
-            this.checkpoint(initialData);
-        } catch (DocumentClientException e) {
-            logger.info(e.getMessage());
-            e.printStackTrace();
-            throw e;
-        }catch (Exception e){
-            logger.info(e.getMessage());
-        }
 
         boolean HasMoreResults = false;
 

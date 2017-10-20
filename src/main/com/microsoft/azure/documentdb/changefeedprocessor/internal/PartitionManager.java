@@ -59,7 +59,7 @@ public class PartitionManager<T extends Lease> {
 
         for (T lease : this.leaseManager.listLeases().call()) {
             allLeases.add(lease);
-            if (lease.getOwner() == null || lease.getOwner().equalsIgnoreCase(this.workerName)) {
+            if (lease.getOwner() == null || lease.getOwner().isEmpty() || lease.getOwner().equalsIgnoreCase(this.workerName)) {
             	Future<T> newLeaseFuture = execService.submit(this.renewLease(lease));
             	T newLease = newLeaseFuture.get();		//TODO: Ensure that this is not blocking other threads in the for loop
                 if (newLease != null) {
@@ -77,7 +77,15 @@ public class PartitionManager<T extends Lease> {
         }
 
         try {
-			execService.invokeAll(addLeaseTasks);	//Wait till all tasks are finished
+			execService.invokeAll(addLeaseTasks).forEach((f)->{
+				try {
+					f.get();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				} catch (ExecutionException e) {
+					e.printStackTrace();
+				}
+			});	//Wait till all tasks are finished
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}

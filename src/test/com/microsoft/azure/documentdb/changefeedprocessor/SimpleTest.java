@@ -8,6 +8,7 @@ import org.junit.Test;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Scanner;
 
 public class SimpleTest {
 
@@ -50,6 +51,10 @@ public class SimpleTest {
 
         try {
             host.registerObserver(TestChangeFeedObserver.class);
+
+            System.out.println("Press ENTER to finish");
+            Scanner scanner = new Scanner(System.in);
+            scanner.nextLine();
         }
         catch(Exception e) {
             e.printStackTrace();
