@@ -19,6 +19,7 @@ public class CheckpointServices {
 
     public CheckpointServices(ILeaseManager leaseManager, CheckpointFrequency checkpointOptions){
         this.leaseManager = leaseManager;
+        this.checkpointManager = (ICheckpointManager)leaseManager;
         this.checkpointOptions = checkpointOptions;
     }
 
@@ -63,8 +64,10 @@ public class CheckpointServices {
         {
             result = (DocumentServiceLease) this.checkpointManager.checkpoint(lease, continuation, lease.getSequenceNumber() + 1);
 
-            assert (result.getConcurrencyToken() == continuation ); // "ContinuationToken was not updated!"
-            logger.info(String.format("Checkpoint: partition %s, new continuation '%s'", lease.getPartitionId(), continuation));
+            if(result.getConcurrencyToken() == continuation )
+                logger.info(String.format("Checkpoint: partition %s, continuation token '%s' was not updated!", lease.getPartitionId(), continuation));
+            else
+                logger.info(String.format("Checkpoint: partition %s, new continuation '%s'", lease.getPartitionId(), continuation));
         }
         catch (Exception ex)
         {
