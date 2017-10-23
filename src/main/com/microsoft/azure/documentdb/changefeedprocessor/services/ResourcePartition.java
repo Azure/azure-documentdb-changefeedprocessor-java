@@ -1,40 +1,28 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
 import com.microsoft.azure.documentdb.DocumentClientException;
+import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverCloseReason;
+
+import java.util.logging.Logger;
 
 public class ResourcePartition {
     private String partitionId;
     private Job resourceJob;
 
-    public ResourcePartition(String partitionId) {
-        this.partitionId = partitionId;
-        this.resourceJob = null;
-    }
+    private Logger logger = Logger.getLogger(ResourcePartition.class.getName());
 
     public ResourcePartition(String partitionId, Job resourceJob) {
         this.partitionId = partitionId;
         this.resourceJob = resourceJob;
     }
 
-    public void init(Job resourceJob) {
-        this.resourceJob = resourceJob;
-    }
-
-    public String getId() {
-        return partitionId;
-    }
-
-    public void start(JobFactory factory, Object initialData) throws DocumentClientException, InterruptedException {
-        this.resourceJob = factory.create();
-        this.resourceJob.start(initialData);
-    }
-
-    public void start(Object initialData) throws DocumentClientException, InterruptedException {
-        this.resourceJob.start(initialData);
+    public void start(String initialData) throws DocumentClientException, InterruptedException {
+        logger.info(String.format("Starting ResourceParition: PartitionID: %s - InitialData %S", this.partitionId, initialData));
+        resourceJob.start(initialData);
     }
 
     public void stop() {
-        resourceJob.stop();
+        resourceJob.stop(ChangeFeedObserverCloseReason.SHUTDOWN);
     }
 
     public void startJob(Job job) throws DocumentClientException, InterruptedException {

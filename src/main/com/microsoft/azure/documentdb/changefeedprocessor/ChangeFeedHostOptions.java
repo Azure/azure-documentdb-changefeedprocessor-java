@@ -25,14 +25,14 @@
 
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
-import java.time.Instant;
+import java.time.Duration;
 
 public class ChangeFeedHostOptions {
 
-    static Instant DefaultRenewInterval =  Instant.ofEpochMilli(0).plusSeconds(17);
-    static Instant DefaultAcquireInterval = Instant.ofEpochMilli(0).plusSeconds(13);
-    static Instant DefaultExpirationInterval = Instant.ofEpochMilli(0).plusSeconds(60);
-    static Instant DefaultFeedPollDelay = Instant.ofEpochMilli(0).plusSeconds(5);
+    static Duration DefaultRenewInterval =  Duration.ofMillis(0).plusSeconds(17);
+    static Duration DefaultAcquireInterval = Duration.ofMillis(0).plusSeconds(13);
+    static Duration DefaultExpirationInterval = Duration.ofMillis(0).plusSeconds(60);
+    static Duration DefaultFeedPollDelay = Duration.ofMillis(0).plusSeconds(5);
 
     public ChangeFeedHostOptions(){
         leaseRenewInterval = DefaultRenewInterval;
@@ -41,10 +41,10 @@ public class ChangeFeedHostOptions {
         feedPollDelay = DefaultFeedPollDelay;
     }
 
-    private Instant leaseRenewInterval;
-    private Instant leaseAcquireInterval;
-    private Instant leaseExpirationInterval;
-    private Instant feedPollDelay;
+    private Duration leaseRenewInterval;
+    private Duration leaseAcquireInterval;
+    private Duration leaseExpirationInterval;
+    private Duration feedPollDelay;
     private CheckpointFrequency checkpointFrequency;
     private String leasePrefix;
     int minPartitionCount;
@@ -56,36 +56,36 @@ public class ChangeFeedHostOptions {
         return this.maxPartitionCount > 0 ? this.maxPartitionCount : 25;
     }
 
-    public Instant getLeaseRenewInterval() {
+    public Duration getLeaseRenewInterval() {
         return leaseRenewInterval;
     }
 
-    public void setLeaseRenewInterval(Instant leaseRenewInterval) {
-        this.leaseRenewInterval = leaseRenewInterval;
+    public void setLeaseRenewInterval(Duration _leaseRenewInterval) {
+        this.leaseRenewInterval = _leaseRenewInterval;
     }
 
-    public Instant getLeaseAcquireInterval() {
+    public Duration getLeaseAcquireInterval() {
         return leaseAcquireInterval;
     }
 
-    public void setLeaseAcquireInterval(Instant leaseAcquireInterval) {
-        this.leaseAcquireInterval = leaseAcquireInterval;
+    public void setLeaseAcquireInterval(Duration _leaseAcquireInterval) {
+        this.leaseAcquireInterval = _leaseAcquireInterval;
     }
 
-    public Instant getLeaseExpirationInterval() {
+    public Duration getLeaseExpirationInterval() {
         return leaseExpirationInterval;
     }
 
-    public void setLeaseExpirationInterval(Instant leaseExpirationInterval) {
-        this.leaseExpirationInterval = leaseExpirationInterval;
+    public void setLeaseExpirationInterval(Duration _leaseExpirationInterval) {
+        this.leaseExpirationInterval = _leaseExpirationInterval;
     }
 
-    public Instant getFeedPollDelay() {
+    public Duration getFeedPollDelay() {
         return feedPollDelay;
     }
 
-    public void setFeedPollDelay(Instant feedPollDelay) {
-        this.feedPollDelay = feedPollDelay;
+    public void setFeedPollDelay(Duration _feedPollDelay) {
+        this.feedPollDelay = _feedPollDelay;
     }
 
     public CheckpointFrequency getCheckpointFrequency() {
@@ -112,7 +112,7 @@ public class ChangeFeedHostOptions {
         this.minPartitionCount = minPartitionCount;
     }
 
-    int getMaxPartitionCount() {
+    public int getMaxPartitionCount() {
         return maxPartitionCount;
     }
 
