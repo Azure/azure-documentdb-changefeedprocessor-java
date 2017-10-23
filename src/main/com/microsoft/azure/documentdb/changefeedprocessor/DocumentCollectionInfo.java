@@ -137,4 +137,20 @@ public class DocumentCollectionInfo {
         this.connectionPolicy = _connectionPolicy;
     }
 
+
+    public DocumentCollectionInfo getCollectionInfo(String userAgentSuffix)
+    {
+        DocumentCollectionInfo collectionInfo = this;
+
+        DocumentCollectionInfo result = collectionInfo;
+        if (result.getConnectionPolicy().getUserAgentSuffix() == null ||
+                result.getConnectionPolicy().getUserAgentSuffix().isEmpty())
+        {
+            result = new DocumentCollectionInfo(collectionInfo);
+            result.getConnectionPolicy().setUserAgentSuffix(userAgentSuffix);
+        }
+
+        return result;
+    }
+
 }

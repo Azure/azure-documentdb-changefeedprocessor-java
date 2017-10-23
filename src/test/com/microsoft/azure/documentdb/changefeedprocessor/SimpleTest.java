@@ -16,23 +16,13 @@ public class SimpleTest {
     public void testCreateChangeFeedHostUsingSecrets()  {
         ConfigurationFile config = null;
 
-        try {
-            config = new ConfigurationFile("app.secrets");
-        } catch (ConfigurationException e) {
-            Assert.fail(e.getMessage());
-        }
+        String url = config.get("COSMOSDB_ENDPOINT");
+        String database = config.get("COSMOSDB_DATABASE");
+        String collection = config.get("COSMOSDB_COLLECTION");
+        String masterKey = config.get("COSMOSDB_SECRET");
+        String auxCollection = config.get("COSMOSDB_AUX_COLLECTION");
 
-        DocumentCollectionInfo docInfo = new DocumentCollectionInfo();
-        try {
-            docInfo.setUri(new URI(config.get("COSMOSDB_ENDPOINT")));
-            docInfo.setMasterKey(config.get("COSMOSDB_SECRET"));
-            docInfo.setDatabaseName(config.get("COSMOSDB_DATABASE"));
-            docInfo.setCollectionName(config.get("COSMOSDB_COLLECTION"));
-        } catch (URISyntaxException e) {
-            Assert.fail("COSMOSDB URI FAIL: " + e.getMessage());
-        } catch (ConfigurationException e) {
-            Assert.fail("Configuration Error " + e.getMessage());
-
+        Main.testChangeFeed2("hostname", url, database, collection, masterKey);
         }
 
         DocumentCollectionInfo docAux = new DocumentCollectionInfo(docInfo);

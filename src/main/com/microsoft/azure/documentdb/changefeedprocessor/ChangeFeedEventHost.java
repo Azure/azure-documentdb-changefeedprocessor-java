@@ -11,6 +11,7 @@ import com.microsoft.azure.documentdb.DocumentClientException;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.*;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLeaseManager;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointDocDbServices;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartitionServices;
@@ -42,7 +43,10 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     private final int DEFAULT_PAGE_SIZE = 100;
     private Logger logger = Logger.getLogger(ChangeFeedEventHost.class.getName());
 
-    public ChangeFeedEventHost( String hostName, DocumentCollectionInfo documentCollectionLocation, DocumentCollectionInfo auxCollectionLocation){
+    public ChangeFeedEventHost(
+            String hostName,
+            DocumentCollectionInfo documentCollectionLocation,
+            DocumentCollectionInfo auxCollectionLocation){
         this(hostName, documentCollectionLocation, auxCollectionLocation, new ChangeFeedOptions(), new ChangeFeedHostOptions());
     }
 

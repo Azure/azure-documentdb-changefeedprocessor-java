@@ -31,6 +31,15 @@ public class DocumentServices {
 
     private Logger logger = Logger.getLogger(DocumentServices.class.getName());
 
+    protected DocumentServices() {
+        this.url = "";
+        this.database = "";
+        this.collection = "";
+        this.masterKey = "";
+        this.client = null;
+        this.collectionLink = null;
+    }
+
     public DocumentServices(DocumentCollectionInfo collectionLocation) {
         this.url = collectionLocation.getUri().toString();
         this.database = collectionLocation.getDatabaseName();

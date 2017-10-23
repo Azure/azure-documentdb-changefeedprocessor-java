@@ -1,51 +1,55 @@
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationException;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationFile;
+import com.microsoft.azure.documentdb.Document;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.CFTestConfiguration;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentChangeFeedClient;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentChangeFeedException;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.TestChangeFeedJobFactory;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
+import java.util.List;
 
 public class DocumentServiceTest {
 
     @Test
-    public void testDocumentService(){
+    public void testConnectionToCosmosChangeFeed() throws DocumentChangeFeedException {
 
-        ConfigurationFile config = null;
-        DocumentServices client = null;
+        // retrieve test configuration
+        DocumentCollectionInfo docInfo = CFTestConfiguration.getDefaultDocumentCollectionInfo();
+        Assert.assertNotNull(docInfo);
 
-        try {
-            config = new ConfigurationFile("app.secrets");
-        } catch (ConfigurationException e) {
-            Assert.fail(e.getMessage());
-        }
+        // list the partitions
+        DocumentServices documentServices = new DocumentServices(docInfo);
+        List<String> partitionNames = documentServices.listPartitionRange();
+        Assert.assertTrue("partition names" , partitionNames.size() >  0);
 
-        DocumentCollectionInfo docInfo = new DocumentCollectionInfo();
-        try {
-            docInfo.setUri(new URI(config.get("COSMOSDB_ENDPOINT")));
-            docInfo.setMasterKey(config.get("COSMOSDB_SECRET"));
-            docInfo.setDatabaseName(config.get("COSMOSDB_DATABASE"));
-            docInfo.setCollectionName(config.get("COSMOSDB_COLLECTION"));
-        } catch (URISyntaxException e) {
-            Assert.fail("COSMOSDB URI FAIL: " + e.getMessage());
-        } catch (ConfigurationException e) {
-            Assert.fail("Configuration Error " + e.getMessage());
-
-        }
-
-        client = new DocumentServices(docInfo);
-
+        // create a partition client
+        String partitionId = partitionNames.get(0); // use partition "0"
+        DocumentChangeFeedClient client = documentServices.createClient(partitionId, null, 2);
         Assert.assertNotNull(client);
 
-        Object list = client.listPartitionRange();
+        // retrieve data
+        List<Document> docs = client.read();
+        String continuationToken = client.getContinuationToken();
 
-        Assert.assertNotNull(list);
+        List<Document> docs2 = client.read();
+        String continuationToken2 = client.getContinuationToken();
 
-        Assert.assertTrue("It must have at least one partition!!", ((ArrayList)list).size() >= 1);
+        // create another client using continuation token
+        DocumentChangeFeedClient anotherClient = documentServices.createClient(partitionId, continuationToken, 2);
+        Assert.assertNotNull(anotherClient);
+
+        List<Document> anotherDocs = anotherClient.read();
+        String anotherContinuationToken = anotherClient.getContinuationToken();
+
+        // since it is a continuation, the document is different from the original client
+        Assert.assertNotEquals(docs.get(0), anotherDocs.get(0));
+
+        // but it is exactly the same as the second retrieval
+        Assert.assertArrayEquals(docs2.toArray(), anotherDocs.toArray());
+        Assert.assertEquals(continuationToken2, anotherContinuationToken);
     }
 
 }

@@ -40,8 +40,8 @@ public class TestChangeFeedObserver implements IChangeFeedObserver {
         }
     }
 
+  
     public void processChanges(ChangeFeedObserverContext context, List<Document> docs) {
-
         if (exec == null)
             throw new NullPointerException("Exec is null, initiate the class properly before using it!");
 
@@ -63,5 +63,4 @@ public class TestChangeFeedObserver implements IChangeFeedObserver {
         }
 
     }
-
 }

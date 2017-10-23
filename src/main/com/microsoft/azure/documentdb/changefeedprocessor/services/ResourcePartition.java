@@ -8,6 +8,7 @@ import java.util.logging.Logger;
 public class ResourcePartition {
     private String partitionId;
     private Job resourceJob;
+
     private Logger logger = Logger.getLogger(ResourcePartition.class.getName());
 
     public ResourcePartition(String partitionId, Job resourceJob) {
@@ -22,6 +23,17 @@ public class ResourcePartition {
 
     public void stop() {
         resourceJob.stop(ChangeFeedObserverCloseReason.SHUTDOWN);
+    }
+
+    public void startJob(Job job) throws DocumentClientException, InterruptedException {
+        Object initialData = this.partitionId;
+        job.start(initialData);
+
+        this.resourceJob = job;
+    }
+
+    public void stopJob() {
+        resourceJob.stop();
     }
 
     public Job getJob() {
