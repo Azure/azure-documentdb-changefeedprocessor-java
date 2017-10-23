@@ -56,22 +56,54 @@ public class ChangeFeedJob2 implements Job {
 
             try {
                 docs = client.read();
-            } catch(DocumentChangeFeedException e) {
 
+                if(docs == null)
+                    continue;
+
+                processChanges(docs);
+
+                hasMoreResults = true;
+
+            } catch(DocumentChangeFeedException e) {
+                hasMoreResults = false; // force false for now
             }
 
-            hasMoreResults = (docs != null);
+            if (this.stop)
+                break;
 
-            if (hasMoreResults || this.stop)
+            if (hasMoreResults)
                 continue;
 
-            Thread.sleep(this.DEFAULT_THREAD_WAIT);
+            sleep(DEFAULT_THREAD_WAIT);
         }
+
+        this.partitionId = null;
+    }
+
+    void sleep(int totalTime) throws InterruptedException {
+        int interval = 10;
+        for(int totalSleep=0; totalSleep < totalTime; totalSleep += interval ) {
+            // check if the stop is signaled
+            if( this.stop )
+                break;
+            Thread.sleep( interval );
+        }
+
+    }
+
+    void processChanges(List<Document> docs) {
+        // return null for feedresponse (temporarily)
+        // suggestion: remove from API
+        FeedResponse<Document> WRONG_BUT_WORKS = null;
+        ChangeFeedObserverContext context = new ChangeFeedObserverContext();
+        context.setPartitionKeyRangeId(partitionId);
+        context.setFeedResponse(WRONG_BUT_WORKS);
+        observer.processChanges(context, docs);
     }
 
     void checkpoint(Object data) throws DocumentClientException {
         String initialData = (String) (data == null ? "" : data);
-        checkpointSvcs.setCheckpointData(partitionId, initialData);
+        checkpointSvcs.setContinuationToken(partitionId, initialData);
     }
 
     @Override
@@ -79,4 +111,7 @@ public class ChangeFeedJob2 implements Job {
         stop = true;
     }
 
+    public boolean checkIsRunning() {
+        return this.partitionId != null;
+    }
 }

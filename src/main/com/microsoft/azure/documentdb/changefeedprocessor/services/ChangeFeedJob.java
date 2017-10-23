@@ -83,7 +83,7 @@ public class ChangeFeedJob implements Job {
         while(!this.stop) {
             do {
                 try {
-                    query = client.createDocumentChangeFeedQuery(partitionId, (String) checkpointSvcs.getCheckpointData(partitionId), this.pageSize);
+                    query = client.createDocumentChangeFeedQuery(partitionId, (String) checkpointSvcs.getContinuationToken(partitionId), this.pageSize);
                     if (query != null) {
                         context.setFeedResponse(query);
                         List<Document> docs = query.getQueryIterable().fetchNextBlock();
@@ -124,7 +124,7 @@ public class ChangeFeedJob implements Job {
 
     void checkpoint(Object data) throws DocumentClientException {
         String initialData = (String) (data == null ? "" : data);
-        checkpointSvcs.setCheckpointData(partitionId, initialData);
+        checkpointSvcs.setContinuationToken(partitionId, initialData);
     }
 
     @Override
