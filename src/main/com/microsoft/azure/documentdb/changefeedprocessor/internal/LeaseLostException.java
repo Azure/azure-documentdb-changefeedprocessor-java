@@ -26,24 +26,22 @@ public class LeaseLostException extends Exception {
 
     public LeaseLostException(Lease lease, Exception innerException)
     {
-        setLease(lease);
-        setIsGone(false);
+//        this.Lease = lease;
+//        this.IsGone = false;
     }
 
     public LeaseLostException(Lease lease, Exception innerException, Boolean isGone)
     {
-    	setLease(lease);
-        setIsGone(isGone);
+//        this.Lease = lease;
+//        this.IsGone = isGone;
     }
 
     public LeaseLostException(String message)
     {
-    	new Exception(message);
     }
 
     public LeaseLostException(String message, Exception innerException)
     {
-    	new Exception(message, innerException);
     }
 
 //    protected LeaseLostException(SerializationInfo info, StreamingContext context)
@@ -55,7 +53,6 @@ public class LeaseLostException extends Exception {
         return lease;
     }
     private void setLease(Lease value) {
-    	this.lease = value;
     }
 
     public Boolean geteIsGone() {
@@ -63,7 +60,6 @@ public class LeaseLostException extends Exception {
     }
 
     public void setIsGone(Boolean value) {
-    	this.isGone = value;
     }
 
 //    public override void GetObjectData(SerializationInfo info, StreamingContext context)

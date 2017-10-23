@@ -44,7 +44,7 @@ public class ChangeFeedEventHostTest {
 
 
     @Test
-    public void testCreateChangeFeedHostUsingSecrets()  {
+    public void testCreatChangeFeedHostUsingSecrets()  {
         ConfigurationFile config = null;
 
         try {

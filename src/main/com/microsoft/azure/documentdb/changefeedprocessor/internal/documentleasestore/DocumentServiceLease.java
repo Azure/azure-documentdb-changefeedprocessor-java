@@ -22,21 +22,20 @@
  */
 package com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.microsoft.azure.documentdb.Document;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.Lease;
-import lombok.Getter;
-import lombok.Setter;
-
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.util.Locale;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.microsoft.azure.documentdb.Document;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.Lease;
+
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  *
@@ -54,15 +53,14 @@ public class DocumentServiceLease extends Lease {
     	this.id = other.id;
         this.state = other.state;
         this.eTag = other.eTag;
-        this.ts = other.ts;
+        this.tS = other.tS;
     }
 
     public DocumentServiceLease(Document document) {
-    	this(fromDocument(document));
-        
+        super(fromDocument(document));
     	if (document == null) {
             throw new IllegalArgumentException("document");
-        }      
+        }
     }
 
     @JsonProperty("id")
@@ -81,16 +79,17 @@ public class DocumentServiceLease extends Lease {
     public String concurrencyToken;
     
     @JsonProperty("_ts")
-    @Getter @Setter private long ts;
+    @Getter @Setter private long tS;
         
     public Instant getTimestamp() {
-    	return unixStartTime.plusSeconds(ts);
+    	return unixStartTime.plusSeconds(tS);
     }
     
     public void setTimestamp(Instant value) {
-    	ts = Duration.between(value, unixStartTime).getSeconds(); 
+    	tS = Duration.between(value, unixStartTime).getSeconds(); 
     }    
 
+    @Override
     public String getConcurrencyToken() {
     	return eTag;
     }
@@ -99,21 +98,19 @@ public class DocumentServiceLease extends Lease {
     public String toString() {
         return String.format(
             Locale.ROOT,
-            "%d %s Owner='%s' Continuation=%s Timestamp(local)=%s",
+            "{0} {1} Owner='{2}' Continuation={3} Timestamp(local)={4}",
             id,
             state,
-            this.getOwner(),
-            this.getContinuationToken(),
+            getOwner(),
+            getContinuationToken(),
             LocalTime.from(timestamp));
     }
 
     private static DocumentServiceLease fromDocument(Document document) {
         ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-
-		try {
-			String json = document.toJson();
+    	
+        try {
+        	String json = mapper.writeValueAsString(document);
 			return mapper.readValue(json, DocumentServiceLease.class);
 		} catch (IOException e) {
 			e.printStackTrace();

@@ -6,10 +6,10 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
 /**
-*
-* @author rogirdh
-*/
-public interface IPartitionManager<T extends Lease> {
+ *
+ * @author yoterada
+ */
+public interface IPartitionManager<T> {
     void start();	//TODO: implement as async 
     void stop();	//TODO: implement as async 
     IDisposable subscribe(IPartitionObserver<T> observer);

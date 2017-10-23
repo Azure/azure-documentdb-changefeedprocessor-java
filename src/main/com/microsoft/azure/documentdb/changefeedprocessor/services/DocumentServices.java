@@ -2,11 +2,9 @@ package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
 import com.microsoft.azure.documentdb.*;
 import com.microsoft.azure.documentdb.changefeedprocessor.*;
-import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
 public class DocumentServices {
 
@@ -16,20 +14,6 @@ public class DocumentServices {
     private final String masterKey;
     private final DocumentClient client;
     private final String collectionLink;
-    private final String databaseLink;
-    private DocumentCollection documentCollection;
-    private ResourceResponse<DocumentCollection> collectionResponse;
-
-    @Getter
-    private String collectionSelfLink;
-    @Getter
-    private String collectionID;
-    @Getter
-    private String databaseSelfLink;
-    @Getter
-    private String databaseID;
-
-    private Logger logger = Logger.getLogger(DocumentServices.class.getName());
 
     protected DocumentServices() {
         this.url = "";
@@ -47,43 +31,6 @@ public class DocumentServices {
         this.masterKey = collectionLocation.getMasterKey();
         this.client = new DocumentClient(url, masterKey, new ConnectionPolicy(), ConsistencyLevel.Session);
         this.collectionLink = String.format("/dbs/%s/colls/%s", database, collection);
-        this.databaseLink = String.format("/dbs/%s", database);
-        Initialize();
-
-    }
-
-    /***
-     * This initialization process does a request to the collection getting quota information usage.
-     * this information will be used after in getDocumentCount method, (obs: the valure returned can be different from the number os records at the collection)
-     * It also update the collection selflink info.
-     */
-    private void Initialize() {
-
-        try {
-            ResourceResponse databaseResponse = client.readDatabase(databaseLink, new RequestOptions());
-            databaseID = databaseResponse.getResource().getId();
-            databaseSelfLink = databaseResponse.getResource().getSelfLink();
-        } catch (DocumentClientException e) {
-            e.printStackTrace();
-        }
-
-        RequestOptions options = new RequestOptions();
-        options.setPopulateQuotaInfo(true);
-
-        ResourceResponse<DocumentCollection> response = null;
-        try {
-            response  = client.readCollection(collectionLink, options);
-        } catch (DocumentClientException e) {
-            e.printStackTrace();
-        }
-
-        if (response != null){
-            collectionResponse = response;
-            documentCollection = collectionResponse.getResource();
-            collectionSelfLink = documentCollection.getSelfLink();
-            collectionID = documentCollection.getId();
-        }
-
     }
 
     public List<String> listPartitionRange() {
@@ -130,36 +77,11 @@ public class DocumentServices {
         return query;
     }
 
-    public int getDocumentCount(){
+    public DocumentChangeFeedClient createClient(String partitionId, String continuationToken) {
+        return new DocumentChangeFeedClient(this, partitionId, continuationToken, 100);
+    }
 
-        if (collectionResponse == null)
-            return -1;
-
-        int result = -1;
-
-        String resourceUsage = collectionResponse.getResponseHeaders().get("x-ms-resource-usage");
-        if (resourceUsage != null)
-        {
-            String[] parts = resourceUsage.split(";");
-            for(int i=0; i < parts.length; i++)
-            {
-                String[] name = parts[i].split("=");
-                if (name.length > 1 && name[0].equals("documentsCount") && name[1] != null &&
-                        !name[1].isEmpty())
-                {
-                    try {
-
-                        result = Integer.parseInt(name[1]);
-                    }catch (NumberFormatException ex)
-                    {
-                        logger.warning(String.format("Failed to get document count from response, cant Integer.parseInt('%s')", name[1]));
-                    }
-
-                    break;
-                }
-            }
-        }
-
-        return result;
+    public DocumentChangeFeedClient createClient(String partitionId, String continuationToken, int pageSize) {
+        return new DocumentChangeFeedClient(this, partitionId, continuationToken, pageSize);
     }
 }
