@@ -41,3 +41,6 @@ app.secrets
 
 # NetBeans Project Files #
 /nbproject/
+
+# logs folder
+logs/*
