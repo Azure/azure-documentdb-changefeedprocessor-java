@@ -13,17 +13,52 @@ import java.util.Scanner;
 public class SimpleTest {
 
     @Test
-    public void testCreatChangeFeedHostUsingSecrets() throws Exception {
-        ConfigurationFile config = new ConfigurationFile("app.secrets");
+    public void testCreatChangeFeedHostUsingSecrets()  {
+        ConfigurationFile config = null;
 
-        String url = config.get("COSMOSDB_ENDPOINT");
-        String database = config.get("COSMOSDB_DATABASE");
-        String collection = config.get("COSMOSDB_COLLECTION");
-        String masterKey = config.get("COSMOSDB_SECRET");
-        String auxCollection = config.get("COSMOSDB_AUX_COLLECTION");
+        try {
+            config = new ConfigurationFile("app.secrets");
+        } catch (ConfigurationException e) {
+            Assert.fail(e.getMessage());
+        }
 
-        Main.testChangeFeed2("hostname", url, database, collection, masterKey);
+        DocumentCollectionInfo docInfo = new DocumentCollectionInfo();
+        try {
+            docInfo.setUri(new URI(config.get("COSMOSDB_ENDPOINT")));
+            docInfo.setMasterKey(config.get("COSMOSDB_SECRET"));
+            docInfo.setDatabaseName(config.get("COSMOSDB_DATABASE"));
+            docInfo.setCollectionName(config.get("COSMOSDB_COLLECTION"));
+        } catch (URISyntaxException e) {
+            Assert.fail("COSMOSDB URI FAIL: " + e.getMessage());
+        } catch (ConfigurationException e) {
+            Assert.fail("Configuration Error " + e.getMessage());
 
-        Thread.sleep(10000);
+        }
+
+        DocumentCollectionInfo docAux = new DocumentCollectionInfo(docInfo);
+
+        try {
+            docAux.setCollectionName(config.get("COSMOSDB_AUX_COLLECTION"));
+        } catch (ConfigurationException e) {
+            Assert.fail("Configuration Error " + e.getMessage());
+        }
+
+        ChangeFeedOptions options = new ChangeFeedOptions();
+        options.setPageSize(3);
+
+        ChangeFeedEventHost host = new ChangeFeedEventHost("hotsname", docInfo, docAux, options, new ChangeFeedHostOptions() );
+        Assert.assertNotNull(host);
+
+        try {
+            host.registerObserver(TestChangeFeedObserver.class);
+
+            System.out.println("Press ENTER to finish");
+            Scanner scanner = new Scanner(System.in);
+            scanner.nextLine();
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+            Assert.fail("failed");
+        }
     }
 }

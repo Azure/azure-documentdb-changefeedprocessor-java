@@ -56,54 +56,22 @@ public class ChangeFeedJob2 implements Job {
 
             try {
                 docs = client.read();
-
-                if(docs == null)
-                    continue;
-
-                processChanges(docs);
-
-                hasMoreResults = true;
-
             } catch(DocumentChangeFeedException e) {
-                hasMoreResults = false; // force false for now
+
             }
 
-            if (this.stop)
-                break;
+            hasMoreResults = (docs != null);
 
-            if (hasMoreResults)
+            if (hasMoreResults || this.stop)
                 continue;
 
-            sleep(DEFAULT_THREAD_WAIT);
+            Thread.sleep(this.DEFAULT_THREAD_WAIT);
         }
-
-        this.partitionId = null;
-    }
-
-    void sleep(int totalTime) throws InterruptedException {
-        int interval = 10;
-        for(int totalSleep=0; totalSleep < totalTime; totalSleep += interval ) {
-            // check if the stop is signaled
-            if( this.stop )
-                break;
-            Thread.sleep( interval );
-        }
-
-    }
-
-    void processChanges(List<Document> docs) {
-        // return null for feedresponse (temporarily)
-        // suggestion: remove from API
-        FeedResponse<Document> WRONG_BUT_WORKS = null;
-        ChangeFeedObserverContext context = new ChangeFeedObserverContext();
-        context.setPartitionKeyRangeId(partitionId);
-        context.setFeedResponse(WRONG_BUT_WORKS);
-        observer.processChanges(context, docs);
     }
 
     void checkpoint(Object data) throws DocumentClientException {
         String initialData = (String) (data == null ? "" : data);
-        checkpointSvcs.setContinuationToken(partitionId, initialData);
+        checkpointSvcs.setCheckpointData(partitionId, initialData);
     }
 
     @Override
@@ -111,7 +79,4 @@ public class ChangeFeedJob2 implements Job {
         stop = true;
     }
 
-    public boolean checkIsRunning() {
-        return this.partitionId != null;
-    }
 }
