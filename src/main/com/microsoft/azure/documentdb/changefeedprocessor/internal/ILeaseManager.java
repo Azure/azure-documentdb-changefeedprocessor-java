@@ -118,8 +118,6 @@ public interface ILeaseManager<T extends Lease> {
 	 */
 	Callable<Boolean> isExpired(T lease);
 
-	void createLeases(List<String> range);
-
 	void createLeases(Hashtable<String, PartitionKeyRange> ranges);
 
 }

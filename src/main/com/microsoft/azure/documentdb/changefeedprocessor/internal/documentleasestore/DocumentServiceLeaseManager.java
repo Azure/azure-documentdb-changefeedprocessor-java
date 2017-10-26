@@ -409,13 +409,30 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
             String continuationToken = null;
             String parentIds = "";
 
+            PartitionKeyRange range = ranges.get(addedRangeId);
+            if (range.getParents()!= null && range.getParents().size() > 0)   // Check for split.
+            {
+                for (String parentRangeId : range.getParents()){
+                    if (gonePartitionIds.contains(parentRangeId))
+                    {
+                        // Transfer ContinuationToken from lease for gone parent to lease for its child partition.
+                        parentIds += parentIds.length() == 0 ? parentRangeId : "," + parentRangeId;
+                        DocumentServiceLease parentLease = (DocumentServiceLease)existingLeases.get(parentRangeId);
+                        if (continuationToken != null)
+                        {
+                            logger.warning(String.format("Partition {0}: found more than one parent, new continuation '{1}', current '{2}', will use '{3}'", addedRangeId, parentLease.getContinuationToken(), continuationToken, parentLease.getContinuationToken()));
+                        }
+                        continuationToken = parentLease.getContinuationToken();
+                    }
+                }
+            }
 
             //TODO: Handle Split
             try {
 
-                continuationToken = "";
-                if (existingLeases != null && existingLeases.get(addedRangeId) != null)
+                if (continuationToken == null &&  existingLeases != null && existingLeases.get(addedRangeId) != null)
                     continuationToken = ((DocumentServiceLease)existingLeases.get(addedRangeId)).getContinuationToken();
+
                 createLeaseIfNotExist(addedRangeId, continuationToken).call();
             } catch (DocumentClientException e) {
                 logger.severe(String.format("Error creating lease %s", e.getMessage()));
@@ -426,55 +443,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         } );
     }
 
-    @Override
-    public void createLeases(List<String> ranges) {
-        logger.info("Creating Leases");
 
-
-        // Get leases after getting ranges, to make sure that no other hosts checked in continuation for split partition after we got leases.
-        ConcurrentHashMap existingLeases = new ConcurrentHashMap<String, DocumentServiceLease>();
-        try {
-            listLeases().call().forEach((lease) -> {
-                existingLeases.put(lease.getPartitionId(), lease);
-            });
-        }catch (Exception e){
-            logger.severe(e.getMessage());
-        }
-
-        HashSet<String> gonePartitionIds = new HashSet<>();
-        existingLeases.keySet().forEach((key)->{
-            String partitionID = (String)key;
-            if(!ranges.contains(partitionID))gonePartitionIds.add(partitionID);
-        });
-
-
-        ArrayList<String> addedPartitionIds = new ArrayList<>();
-        ranges.stream().forEach((range) ->{
-            if (!existingLeases.containsKey(range)) addedPartitionIds.add(range);
-        });
-
-        ConcurrentHashMap<String, ConcurrentLinkedQueue<DocumentServiceLease>> parentIdToChildLeases = new ConcurrentHashMap<>();
-
-        addedPartitionIds.forEach((addedRangeId)->{
-            String continuationToken = null;
-            String parentIds = "";
-
-
-            //TODO: Handle Split
-            try {
-
-                continuationToken = "";
-                if (existingLeases != null && existingLeases.get(addedRangeId) != null)
-                    continuationToken = ((DocumentServiceLease)existingLeases.get(addedRangeId)).getContinuationToken();
-                    createLeaseIfNotExist(addedRangeId, continuationToken).call();
-            } catch (DocumentClientException e) {
-                logger.severe(String.format("Error creating lease %s", e.getMessage()));
-            }catch (Exception e) {
-                e.printStackTrace();
-            }
-
-        } );
-    }
 
     @Override
     public Lease checkpoint(Lease lease, String continuationToken, long sequenceNumber) {

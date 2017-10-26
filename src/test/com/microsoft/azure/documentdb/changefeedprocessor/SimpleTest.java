@@ -44,7 +44,7 @@ public class SimpleTest {
         }
 
         ChangeFeedOptions options = new ChangeFeedOptions();
-        options.setPageSize(100);
+        options.setPageSize(1);
 
         ChangeFeedEventHost host = new ChangeFeedEventHost("hotsname", docInfo, docAux, options, new ChangeFeedHostOptions() );
         Assert.assertNotNull(host);
