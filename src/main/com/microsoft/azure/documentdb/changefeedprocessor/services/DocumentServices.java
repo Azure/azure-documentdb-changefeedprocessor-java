@@ -5,6 +5,7 @@ import com.microsoft.azure.documentdb.changefeedprocessor.*;
 import lombok.Getter;
 
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -77,13 +78,13 @@ public class DocumentServices {
 
     }
 
-    public List<String> listPartitionRange() {
+    public Hashtable<String, PartitionKeyRange> listPartitionRange() {
 
         String checkpointContinuation = null;
         FeedOptions options = new FeedOptions();
 
         List<PartitionKeyRange> partitionKeys = new ArrayList();
-        List<String> partitionsId = new ArrayList();
+        Hashtable<String, PartitionKeyRange> partitionsId = new Hashtable();
 
         do {
             options.setRequestContinuation(checkpointContinuation);
@@ -97,7 +98,7 @@ public class DocumentServices {
 
 
         for(PartitionKeyRange pkr : partitionKeys) {
-            partitionsId.add(pkr.getId());
+            partitionsId.put(pkr.getId(),pkr );
         }
 
         return partitionsId;
@@ -119,6 +120,13 @@ public class DocumentServices {
         FeedResponse<Document> query = client.queryDocumentChangeFeed(collectionLink, options);
 
         return query;
+    }
+
+    public ResourceResponse createDocument(Object document, boolean disableIdGeneration) throws DocumentClientException {
+
+        RequestOptions options = new RequestOptions();
+        ResourceResponse response = client.createDocument(collectionSelfLink, document, options, disableIdGeneration );
+        return response;
     }
 
     public int getDocumentCount(){

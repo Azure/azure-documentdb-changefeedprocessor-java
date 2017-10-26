@@ -8,12 +8,15 @@ package com.microsoft.azure.documentdb.changefeedprocessor;
 
 import com.microsoft.azure.documentdb.ChangeFeedOptions;
 import com.microsoft.azure.documentdb.DocumentClientException;
+import com.microsoft.azure.documentdb.PartitionKeyRange;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.*;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLeaseManager;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartitionServices;
+
+import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -110,8 +113,6 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         initializeIntegrations();
 
-        //initializePartitions();
-        //initializeLeaseManager();
     }
 
     private void initializeIntegrations() throws DocumentClientException, LeaseLostException {
@@ -152,12 +153,11 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
             e.printStackTrace();
         }
 
-        List<String> range = this.documentServices.listPartitionRange();
+        Hashtable<String, PartitionKeyRange> ranges = this.documentServices.listPartitionRange();
 
-//        this.CreateLeases(range);
-        this.leaseManager.createLeases(range);
+        this.leaseManager.createLeases(ranges);
 
-        logger.info(String.format("Source collection: '%s', %d partition(s), %s document(s)", collectionLocation.getCollectionName(), range.size(), documentServices.getDocumentCount()));
+        logger.info(String.format("Source collection: '%s', %d partition(s), %s document(s)", collectionLocation.getCollectionName(), ranges.size(), documentServices.getDocumentCount()));
 
         logger.info("Initializing partition manager");
         partitionManager = new PartitionManager<DocumentServiceLease>(this.hostName, this.leaseManager, this.options);
@@ -170,51 +170,6 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         }
 
     }
-//
-//    private void initializePartitions(){
-//        logger.info("Initializing partitions");
-//
-//        //TODO: This is not the right place to have this code..
-//        this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, observerFactory, changeFeedOptions.getPageSize());
-//
-//        // list partitions
-//        List<String> partitionIds = this.listPartition();
-//
-//        partitionIds.stream().forEach((id) -> {
-//            logger.info(String.format("PartitionID %s", id));
-//            resourcePartitionSvcs.create(id);
-//        });
-//
-//    }
-//
-//    private void initializeLeaseManager() {
-//        // simulate a callback from partitionManager
-//        hackStartSinglePartition();
-//    }
-//
-//    private void hackStartSinglePartition() {
-//        List<String> partitionIds = this.listPartition();
-//
-//        partitionIds.stream().forEach((id) -> {
-//            try {
-//                resourcePartitionSvcs.start(id);
-//            } catch (DocumentClientException e) {
-//                e.printStackTrace();
-//            }
-//            catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//        });
-//
-//    }
-//
-//    private List listPartition(){
-//        DocumentServices client = this.documentServices;
-//
-//        List list = (List)client.listPartitionRange();
-//
-//        return list;
-//    }
 
     @Override
     public Callable<Void> onPartitionAcquired(DocumentServiceLease documentServiceLease) {

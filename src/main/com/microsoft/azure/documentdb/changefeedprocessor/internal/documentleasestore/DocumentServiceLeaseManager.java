@@ -379,6 +379,54 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
 
     @Override
+    public  void createLeases(Hashtable<String, PartitionKeyRange> ranges){
+        // Get leases after getting ranges, to make sure that no other hosts checked in continuation for split partition after we got leases.
+        ConcurrentHashMap existingLeases = new ConcurrentHashMap<String, DocumentServiceLease>();
+        try {
+            listLeases().call().forEach((lease) -> {
+                existingLeases.put(lease.getPartitionId(), lease);
+            });
+        }catch (Exception e){
+            logger.severe(e.getMessage());
+        }
+
+        HashSet<String> gonePartitionIds = new HashSet<>();
+        existingLeases.keySet().forEach((key)->{
+            String partitionID = (String)key;
+            if(!ranges.contains(partitionID))
+                gonePartitionIds.add(partitionID);
+        });
+
+        ArrayList<String> addedPartitionIds = new ArrayList<>();
+        ranges.keySet().stream().forEach((range) ->{
+            if (!existingLeases.containsKey(range))
+                addedPartitionIds.add(range);
+        });
+
+        ConcurrentHashMap<String, ConcurrentLinkedQueue<DocumentServiceLease>> parentIdToChildLeases = new ConcurrentHashMap<>();
+
+        addedPartitionIds.forEach((addedRangeId)->{
+            String continuationToken = null;
+            String parentIds = "";
+
+
+            //TODO: Handle Split
+            try {
+
+                continuationToken = "";
+                if (existingLeases != null && existingLeases.get(addedRangeId) != null)
+                    continuationToken = ((DocumentServiceLease)existingLeases.get(addedRangeId)).getContinuationToken();
+                createLeaseIfNotExist(addedRangeId, continuationToken).call();
+            } catch (DocumentClientException e) {
+                logger.severe(String.format("Error creating lease %s", e.getMessage()));
+            }catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        } );
+    }
+
+    @Override
     public void createLeases(List<String> ranges) {
         logger.info("Creating Leases");
 

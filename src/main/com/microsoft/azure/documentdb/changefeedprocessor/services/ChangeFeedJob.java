@@ -86,7 +86,6 @@ public class ChangeFeedJob implements Job {
         ChangeFeedThreadFactory threadFactory = new ChangeFeedThreadFactory(threadSuffixName);
         ExecutorService exec = Executors.newFixedThreadPool(numThreadPerCPU * CPUs, threadFactory);
 
-        //ExecutorService exec = Executors.newFixedThreadPool(numThreadPerCPU * CPUs, Executors.defaultThreadFactory());
         return exec;
     }
 
@@ -94,10 +93,10 @@ public class ChangeFeedJob implements Job {
     public void start(String initialData) throws DocumentClientException, InterruptedException {
         logger.info(String.format("Starting ChangeFeedJob "));
         if (!exec.isShutdown() && !exec.isTerminated()) {
-            Future future = exec.submit(() -> {
+
+            exec.execute(() -> {
                 try {
                     QueryChangeFeed(initialData);
-
                 } catch (DocumentClientException e) {
                     logger.warning(e.getMessage());
                     e.printStackTrace();
@@ -106,13 +105,6 @@ public class ChangeFeedJob implements Job {
                     e.printStackTrace();
                 }
             });
-
-            try {
-                future.get();
-            } catch (ExecutionException e) {
-                e.printStackTrace();
-            }
-
         }
     }
 
