@@ -7,7 +7,9 @@ package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
 
 import com.microsoft.azure.documentdb.DocumentClientException;
+import com.microsoft.azure.documentdb.PartitionKeyRange;
 
+import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -116,5 +118,6 @@ public interface ILeaseManager<T extends Lease> {
 	 */
 	Callable<Boolean> isExpired(T lease);
 
-	void createLeases(List<String> range);
+	void createLeases(Hashtable<String, PartitionKeyRange> ranges);
+
 }

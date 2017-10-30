@@ -86,7 +86,6 @@ public class ChangeFeedJob implements Job {
         ChangeFeedThreadFactory threadFactory = new ChangeFeedThreadFactory(threadSuffixName);
         ExecutorService exec = Executors.newFixedThreadPool(numThreadPerCPU * CPUs, threadFactory);
 
-        //ExecutorService exec = Executors.newFixedThreadPool(numThreadPerCPU * CPUs, Executors.defaultThreadFactory());
         return exec;
     }
 
@@ -94,10 +93,10 @@ public class ChangeFeedJob implements Job {
     public void start(String initialData) throws DocumentClientException, InterruptedException {
         logger.info(String.format("Starting ChangeFeedJob "));
         if (!exec.isShutdown() && !exec.isTerminated()) {
-            Future future = exec.submit(() -> {
+
+            exec.execute(() -> {
                 try {
                     QueryChangeFeed(initialData);
-
                 } catch (DocumentClientException e) {
                     logger.warning(e.getMessage());
                     e.printStackTrace();
@@ -106,13 +105,6 @@ public class ChangeFeedJob implements Job {
                     e.printStackTrace();
                 }
             });
-
-            try {
-                future.get();
-            } catch (ExecutionException e) {
-                e.printStackTrace();
-            }
-
         }
     }
 
@@ -144,16 +136,25 @@ public class ChangeFeedJob implements Job {
                     }
                 } catch (DocumentClientException dce) {
                     int subStatusCode = getSubStatusCode(dce);
-                    if (dce.getStatusCode() == StatusCode.NOTFOUND.Value() &&
-                            SubStatusCode.ReadSessionNotAvailable.Value() != subStatusCode){
+                    if ((dce.getStatusCode() == StatusCode.NOTFOUND.Value() &&
+                            SubStatusCode.ReadSessionNotAvailable.Value() != subStatusCode) ||
+                            dce.getStatusCode() == StatusCode.GONE.Value()){
                         this.stop(ChangeFeedObserverCloseReason.RESOURCE_GONE);
                         observer.close(context,ChangeFeedObserverCloseReason.RESOURCE_GONE );
-                    }else if(dce.getStatusCode() == StatusCode.CODE.Value()){
-                        //TODO: handle partition split
                     }
                     else if (SubStatusCode.Splitting.Value() == subStatusCode)
                     {
                         logger.warning(String.format("Partition %s is splitting. Will retry to read changes until split finishes. %s", context.getPartitionKeyRangeId(), dce.getMessage()));
+                    }
+                    else if (dce.getStatusCode() == StatusCode.TOO_MANY_REQUESTS.Value())
+                    {
+                        //Wait the thread a little more to cool down the hit.
+                        try {
+                            exec.awaitTermination(this.DEFAULT_THREAD_WAIT, TimeUnit.MILLISECONDS);
+                            logger.info(String.format("Too many requests during change feed for Partition: %s - Waiting for %d milliseconds before perform another query.", this.partitionId, this.DEFAULT_THREAD_WAIT));
+                        }catch (InterruptedException e){
+                            logger.warning(String.format("Too Many requests InterruptedException trying to wait the thread: %s", e.getMessage()));
+                        }
                     }
                     else
                     {
@@ -173,7 +174,6 @@ public class ChangeFeedJob implements Job {
                     logger.info(String.format("There are no changes for Partition: %s - Waiting for %d milliseconds before perform another query.", this.partitionId, this.DEFAULT_THREAD_WAIT));
                 }catch (InterruptedException e){
                     logger.warning(String.format(" InterruptedException trying to wait the thread: %s", e.getMessage()));
-                    throw e;
                 }
             }
 

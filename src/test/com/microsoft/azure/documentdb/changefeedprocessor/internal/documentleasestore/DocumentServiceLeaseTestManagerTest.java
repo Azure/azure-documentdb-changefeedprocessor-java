@@ -11,6 +11,7 @@ import com.microsoft.azure.documentdb.changefeedprocessor.internal.Configuration
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationFile;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.Lease;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.LeaseLostException;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -59,8 +60,10 @@ public class DocumentServiceLeaseTestManagerTest {
             Assert.fail("Configuration Error " + e.getMessage());
 
         }
-        
-        instance = new DocumentServiceLeaseManager(docInfo, "leases", DEFAULT_EXPIRATION_INTERVAL, DEFAULT_RENEW_INTERVAL);
+
+        DocumentServices documentServices = new DocumentServices(docInfo);
+
+        instance = new DocumentServiceLeaseManager(docInfo, "leases", DEFAULT_EXPIRATION_INTERVAL, DEFAULT_RENEW_INTERVAL,documentServices);
         instance.initialize(true);
         
         // Clean up lease store before each test
