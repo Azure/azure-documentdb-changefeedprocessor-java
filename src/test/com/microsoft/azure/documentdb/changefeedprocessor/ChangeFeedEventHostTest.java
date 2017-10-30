@@ -6,10 +6,15 @@ import com.microsoft.azure.documentdb.changefeedprocessor.internal.Configuration
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.Console;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 public class ChangeFeedEventHostTest {
+
+    Logger logger = Logger.getLogger(ChangeFeedEventHostTest.class.getName());
 
     @Test (expected = IllegalArgumentException.class)
     public void testInvalidConstructorHostname() throws IllegalArgumentException {
@@ -44,7 +49,7 @@ public class ChangeFeedEventHostTest {
 
 
     @Test
-    public void testCreateChangeFeedHostUsingSecrets()  {
+    public void createChangeFeedHostUsingSecrets()  {
         ConfigurationFile config = null;
 
         try {
@@ -74,11 +79,23 @@ public class ChangeFeedEventHostTest {
             Assert.fail("Configuration Error " + e.getMessage());
         }
 
-        ChangeFeedEventHost host = new ChangeFeedEventHost("hotsname", docInfo, docAux );
+        ChangeFeedOptions options = new ChangeFeedOptions();
+        options.setPageSize(100);
+
+        ChangeFeedHostOptions hostOptions = new ChangeFeedHostOptions();
+        hostOptions.setDiscardExistingLeases(true);
+
+        ChangeFeedEventHost host = new ChangeFeedEventHost("hostname", docInfo, docAux, options, hostOptions );
         Assert.assertNotNull(host);
 
         try {
             host.registerObserver(TestChangeFeedObserver.class);
+
+            while(!host.getExecutorService().isTerminated() &&
+                    !host.getExecutorService().isShutdown()){
+                logger.info("Host Service is Running");
+                host.getExecutorService().awaitTermination(5, TimeUnit.MINUTES);
+            }
         }
         catch(Exception e) {
             Assert.fail("registerObserver exception " + e.getMessage());

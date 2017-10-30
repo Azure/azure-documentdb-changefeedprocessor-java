@@ -4,6 +4,7 @@ import com.microsoft.azure.documentdb.DocumentClientException;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationException;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationFile;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLeaseManager;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -37,12 +38,14 @@ public class LeaseTest {
         }
 
         ChangeFeedHostOptions options = new ChangeFeedHostOptions();
+        DocumentServices documentServices = new DocumentServices(docAux);
 
         DocumentServiceLeaseManager leaseManager = new DocumentServiceLeaseManager(
                 docAux,
                 "lease",
                 options.getLeaseExpirationInterval(),
-                options.getLeaseRenewInterval());
+                options.getLeaseRenewInterval(),
+                documentServices);
 
         try {
             leaseManager.initialize(true);

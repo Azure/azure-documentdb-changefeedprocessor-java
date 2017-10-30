@@ -18,9 +18,7 @@ import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourceParti
 
 import java.util.Hashtable;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.*;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -42,8 +40,10 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     private ResourcePartitionServices resourcePartitionSvcs;
     private CheckpointServices checkpointSvcs;
     private IChangeFeedObserverFactory observerFactory;
+    private ExecutorService executorService;
     private final int DEFAULT_PAGE_SIZE = 100;
     private Logger logger = Logger.getLogger(ChangeFeedEventHost.class.getName());
+
 
     public ChangeFeedEventHost( String hostName, DocumentCollectionInfo documentCollectionLocation, DocumentCollectionInfo auxCollectionLocation){
         this(hostName, documentCollectionLocation, auxCollectionLocation, new ChangeFeedOptions(), new ChangeFeedHostOptions());
@@ -77,6 +77,9 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         if (this.changeFeedOptions.getPageSize() == null ||
                 this.changeFeedOptions.getPageSize() == 0)
             this.changeFeedOptions.setPageSize(this.DEFAULT_PAGE_SIZE);
+
+
+        this.executorService = Executors.newFixedThreadPool(1);
     }
 
     private DocumentCollectionInfo canonicalizeCollectionInfo(DocumentCollectionInfo collectionInfo)
@@ -101,7 +104,14 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         ChangeFeedObserverFactory factory = new ChangeFeedObserverFactory(type);
 
         registerObserverFactory(factory);
-        start();
+
+        this.executorService.execute(()->{
+            try {
+                start();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     private void registerObserverFactory(ChangeFeedObserverFactory factory) {
@@ -129,7 +139,8 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
                 this.auxCollectionLocation,
                 this.leasePrefix,
                 this.options.getLeaseExpirationInterval(),
-                this.options.getLeaseRenewInterval());
+                this.options.getLeaseRenewInterval(),
+                this.documentServices);
 
         leaseManager.initialize(true);
 
@@ -211,5 +222,9 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         return callable;
 
+    }
+
+    public ExecutorService getExecutorService(){
+        return executorService;
     }
 }

@@ -25,7 +25,7 @@ public enum StatusCode {
      * The resource is gone
      */
 
-    CODE(410),
+    GONE(410),
 
     /**
      * The operation specified an eTag that is different from the version available at the server, i.e., an optimistic concurrency error.

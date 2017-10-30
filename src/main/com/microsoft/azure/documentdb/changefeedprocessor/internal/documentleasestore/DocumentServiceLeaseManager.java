@@ -25,6 +25,7 @@ package com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleas
 import com.microsoft.azure.documentdb.*;
 import com.microsoft.azure.documentdb.changefeedprocessor.DocumentCollectionInfo;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.*;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
 import org.apache.http.HttpStatus;
 
 import java.time.Duration;
@@ -51,24 +52,25 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     private Duration leaseIntervalAllowance = Duration.ofMillis(25);
     private Duration leaseInterval;
     private Duration renewInterval;
+    private DocumentServices documentServices;
+
 
     private String leaseStoreCollectionLink;
     private Duration serverToLocalTimeDelta;
     private Logger logger = Logger.getLogger(DocumentServiceLeaseManager.class.getName());
-
-    private DocumentClient client;
 
     @FunctionalInterface
     private interface LeaseConflictResolver {
         DocumentServiceLease run(DocumentServiceLease serverLease);
     }
 
-    public DocumentServiceLeaseManager(DocumentCollectionInfo leaseStoreCollectionInfo, String storeNamePrefix, Duration leaseInterval, Duration renewInterval) {
+    public DocumentServiceLeaseManager(DocumentCollectionInfo leaseStoreCollectionInfo, String storeNamePrefix, Duration leaseInterval, Duration renewInterval, DocumentServices documentServices) {
         this.leaseStoreCollectionInfo = leaseStoreCollectionInfo;
         this.containerNamePrefix = storeNamePrefix;
         this.leaseInterval = leaseInterval;
         this.renewInterval = renewInterval;
-        this.client = new DocumentClient(leaseStoreCollectionInfo.getUri().toString(), leaseStoreCollectionInfo.getMasterKey(), leaseStoreCollectionInfo.getConnectionPolicy(), ConsistencyLevel.Session);
+        this.documentServices = documentServices;
+
     }
 
     public void dispose() {
@@ -80,7 +82,9 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         String uri = String.format("/dbs/%s/colls/%s", leaseStoreCollectionInfo.getDatabaseName(), leaseStoreCollectionInfo.getCollectionName());
 
         try {
-            leaseStoreCollectionLink = client.readCollection(uri, new RequestOptions()).getResource().getSelfLink();
+            ResourceResponse response = documentServices.readCollection(uri, new RequestOptions());
+            if (response != null)
+                leaseStoreCollectionLink = response.getResource().getSelfLink();
         }catch (DocumentClientException ex){
             if (createLeaseCollection && ex.getStatusCode() == 404 ) { //Collection Lease Not Found)
                 logger.info("Parameter createLeaseCollection is true! Creating lease collection");
@@ -88,7 +92,9 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
                 DocumentCollection leaseColl = new DocumentCollection();
                 leaseColl.setId(leaseStoreCollectionInfo.getCollectionName());
 
-                leaseStoreCollectionLink = client.createCollection(String.format("/dbs/%s", leaseStoreCollectionInfo.getDatabaseName()),leaseColl,new RequestOptions()).getResource().getSelfLink();
+                ResourceResponse response = documentServices.createCollection(String.format("/dbs/%s", leaseStoreCollectionInfo.getDatabaseName()),leaseColl,new RequestOptions());
+                leaseStoreCollectionLink = response.getResource().getSelfLink();
+
             }else{
                 if (!createLeaseCollection)
                     logger.info("Parameter createLeaseCollection is false! Creating lease collection");
@@ -102,7 +108,9 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         // Create and upload a new document
         Document document = new Document();
         document.setId(getDocumentId() + UUID.randomUUID().toString());
-        Document dummyDocument = client.createDocument(leaseStoreCollectionLink, document, new RequestOptions(), true).getResource();
+
+        Document dummyDocument = (Document)documentServices.createDocument(leaseStoreCollectionLink, document, new RequestOptions(), true).getResource();
+        //Document dummyDocument = client.createDocument(leaseStoreCollectionLink, document, new RequestOptions(), true).getResource();
 
         // Get the new current time
         Instant snapshot2 = Instant.now();
@@ -111,7 +119,8 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         Instant currentTimeDiff = Instant.ofEpochSecond(snapshot1.plusSeconds(snapshot2.getEpochSecond()).getEpochSecond() / 2);
         serverToLocalTimeDelta = Duration.between(currentTimeDiff, dummyTimestamp);
 
-        client.deleteDocument(dummyDocument.getSelfLink(), new RequestOptions());
+        documentServices.deleteDocument(dummyDocument.getSelfLink(), new RequestOptions());
+       // client.deleteDocument(dummyDocument.getSelfLink(), new RequestOptions());
 
         logger.info(String.format("Server to local time delta: {0}", serverToLocalTimeDelta));
 
@@ -145,7 +154,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
                         Document containerDocumentnew = new Document();
                         containerDocumentnew.setId(getDocumentId());
 
-                        client.createDocument(leaseStoreCollectionLink, containerDocumentnew, new RequestOptions(), true);
+                        documentServices.createDocument(leaseStoreCollectionLink, containerDocumentnew, new RequestOptions(), true);
                         wasCreated = true;
                     }
                 }catch (Exception e){
@@ -189,7 +198,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
                     documentServiceLease.setPartitionId(partitionId);
                     documentServiceLease.setContinuationToken(continuationToken);
 
-                    client.createDocument(leaseStoreCollectionLink, documentServiceLease, new RequestOptions(), true).getResource();
+                    documentServices.createDocument(leaseStoreCollectionLink, documentServiceLease, new RequestOptions(), true);
                     wasCreated = true;
                 }
                 return wasCreated;
@@ -322,7 +331,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
                 //Create URI String
                 String uri = String.format("/dbs/%s/colls/%s/docs/%s", leaseStoreCollectionInfo.getDatabaseName(), leaseStoreCollectionInfo.getCollectionName(), lease.getId());
                 try {
-                    client.deleteDocument(uri, new RequestOptions());
+                    documentServices.deleteDocument(uri, new RequestOptions());
                 } catch (DocumentClientException ex) {
                     if (HttpStatus.SC_NOT_FOUND != ex.getStatusCode())
                     {
@@ -342,9 +351,9 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         Callable<Void> callable = new Callable<Void>() {
             @Override
             public Void call() throws Exception {
-                Iterable<DocumentServiceLease> listDocuments = listDocuments(containerNamePrefix);
+                Iterable<DocumentServiceLease> listDocuments = listDocuments(getDocumentId(""));
                 for (DocumentServiceLease lease : listDocuments) {
-                    delete(lease);
+                    delete(lease).call();
                 }
                 return null;
             }
@@ -427,11 +436,13 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
                 }
             }
 
-            //TODO: Handle Split
             try {
 
                 if (continuationToken == null &&  existingLeases != null && existingLeases.get(addedRangeId) != null)
                     continuationToken = ((DocumentServiceLease)existingLeases.get(addedRangeId)).getContinuationToken();
+
+                if (continuationToken == null)
+                    continuationToken = "";
 
                 createLeaseIfNotExist(addedRangeId, continuationToken).call();
             } catch (DocumentClientException e) {
@@ -471,7 +482,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         logger.info(String.format("getting document uri %s", uri));
         Document doc = null;
         try {
-        	doc = client.readDocument(uri, new RequestOptions()).getResource();
+            doc = documentServices.readDocument(uri, new RequestOptions()).getResource();
         } catch (DocumentClientException ex) {
         	if(HttpStatus.SC_NOT_FOUND != ex.getStatusCode()) {
         		throw ex;
@@ -499,10 +510,10 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         SqlQuerySpec querySpec = new SqlQuerySpec(
                 String.format(Locale.ROOT, "SELECT * FROM c WHERE STARTSWITH(c.id, @PartitionLeasePrefix)"),
                 new SqlParameterCollection(new SqlParameter[] { param }));
-        
-        FeedResponse<Document> queryResults = client.queryDocuments(leaseStoreCollectionLink, querySpec, null);
-        
-        List<DocumentServiceLease> docs = new ArrayList<DocumentServiceLease>();
+
+        FeedResponse<Document> queryResults = documentServices.queryDocuments(leaseStoreCollectionLink, querySpec, null);
+
+        List<DocumentServiceLease> docs = new ArrayList<>();
         queryResults.getQueryIterable().forEach((Document d) -> {	
         	docs.add(new DocumentServiceLease(d));
         });
@@ -546,7 +557,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         while (true) {
             Document leaseDocument = null;
             try {
-                leaseDocument = client.replaceDocument(leaseUri, lease, createIfMatchOptions(lease)).getResource();
+                leaseDocument = documentServices.replaceDocument(leaseUri, lease, createIfMatchOptions(lease)).getResource();
             } catch (DocumentClientException ex) {
                 if (HttpStatus.SC_PRECONDITION_FAILED != ex.getStatusCode()) {
                     handleLeaseOperationException(lease, ex);

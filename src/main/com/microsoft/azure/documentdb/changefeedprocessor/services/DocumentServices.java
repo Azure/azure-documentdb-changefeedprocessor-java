@@ -2,6 +2,7 @@ package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
 import com.microsoft.azure.documentdb.*;
 import com.microsoft.azure.documentdb.changefeedprocessor.*;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -129,6 +130,12 @@ public class DocumentServices {
         return response;
     }
 
+    public ResourceResponse createDocument(String collectionLink, Object document, RequestOptions options, boolean disableIdGeneration) throws DocumentClientException {
+
+        ResourceResponse response = client.createDocument(collectionLink, document, options, disableIdGeneration );
+        return response;
+    }
+
     public int getDocumentCount(){
 
         if (collectionResponse == null)
@@ -160,5 +167,49 @@ public class DocumentServices {
         }
 
         return result;
+    }
+
+    public ResourceResponse readCollection(String uri, RequestOptions requestOptions) throws DocumentClientException {
+
+        ResourceResponse response = null;
+
+        try {
+            response = client.readCollection(uri, new RequestOptions());
+        }catch (DocumentClientException ex){
+            if (ex.getStatusCode() == 404 ) { //Collection Lease Not Found)
+                logger.info("Parameter createLeaseCollection is true! Creating lease collection");
+                throw ex;
+            }
+        }
+        return response;
+    }
+
+    public ResourceResponse createCollection(String databaseLink, DocumentCollection leaseColl, RequestOptions requestOptions) throws DocumentClientException {
+
+        ResourceResponse response = client.createCollection(databaseLink, leaseColl, requestOptions );
+
+        return response;
+    }
+
+    public void deleteDocument(String selfLink, RequestOptions requestOptions) throws DocumentClientException {
+
+        client.deleteDocument(selfLink, requestOptions);
+
+    }
+
+    public ResourceResponse<Document> readDocument(String uri, RequestOptions requestOptions) throws DocumentClientException {
+
+        return client.readDocument(uri, requestOptions);
+
+    }
+
+    public ResourceResponse<Document>  replaceDocument(String uri, Object obj, RequestOptions ifMatchOptions) throws DocumentClientException {
+
+        return client.replaceDocument(uri, obj, ifMatchOptions );
+    }
+
+    public FeedResponse<Document> queryDocuments(String collectionLink, SqlQuerySpec querySpec, FeedOptions feedOptions) {
+
+        return client.queryDocuments(collectionLink, querySpec, feedOptions);
     }
 }

@@ -59,7 +59,7 @@ public class SplitPartitionTest
     private final int CPUs = Runtime.getRuntime().availableProcessors();
 
     @Test
-    public void test() {
+    public void writeColletionRecords() {
 
         //Read properties from app.secrets
         ConfigurationFile config = null;
@@ -116,14 +116,8 @@ public class SplitPartitionTest
             Assert.fail("Configuration Error " + e.getMessage());
         }
 
-//        ChangeFeedOptions options = new ChangeFeedOptions();
-//        options.setPageSize(100);
-//
-//        ChangeFeedEventHost host = new ChangeFeedEventHost("hotsname", docInfo, docAux, options, new ChangeFeedHostOptions() );
-//        Assert.assertNotNull(host);
 
         try {
-//            host.registerObserver(TestChangeFeedObserver.class);
 
             System.out.println("Press ENTER to finish");
             Scanner scanner = new Scanner(System.in);
@@ -133,6 +127,7 @@ public class SplitPartitionTest
             e.printStackTrace();
             Assert.fail("failed");
         }
+
 
 
     }
