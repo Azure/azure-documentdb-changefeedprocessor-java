@@ -7,10 +7,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.TimeUnit;
 
-public class SampleClass {
+public class Sample {
 
 
-    public static void main(String args[]){
+    public static void main (String[]args) {
 
         ConfigurationFile config = null;
 
