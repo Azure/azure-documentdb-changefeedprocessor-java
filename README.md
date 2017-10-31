@@ -54,7 +54,7 @@ The code is divided into four main parts:
 
 ## How to use
 
-The basic usage of this library is covered at [samples folder](samples/Readme.md), there you will find a simple application and the explanation.
+The basic usage of this library is covered at [samples folder](./samples/Readme.md), there you will find a simple application and the explanation.
 
 ## Dependencies
 
@@ -67,8 +67,6 @@ The basic usage of this library is covered at [samples folder](samples/Readme.md
 * org.slf4j.slf4j-simple  1.7.25
 
 * org.projectlombok.lombok    1.16.18
-
-
 
 ## Contributing
 
