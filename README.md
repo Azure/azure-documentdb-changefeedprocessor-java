@@ -54,7 +54,7 @@ The code is divided into four main parts:
 
 ## How to use
 
-The basic usage of this library is covered at [samples folder](./samples/Readme.md), there you will find a simple application and the explanation.
+The basic usage of this library is covered at [samples folder](samples/README.md), there you will find a simple application and the explanation.
 
 ## Dependencies
 
