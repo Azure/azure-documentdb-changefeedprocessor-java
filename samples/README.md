@@ -131,7 +131,7 @@ catch(Exception e) {
 }
 ```
 
-To access a real class of this working please access the following link [Sample](Sample.java)
+To access a real class of this working please access the following link [Sample](../src/test/com/microsoft/azure/documentdb/changefeedprocessor/Sample.java)
 
 ## 6. Running the sample
 
