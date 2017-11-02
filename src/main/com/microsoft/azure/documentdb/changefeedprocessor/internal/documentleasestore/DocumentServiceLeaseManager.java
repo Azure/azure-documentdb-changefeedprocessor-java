@@ -41,6 +41,8 @@ import java.util.logging.Logger;
  *
  * @author yoterada
  */
+// CR: why is this class public? Should be internal. Or it this some sort of Java thing making all classes public?
+// CR: also, there are lots of classes that are internal in C# are public in Java version.
 public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>, ICheckpointManager {
     private final static String DATE_HEADER_NAME = "Date";
     private final static String CONTAINER_SEPARATOR = ".";
@@ -53,7 +55,6 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     private Duration leaseInterval;
     private Duration renewInterval;
     private DocumentServices documentServices;
-
 
     private String leaseStoreCollectionLink;
     private Duration serverToLocalTimeDelta;
@@ -70,13 +71,15 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         this.leaseInterval = leaseInterval;
         this.renewInterval = renewInterval;
         this.documentServices = documentServices;
-
     }
 
     public void dispose() {
     }
 
-    public void initialize(boolean createLeaseCollection) throws DocumentClientException { //    public Task InitializeAsync()
+    // CR: createLeaseColection = true has an issue that we don't know which collection to create (offerThroughput, etc)
+    //     that's why in C# version we always use pre-created lease collection.
+    //     Do we realy need this scenario (true)?
+    public void initialize(boolean createLeaseCollection) throws DocumentClientException {
 
         //Create URI String
         String uri = String.format("/dbs/%s/colls/%s", leaseStoreCollectionInfo.getDatabaseName(), leaseStoreCollectionInfo.getCollectionName());
@@ -85,7 +88,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
             ResourceResponse response = documentServices.readCollection(uri, new RequestOptions());
             if (response != null)
                 leaseStoreCollectionLink = response.getResource().getSelfLink();
-        }catch (DocumentClientException ex){
+        } catch (DocumentClientException ex) {
             if (createLeaseCollection && ex.getStatusCode() == 404 ) { //Collection Lease Not Found)
                 logger.info("Parameter createLeaseCollection is true! Creating lease collection");
 
@@ -95,7 +98,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
                 ResourceResponse response = documentServices.createCollection(String.format("/dbs/%s", leaseStoreCollectionInfo.getDatabaseName()),leaseColl,new RequestOptions());
                 leaseStoreCollectionLink = response.getResource().getSelfLink();
 
-            }else{
+            } else {
                 if (!createLeaseCollection)
                     logger.info("Parameter createLeaseCollection is false! Creating lease collection");
                 throw ex;
@@ -109,6 +112,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         Document document = new Document();
         document.setId(getDocumentId() + UUID.randomUUID().toString());
 
+        // CR: move logic of getting time delta into separate method. We are going to have an option to disable this.
         Document dummyDocument = (Document)documentServices.createDocument(leaseStoreCollectionLink, document, new RequestOptions(), true).getResource();
         //Document dummyDocument = client.createDocument(leaseStoreCollectionLink, document, new RequestOptions(), true).getResource();
 
@@ -123,17 +127,15 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
        // client.deleteDocument(dummyDocument.getSelfLink(), new RequestOptions());
 
         logger.info(String.format("Server to local time delta: {0}", serverToLocalTimeDelta));
-
-
     }
 
     @Override
-    public Callable<Boolean> leaseStoreExists() throws DocumentClientException { //    public async Task<bool> LeaseStoreExistsAsync()
+    public Callable<Boolean> leaseStoreExists() throws DocumentClientException {
 
         Callable<Boolean> callable = new Callable<Boolean>() {
             @Override
             public Boolean call() throws Exception {
-                //TODO: Fix with callable
+                //TODO: Fix with callable	// CR: is there still any issue to address?
                 DocumentServiceLease containerDocument = tryGetLease(getDocumentId());
                 return new Boolean(containerDocument != null);
             }
@@ -143,7 +145,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
 
     @Override
-    public Callable<Boolean> createLeaseStoreIfNotExists() throws DocumentClientException { //    public  Task<bool> CreateLeaseStoreIfNotExistsAsync()
+    public Callable<Boolean> createLeaseStoreIfNotExists() throws DocumentClientException {
 
         Callable<Boolean> callable = new Callable<Boolean>() {
             @Override
@@ -151,14 +153,13 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
                 Boolean wasCreated = false;
                 try {
                     if (!leaseStoreExists().call().booleanValue()) {
-                        Document containerDocumentnew = new Document();
-                        containerDocumentnew.setId(getDocumentId());
+                        Document containerDocument = new Document();
+                        containerDocument.setId(getDocumentId());
 
-                        documentServices.createDocument(leaseStoreCollectionLink, containerDocumentnew, new RequestOptions(), true);
+                        documentServices.createDocument(leaseStoreCollectionLink, containerDocument, new RequestOptions(), true);
                         wasCreated = true;
                     }
-                }catch (Exception e){
-
+                } catch (Exception e) {
                 }
                 return wasCreated;
             }
@@ -168,7 +169,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
 
     @Override
-    public Callable<Iterable<DocumentServiceLease>> listLeases() {//    public Task<IEnumerable<DocumentServiceLease>> ListLeases()
+    public Callable<Iterable<DocumentServiceLease>> listLeases() {
 
         Callable<Iterable<DocumentServiceLease>> callable = new Callable<Iterable<DocumentServiceLease>>() {
             @Override
@@ -184,7 +185,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
      * Checks whether lease exists and creates if does not exist.
      * @return true if created, false otherwise. */
     @Override
-    public Callable<Boolean> createLeaseIfNotExist(String partitionId, String continuationToken) throws DocumentClientException { // public async Task<bool> CreateLeaseIfNotExistAsync(string partitionId, string continuationToken)
+    public Callable<Boolean> createLeaseIfNotExist(String partitionId, String continuationToken) throws DocumentClientException {
 
         Callable<Boolean> callable = new Callable<Boolean>() {
             @Override
@@ -209,7 +210,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
 
     @Override
-    public Callable<DocumentServiceLease> getLease(String partitionId) throws DocumentClientException {//    public async Task<DocumentServiceLease> GetLeaseAsync(string partitionId)
+    public Callable<DocumentServiceLease> getLease(String partitionId) throws DocumentClientException {
 
         Callable<DocumentServiceLease> callable = new Callable<DocumentServiceLease>() {
             @Override
