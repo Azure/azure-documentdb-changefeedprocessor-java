@@ -36,8 +36,11 @@ public class CheckpointServices {
         logger.info(String.format("Saving Checkpoint partitionId: %s, data: %s",partitionId,data));
         DocumentServiceLease lease = null;
         try {
+        	// CR: perf/RU impact: if we kept the lease in the loop in checkpoint job, we didn't have to get it every time.
+        	//     Probably OK for now, but we'll need to fix that.
             lease = (DocumentServiceLease)leaseManager.getLease(partitionId).call();
         } catch (Exception e) {
+        	// CR: add a comment that checkpoint will throw if lease is null.
             e.printStackTrace();
         }
         String continuation = data;
@@ -64,7 +67,7 @@ public class CheckpointServices {
         {
             result = (DocumentServiceLease) this.checkpointManager.checkpoint(lease, continuation, lease.getSequenceNumber() + 1);
 
-            if(result.getConcurrencyToken() == continuation )
+            if(result.getConcurrencyToken() == continuation)
                 logger.info(String.format("Checkpoint: partition %s, continuation token '%s' was not updated!", lease.getPartitionId(), continuation));
             else
                 logger.info(String.format("Checkpoint: partition %s, new continuation '%s'", lease.getPartitionId(), continuation));
@@ -75,6 +78,8 @@ public class CheckpointServices {
             throw ex;
         }
     }
+    
+    // CR: this doesn't seem to be called from anywhere. Need to implement the feature.
     public boolean isCheckpointNeeded(DocumentServiceLease lease, CheckpointStats checkpointStats)
     {
         CheckpointFrequency options = this.checkpointOptions;

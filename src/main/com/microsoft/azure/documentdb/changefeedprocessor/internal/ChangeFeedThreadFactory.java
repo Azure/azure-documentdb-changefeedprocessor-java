@@ -5,17 +5,17 @@ import java.util.logging.Logger;
 
 public class ChangeFeedThreadFactory implements ThreadFactory {
 
-    private String ThreadSuffixName;
+    private String threadSuffixName;
     private Logger logger = Logger.getLogger(ChangeFeedThreadFactory.class.getName());
 
-    public ChangeFeedThreadFactory(String ThreadSuffixName){
-        this.ThreadSuffixName = ThreadSuffixName;
+    public ChangeFeedThreadFactory(String threadSuffixName){
+        this.threadSuffixName = threadSuffixName;
     }
 
     @Override
     public Thread newThread(Runnable r) {
         Thread thread = new Thread(r);
-        thread.setName(String.format("%s_%s",thread.getId(),this.ThreadSuffixName));
+        thread.setName(String.format("%s_%s", thread.getId(), this.threadSuffixName));
         thread.setDaemon(true);
 
         logger.info(String.format("Thread Created Name: %s, ID: %s, Daemon: %s", thread.getName(), thread.getId(), thread.isDaemon()));

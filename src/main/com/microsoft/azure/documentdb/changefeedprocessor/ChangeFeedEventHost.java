@@ -5,7 +5,6 @@
  */
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
-
 import com.microsoft.azure.documentdb.ChangeFeedOptions;
 import com.microsoft.azure.documentdb.DocumentClientException;
 import com.microsoft.azure.documentdb.PartitionKeyRange;
@@ -119,6 +118,8 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     }
 
     // CR: must have a public registerObserverFactory method, C# version has it and quite a few customers use it.
+    
+    // CR: important: unregisterObservers is missing. Looks like currently there is no way to stop the host...
 
     // CR: this method is not needed. Remove, just set the factory instead.
     private void registerObserverFactory(ChangeFeedObserverFactory factory) {
@@ -179,13 +180,13 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         logger.info("Initializing partition manager");
         partitionManager = new PartitionManager<DocumentServiceLease>(this.hostName, this.leaseManager, this.options);
         try {
+        	// CR: why is new ResourcePartitionServices inside try-catch?
             this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, observerFactory, changeFeedOptions.getPageSize());
             partitionManager.subscribe(this).call();
             partitionManager.initialize();
         } catch (Exception e) {
-            e.printStackTrace();
+            e.printStackTrace();	// CR: eating exceptions.
         }
-
     }
 
     @Override
@@ -199,17 +200,18 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
                 try {
                     resourcePartitionSvcs.create(partitionId);
                     resourcePartitionSvcs.start(partitionId);
+                    // CR: we need to track new task for shutdown scenario.
                 } catch (DocumentClientException e) {
                     e.printStackTrace();
-                }catch (InterruptedException e) {
+                } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+                // CR: eating exceptions.
 
                 return null;
             }
         };
         return callable;
-
     }
 
     @Override
@@ -222,12 +224,12 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
                 logger.info(String.format("Partition id %s finished", partitionId));
                 resourcePartitionSvcs.stop(partitionId);
                 //TODO:Implement return of callable object
+                // CR: need to await for stop to finish
                 return null;
             }
         };
 
         return callable;
-
     }
 
     public ExecutorService getExecutorService(){

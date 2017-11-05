@@ -11,6 +11,7 @@ import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserver;
  *
  * @author yoterada
  */
+// CR: looks like this is not used. Remove.
 public class DocumentFeedObserverFactory<T extends IChangeFeedObserver> implements IDocumentFeedObserverFactory {
 
     public IChangeFeedObserver createObserver()

@@ -41,6 +41,7 @@ public abstract class AbstractBag<E> extends AbstractCollection<E> implements Ba
 			return true;
 		}
 		
+		// CR: what is this for (empty try)?
 		try {
 			
 		} catch(ClassCastException unused) {

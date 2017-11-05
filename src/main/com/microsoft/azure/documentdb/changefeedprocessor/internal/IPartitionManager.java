@@ -9,6 +9,7 @@ package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 *
 * @author rogirdh
 */
+// CR: are TODOs still need to be addressed?
 public interface IPartitionManager<T extends Lease> {
     void start();	//TODO: implement as async 
     void stop();	//TODO: implement as async 

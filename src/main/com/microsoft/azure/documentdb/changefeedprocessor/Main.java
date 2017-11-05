@@ -34,7 +34,7 @@ import java.util.Scanner;
  * @author moderakh
  *
  */
-public class Main {
+public class Main {	// CR: let's move this class along with TestChangeFeedObserver class to the samples package.
 
     public static void main(String[] args) throws Exception{
 

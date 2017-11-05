@@ -11,6 +11,6 @@ import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserver;
  *
  * @author yoterada
  */
-public interface IDocumentFeedObserverFactory {
+public interface IDocumentFeedObserverFactory {	// CR: looks like this is not used. Remove.
     IChangeFeedObserver createObserver();
 }

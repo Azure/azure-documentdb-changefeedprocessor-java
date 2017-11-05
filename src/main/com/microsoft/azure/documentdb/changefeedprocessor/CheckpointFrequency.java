@@ -33,15 +33,12 @@ import java.util.Optional;
 public class CheckpointFrequency {
 
     private Optional<Integer> processedDocumentCount;
-
     private Optional<Integer> timeInterval;
 
-    public CheckpointFrequency(){
-
+    public CheckpointFrequency() {
     }
 
     public Optional<Integer> getProcessedDocumentCount() {
-
         return processedDocumentCount;
     }
 
@@ -56,5 +53,4 @@ public class CheckpointFrequency {
     public void setTimeInterval(Optional<Integer> _timeInterval) {
         this.timeInterval = _timeInterval;
     }
-
 }

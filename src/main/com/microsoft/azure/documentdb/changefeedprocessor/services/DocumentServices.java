@@ -24,6 +24,8 @@ public class DocumentServices {
     private DocumentCollection documentCollection;
     private ResourceResponse<DocumentCollection> collectionResponse;
 
+    // CR: can we do plain java (without lombok)? I installed lombox for Eclipse and Eclipse still generates build errors for getDatabaseID(), etc.
+    //     This means lombok integration is sort of glitchy/not ready yet, customers may face this issue as well, so let's not use it.
     @Getter
     private String collectionSelfLink;
     @Getter

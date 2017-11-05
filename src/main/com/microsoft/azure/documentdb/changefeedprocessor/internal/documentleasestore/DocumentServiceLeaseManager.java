@@ -78,7 +78,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
 
     // CR: createLeaseColection = true has an issue that we don't know which collection to create (offerThroughput, etc)
     //     that's why in C# version we always use pre-created lease collection.
-    //     Do we realy need this scenario (true)?
+    //     Do we really need this scenario (true)?
     public void initialize(boolean createLeaseCollection) throws DocumentClientException {
 
         //Create URI String
@@ -223,7 +223,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
 
     @Override
-    public Callable<DocumentServiceLease> acquire(DocumentServiceLease lease, String owner) throws DocumentClientException {//    public async Task<DocumentServiceLease> AcquireAsync(DocumentServiceLease lease, string owner)
+    public Callable<DocumentServiceLease> acquire(DocumentServiceLease lease, String owner) throws DocumentClientException {
 
         if (lease == null || lease.getPartitionId() == null) {
             throw new IllegalArgumentException("lease");
@@ -247,7 +247,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
                         return serverLease;
                     }, owner);
                 } catch (LeaseLostException | DocumentClientException ex) {
-                    Logger.getLogger(DocumentServiceLeaseManager.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(DocumentServiceLeaseManager.class.getName()).log(Level.SEVERE, null, ex);	// CR: why eat exceptions?
                 }
                 return null;
             }
@@ -257,7 +257,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
 
     @Override
-    public Callable<DocumentServiceLease> renew(DocumentServiceLease lease) throws LeaseLostException, DocumentClientException {  //    public async Task<DocumentServiceLease> RenewAsync(DocumentServiceLease lease)
+    public Callable<DocumentServiceLease> renew(DocumentServiceLease lease) throws LeaseLostException, DocumentClientException {
 
         if (lease == null) throw new AssertionError("lease");
 
@@ -267,6 +267,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
                 DocumentServiceLease refreshedLease = tryGetLease(getDocumentId(lease.getPartitionId()));
                 if (refreshedLease == null)
                 {
+                	// CR: for consistency, should use this.logger, everywhere.
                     logger.info(String.format("Failed to renew lease for partition id %s! The lease is gone already.", lease.getPartitionId()));
                     throw new LeaseLostException(lease);
                 }
@@ -280,12 +281,10 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         };
 
         return callable;
-
     }
 
     @Override
-    public Callable<Boolean> release(DocumentServiceLease lease) throws DocumentClientException, LeaseLostException {//    public async Task<bool> ReleaseAsync(DocumentServiceLease lease)
-
+    public Callable<Boolean> release(DocumentServiceLease lease) throws DocumentClientException, LeaseLostException {
 
         Callable<Boolean> callable = new Callable<Boolean>() {
             @Override
@@ -320,7 +319,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
 
     @Override
-    public Callable<Void> delete(DocumentServiceLease lease) throws DocumentClientException, LeaseLostException {//    public async Task DeleteAsync(DocumentServiceLease lease)
+    public Callable<Void> delete(DocumentServiceLease lease) throws DocumentClientException, LeaseLostException {
         if (lease == null || lease.getId() == null) {
             throw new IllegalArgumentException("lease");
         }
@@ -347,7 +346,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
 
     @Override
-    public Callable<Void> deleteAll() throws DocumentClientException, LeaseLostException { //    public async Task DeleteAllAsync()
+    public Callable<Void> deleteAll() throws DocumentClientException, LeaseLostException {
 
         Callable<Void> callable = new Callable<Void>() {
             @Override
@@ -364,7 +363,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
 
     @Override
-    public Callable<Boolean> isExpired(DocumentServiceLease lease) {//    public Task<bool> IsExpired(DocumentServiceLease lease)        LOGGER.log(Level.FINEST, "{0} lease", Boolean.toString(lease != null));
+    public Callable<Boolean> isExpired(DocumentServiceLease lease) {
         if ((lease == null)) throw new AssertionError();
 
         Callable<Boolean> callable = new Callable<Boolean>() {
@@ -384,38 +383,36 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         };
 
         return callable;
-
-
     }
 
     @Override
-    public  void createLeases(Hashtable<String, PartitionKeyRange> ranges){
+    public void createLeases(Hashtable<String, PartitionKeyRange> ranges){
         // Get leases after getting ranges, to make sure that no other hosts checked in continuation for split partition after we got leases.
         ConcurrentHashMap existingLeases = new ConcurrentHashMap<String, DocumentServiceLease>();
         try {
             listLeases().call().forEach((lease) -> {
                 existingLeases.put(lease.getPartitionId(), lease);
             });
-        }catch (Exception e){
-            logger.severe(e.getMessage());
+        } catch (Exception e) {
+            logger.severe(e.getMessage());	// Why eat exceptions?
         }
 
         HashSet<String> gonePartitionIds = new HashSet<>();
-        existingLeases.keySet().forEach((key)->{
+        existingLeases.keySet().forEach((key) -> {
             String partitionID = (String)key;
             if(!ranges.contains(partitionID))
                 gonePartitionIds.add(partitionID);
         });
 
         ArrayList<String> addedPartitionIds = new ArrayList<>();
-        ranges.keySet().stream().forEach((range) ->{
+        ranges.keySet().stream().forEach((range) -> {
             if (!existingLeases.containsKey(range))
                 addedPartitionIds.add(range);
         });
 
         ConcurrentHashMap<String, ConcurrentLinkedQueue<DocumentServiceLease>> parentIdToChildLeases = new ConcurrentHashMap<>();
 
-        addedPartitionIds.forEach((addedRangeId)->{
+        addedPartitionIds.forEach((addedRangeId) -> {
             String continuationToken = null;
             String parentIds = "";
 
@@ -438,7 +435,6 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
             }
 
             try {
-
                 if (continuationToken == null &&  existingLeases != null && existingLeases.get(addedRangeId) != null)
                     continuationToken = ((DocumentServiceLease)existingLeases.get(addedRangeId)).getContinuationToken();
 
@@ -447,15 +443,14 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
 
                 createLeaseIfNotExist(addedRangeId, continuationToken).call();
             } catch (DocumentClientException e) {
-                logger.severe(String.format("Error creating lease %s", e.getMessage()));
-            }catch (Exception e) {
-                e.printStackTrace();
+                logger.severe(String.format("Error creating lease %s", e.getMessage()));	// CR: why eat exception?
+            } catch (Exception e) {
+                e.printStackTrace();														// CR: why eat exception?
             }
-
-        } );
+        });
+        
+        // CR: important: must remove gone leases (for every item in gonePartitionIds).
     }
-
-
 
     @Override
     public Lease checkpoint(Lease lease, String continuationToken, long sequenceNumber) {
@@ -471,14 +466,14 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
             }, DATE_HEADER_NAME);
             return result;
         } catch (LeaseLostException | DocumentClientException ex) {
-            Logger.getLogger(DocumentServiceLeaseManager.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(DocumentServiceLeaseManager.class.getName()).log(Level.SEVERE, null, ex);	// CR: eating exceptions.
         }
         return null;
     }
 
 
 
-    private Document tryGetDocument(String documentId) throws DocumentClientException {//    private async Task<Document> TryGetDocument(string documentId)
+    private Document tryGetDocument(String documentId) throws DocumentClientException {
         String uri = String.format("/dbs/%s/colls/%s/docs/%s", leaseStoreCollectionInfo.getDatabaseName(), leaseStoreCollectionInfo.getCollectionName(), documentId);
         logger.info(String.format("getting document uri %s", uri));
         Document doc = null;
@@ -493,7 +488,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         return doc;
     }
 
-    private DocumentServiceLease tryGetLease(String documentId) throws DocumentClientException {//    private async Task<DocumentServiceLease> TryGetLease(string documentId)
+    private DocumentServiceLease tryGetLease(String documentId) throws DocumentClientException {
         Document leaseDocument = tryGetDocument(documentId);
         if (leaseDocument != null) {
         	return new DocumentServiceLease(leaseDocument);
@@ -523,7 +518,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
 
 
-    private String getDocumentId() { //    private string GetDocumentId(string partitionId = null)    
+    private String getDocumentId() {    
         return getDocumentId(null);
     }
 
@@ -618,7 +613,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
 }
 
-class PartitionInfo implements Partition {
+class PartitionInfo implements Partition {	// CR: move to separate file. Is this actually used anywhere? If not, let's remove.
 
     public String Etag;
     public String DatabaseName;
@@ -659,13 +654,12 @@ class PartitionInfo implements Partition {
         return String.format("%s,%s,%s", this.DatabaseName, this.CollName, this.ID);
     }
 
-
     public enum PartitionStatus {
         COMPLETED, SYNCING;
     }
 }
 
-interface Partition {
+interface Partition {	// CR: move to separate file
 
     public Date lastExcetution();
 

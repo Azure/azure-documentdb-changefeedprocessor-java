@@ -23,11 +23,13 @@
  *
  */
 
-package com.microsoft.azure.documentdb.changefeedprocessor.internal;
+// CR: can we not use different packages (put everything into one package)?
+//     This way we will not have to make classes used cross-package boundary public and have public only what needs to be public.
+package com.microsoft.azure.documentdb.changefeedprocessor.internal;	
 
 public class CancellationTokenSource {
 
-    private boolean cancel = false;
+    private boolean cancel = false;	// CR: isCancelled? Or for Java code convention is to use verbs for booleans?
 
     public void cancel(){
         cancel = true;
@@ -36,5 +38,4 @@ public class CancellationTokenSource {
     public boolean isCanceled(){
         return cancel;
     }
-
 }
