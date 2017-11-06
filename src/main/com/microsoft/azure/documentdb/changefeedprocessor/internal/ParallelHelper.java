@@ -5,10 +5,12 @@
  */
 package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
+// CR: remove this file, not used anywhere.
 /**
  *
  * @author yoterada
  */
+// CR: remove or implement?
 public class ParallelHelper {
     // How to translate this?
     // public static Task ForEachAsync<TSource>(this IEnumerable<TSource> source, Func<TSource, Task> worker, int maxParallelTaskCount = 0, CancellationToken cancellationToken = new CancellationToken())

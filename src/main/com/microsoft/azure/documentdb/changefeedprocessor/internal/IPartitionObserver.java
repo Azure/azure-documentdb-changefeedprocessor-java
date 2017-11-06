@@ -34,9 +34,6 @@ import java.util.concurrent.Callable;
 * @author rogirdh
 */
 public interface IPartitionObserver<T extends Lease> {
-        Callable<Void> onPartitionAcquired(T lease);
-        //void onPatitionAcquiredAsync(T lease);
-        Callable<Void> onPartitionReleased(T lease, ChangeFeedObserverCloseReason reason);
-       // void onPartitionReleasedAsync(T lease, ChangeFeedObserverCloseReason reason);
+    Callable<Void> onPartitionAcquired(T lease);
+    Callable<Void> onPartitionReleased(T lease, ChangeFeedObserverCloseReason reason);
 }
-

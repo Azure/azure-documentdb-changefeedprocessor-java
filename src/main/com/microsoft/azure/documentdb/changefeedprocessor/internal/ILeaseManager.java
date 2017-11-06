@@ -48,7 +48,6 @@ public interface ILeaseManager<T extends Lease> {
 	 */
 	Callable<Iterable<T>> listLeases();
 
-
 	/***
 	 * Checks whether lease exists and creates if does not exist.
 	 * @param partitionId: The ID of the partition
@@ -119,5 +118,4 @@ public interface ILeaseManager<T extends Lease> {
 	Callable<Boolean> isExpired(T lease);
 
 	void createLeases(Hashtable<String, PartitionKeyRange> ranges);
-
 }

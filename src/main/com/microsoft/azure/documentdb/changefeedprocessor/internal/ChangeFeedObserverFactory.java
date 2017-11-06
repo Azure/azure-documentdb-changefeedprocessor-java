@@ -15,17 +15,13 @@ import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserverFac
 public class ChangeFeedObserverFactory<T extends IChangeFeedObserver> implements IChangeFeedObserverFactory {
     private final Class type;
 
+    // CR: why is T template parameter never used? Can we use it instead of passing Class othwerwise it's not a template really?
     public ChangeFeedObserverFactory(Class type) {
         this.type = type;
     }
 
     @Override
     public IChangeFeedObserver createObserver() throws IllegalAccessException, InstantiationException {
-
-        IChangeFeedObserver newInstance = null;
-        newInstance = (IChangeFeedObserver) type.newInstance();
-
-
-        return newInstance;
+        return (IChangeFeedObserver) type.newInstance();
     }
 }

@@ -43,7 +43,6 @@ public class DocumentCollectionInfo {
 
     }
 
-
     /**
      * Instantiante a new instance of {@link DocumentCollectionInfo} using other as a source
      * @param other the other {@link DocumentCollectionInfo} object that will be used as source

@@ -25,19 +25,17 @@ final class PartitionObserverManager<T extends Lease> {
         this.observers = new ArrayList<IPartitionObserver<T>>();
     }
 
-    // TODO: implement subscribeAsync ,notifyPartitionAcquiredAsync,  notifyPartitionReleasedAsync
-
     @SuppressWarnings({ "unchecked" })
-    public Callable<IDisposable> subscribe(IPartitionObserver<T> observer){
+    public Callable<IDisposable> subscribe(IPartitionObserver<T> observer) {
     	Callable<IDisposable> subscribeCallable = new Callable<IDisposable>() {
     		public IDisposable call() {
     			if (!PartitionObserverManager.this.observers.contains(observer)) {
     				PartitionObserverManager.this.observers.add(observer);
     		
-    		        for (T lease : PartitionObserverManager.this.partitionManager.currentlyOwnedPartitions.values()) {
+    		        for (T lease : PartitionObserverManager.this.partitionManager.currentlyOwnedPartitions.values()) {	// CR: what "PartitionObserverManager." is here for?
     		            try {
-    		              //  Wait till the runnable completes
-    		            	observer.onPartitionAcquired(lease).wait();
+    		                //  Wait till the runnable completes
+    		            	observer.onPartitionAcquired(lease).wait();	// CR: who signals the wait to finish?
     		            } catch (Exception ex) {
     		                // Eat any exceptions during notification of observers
 							logger.warning(ex.getMessage());
@@ -51,11 +49,13 @@ final class PartitionObserverManager<T extends Lease> {
     	return subscribeCallable;
     }
 
-    public Runnable notifyPartitionAcquired(T lease){
+    public Runnable notifyPartitionAcquired(T lease) {
     	Runnable notifyPartitionAcquiredRunnable = new Runnable() {
     		public void run() {
+    			// CR: note that this complexity is not really needed as there is only 1 observer: change feed event host.
+    			//     Could be done as simple as wait() like in subscribe method.
     			ExecutorService execSvc = Executors.newFixedThreadPool(PartitionObserverManager.this.observers.size());
-    			List<Callable<Void>> oPA = new ArrayList<>();
+    			List<Callable<Void>> oPA = new ArrayList<>();	// CR: rename, what is OPA BTW? :)
     			for (IPartitionObserver<T> obs : PartitionObserverManager.this.observers) {
     				oPA.add(obs.onPartitionAcquired(lease));  //TODO: Check if this works as expected. If not, change the return type of onPartitionAcquired to callable
     	        }
@@ -78,7 +78,7 @@ final class PartitionObserverManager<T extends Lease> {
     	return notifyPartitionAcquiredRunnable;      
     }
 
-    public Runnable notifyPartitionReleased(T lease, ChangeFeedObserverCloseReason reason){
+    public Runnable notifyPartitionReleased(T lease, ChangeFeedObserverCloseReason reason) {
     	Runnable notifyPartitionReleasedRunnable = new Runnable() {
     		public void run() {
     			ExecutorService execSvc = Executors.newFixedThreadPool(PartitionObserverManager.this.observers.size());

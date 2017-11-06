@@ -40,7 +40,7 @@ import java.util.Locale;
 
 /**
  *
- * @author yoterada
+ * @author yoterada		// CR: should we remove all @author attributes?
  */
 public class DocumentServiceLease extends Lease {
 	
@@ -117,7 +117,7 @@ public class DocumentServiceLease extends Lease {
 			return mapper.readValue(json, DocumentServiceLease.class);
 		} catch (IOException e) {
 			e.printStackTrace();
-			return null;
+			return null;	// CR: is there specific reason to eat IOException?
 		}
     } 
 }

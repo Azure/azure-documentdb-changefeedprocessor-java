@@ -97,7 +97,7 @@ ChangeFeedEventHost host = new ChangeFeedEventHost("hostname", docInfo, docAux, 
 
 ## 5. The Observer
 
-The code realy on the observer to actually perform some action to the docs that are read from change feed.
+The code relies on the observer to actually perform some action to the docs that are read from change feed.
 
 We have made available a test observer that just print the docs received at the console. the class is on Test Package TestChangeFeedObserver.
 
@@ -135,7 +135,7 @@ To access a real class of this working please access the following link [Sample]
 
 ## 6. Running the sample
 
-To run the sample you will need an IDE (InteliJ, Eclipse, Netbeans and etc.) choose one that has the best fit with you. The IDE´s already has the Maven available and this make things easy to test.
+To run the sample you will need an IDE (InteliJ, Eclipse, Netbeans and etc.) choose one that has the best fit with you. These IDEs already have the Maven available and this make things easy to test.
 
 If you want to test it in the CommandLine first you will need to generate the jar, by using Maven. To install it click [here](https://maven.apache.org/install.html).
 
