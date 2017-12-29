@@ -9,7 +9,7 @@ package com.microsoft.azure.documentdb.changefeedprocessor.internal;
  *
  * @author yoterada
  */
-public enum StatusCode {
+enum StatusCode {
 
     /**
      * The operation is attempting to act on a resource that no longer exists. For example, the resource may have already been deleted.

@@ -1,4 +1,5 @@
-package com.microsoft.azure.documentdb.changefeedprocessor.internal;
+//package com.microsoft.azure.documentdb.changefeedprocessor.internal;
+package com.microsoft.azure.documentdb.changefeedprocessor;
 
 import java.util.List;
 
@@ -6,8 +7,8 @@ import java.util.List;
 *
 * @author rogirdh
 */
-// CR: this (IDisposable aspect of it which is the reason to have it) is not actually used. Let's remove.
-final class Unsubscriber<T extends Lease> implements IDisposable {
+// [Done: Changed IDisposable to Java Equivalent: AutoCloseable] CR: this (IDisposable aspect of it which is the reason to have it) is not actually used. Let's remove.
+final class Unsubscriber<T extends Lease> implements AutoCloseable {
 
     final List<IPartitionObserver<T>> observers;
     final IPartitionObserver<T> observer;
@@ -17,7 +18,7 @@ final class Unsubscriber<T extends Lease> implements IDisposable {
         this.observer = observer;
     }
 
-    public void Dispose()
+    public void close()
     {
         if (this.observers.contains(this.observer))
         {

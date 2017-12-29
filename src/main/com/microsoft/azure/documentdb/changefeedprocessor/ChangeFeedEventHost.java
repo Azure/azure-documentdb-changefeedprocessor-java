@@ -9,14 +9,14 @@ import com.microsoft.azure.documentdb.ChangeFeedOptions;
 import com.microsoft.azure.documentdb.DocumentClientException;
 import com.microsoft.azure.documentdb.PartitionKeyRange;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.*;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLeaseManager;
-import com.microsoft.azure.documentdb.changefeedprocessor.services.CheckpointServices;
+import com.microsoft.azure.documentdb.changefeedprocessor.DocumentServiceLease;
+import com.microsoft.azure.documentdb.changefeedprocessor.DocumentServiceLeaseManager;
+import com.microsoft.azure.documentdb.changefeedprocessor.CheckpointServices;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentCollectionInfo;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartitionServices;
 
 import java.util.Hashtable;
-import java.util.List;
 import java.util.concurrent.*;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -66,11 +66,17 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         this.changeFeedOptions = changeFeedOptions;
         this.options = hostOptions;
         this.hostName = hostName;
-
-        this.documentServices = new DocumentServices(documentCollectionLocation);
+        try{
+            this.documentServices = new DocumentServices(documentCollectionLocation);
+        }
+        catch(DocumentClientException ex){
+            ex.printStackTrace();
+        }
+        
         this.checkpointSvcs = null;
         this.resourcePartitionSvcs = null;
 
+        // Checking for ChangeFeed Page Size
         if (this.changeFeedOptions.getPageSize() == null || this.changeFeedOptions.getPageSize() == 0)
         {
             this.changeFeedOptions.setPageSize(this.DEFAULT_PAGE_SIZE);
@@ -79,10 +85,9 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         this.executorService = Executors.newFixedThreadPool(1);
     }
 
-    private DocumentCollectionInfo canonicalizeCollectionInfo(DocumentCollectionInfo collectionInfo)
-    {
-    	// CR: can we do some analog of Debug.Assert() for all private method input check?
-    	//     Debug.Assert(collectionInfo != null);
+    private DocumentCollectionInfo canonicalizeCollectionInfo(DocumentCollectionInfo collectionInfo) {
+    	// [Done] CR: can we do some analog of Debug.Assert() for all private method input check?
+    	assert collectionInfo != null;
         DocumentCollectionInfo result = collectionInfo;
         if (result.getConnectionPolicy().getUserAgentSuffix() == null ||
                 result.getConnectionPolicy().getUserAgentSuffix().isEmpty())
@@ -101,38 +106,70 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     /**
      * This code used to be async
      */
-    public void registerObserver(Class type) throws Exception	// CR: can we use generics?
-    {
-        logger.info(String.format("Registering Observer of type %s", type));	// CR: change this this.logger for consistency.
-        ChangeFeedObserverFactory factory = new ChangeFeedObserverFactory(type);
+    public <T extends IChangeFeedObserver> Callable<Void> registerObserver(Class<T>  type) throws Exception, InterruptedException {	// CR: can we use generics? 
+        Callable<Void> callable = new Callable<Void>() {
+            public Void call() throws InterruptedException {
+                ChangeFeedEventHost.this.logger.info(String.format("Registering Observer of type %s", type));	// CR: change this this.logger for consistency.       
+                ChangeFeedObserverFactory<T> factory = new ChangeFeedObserverFactory<T>(type);
+                ChangeFeedEventHost.this.observerFactory = factory;
+            // registerObserverFactory(factory);      //TODO CR: Do we need this here?
 
-        registerObserverFactory(factory);
+                ChangeFeedEventHost.this.executorService.execute(() -> {
+                    try {
+                        start();
+                    } catch (Exception e) {
+                        e.printStackTrace();	// CR: does Java support pluggable tracing like .Net (different trace sources, levels, etc)? What is Logger?
+                    }
+                });
 
-        this.executorService.execute(() -> {
-            try {
-                start();
-            } catch (Exception e) {
-                e.printStackTrace();	// CR: does Java support pluggable tracing like .Net (different trace sources, levels, etc)? What is Logger?
+                while (!ChangeFeedEventHost.this.executorService.awaitTermination(24L, TimeUnit.HOURS)) {   //Waiting for Executor to finish
+                }
+
+                return null;
             }
-        });
+        };
+        
+        return callable;
     }
 
-    // CR: must have a public registerObserverFactory method, C# version has it and quite a few customers use it.
+    // [Done] CR: must have a public registerObserverFactory method, C# version has it and quite a few customers use it.
     
     // CR: important: unregisterObservers is missing. Looks like currently there is no way to stop the host...
+    public Callable<Void> unregisterObservers(){
+        Callable<Void> callable = new Callable<Void>() {
+            public Void call(){
+             //   ChangeFeedEventHost.this.stop();    //TODO CR: stopAsync method seems to be missing
+                ChangeFeedEventHost.this.observerFactory = null;
+                return null;
+            }
+        };
 
-    // CR: this method is not needed. Remove, just set the factory instead.
-    private void registerObserverFactory(ChangeFeedObserverFactory factory) {
-        this.observerFactory = factory;
+        return callable;
     }
+
+
+    // [Done] CR: this method is not needed. Remove, just set the factory instead.
+  /*  public void registerObserverFactory(ChangeFeedObserverFactory factory) {
+        this.observerFactory = factory;
+        //TODO CR: Check out the .NET implementation. Need to call Start() method
+    } */
 
     private void start() throws Exception{
         logger.info(String.format("Starting..."));
+        this.executorService.execute(() -> {
+            try {
+                initializeIntegrations();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
 
-        initializeIntegrations();
+        while (!this.executorService.awaitTermination(24L, TimeUnit.HOURS)) {   //Waiting for Executor to finish
+        }
+        
     }
 
-    private void initializeIntegrations() throws DocumentClientException, LeaseLostException {
+    private void initializeIntegrations() throws DocumentClientException, LeaseLostException, InterruptedException {
         // Grab the options-supplied prefix if present otherwise leave it empty.
         String optionsPrefix = this.options.getLeasePrefix();
         if (optionsPrefix == null) {
@@ -140,7 +177,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         }
 
         // Beyond this point all access to collection is done via this self link: if collection is removed, we won't access new one using same name by accident.
-        this.leasePrefix = String.format("%s%s_%s_%s", optionsPrefix, this.collectionLocation.getUri().getHost(), documentServices.getDatabaseID(), documentServices.getCollectionID());
+        this.leasePrefix = String.format("%s%s_%s_%s", optionsPrefix, this.collectionLocation.getUri().getHost(), documentServices.getDatabaseId(), documentServices.getCollectionId());
 
         this.leaseManager = new DocumentServiceLeaseManager(
                 this.auxCollectionLocation,
@@ -149,7 +186,17 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
                 this.options.getLeaseRenewInterval(),
                 this.documentServices);
 
-        leaseManager.initialize(true);
+        //leaseManager.initialize(true);
+        this.executorService.execute(() -> {
+            try {
+                leaseManager.initialize();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
+        while (!this.executorService.awaitTermination(24L, TimeUnit.HOURS)) {   //Waiting for Executor to finish
+        }
 
         this.checkpointSvcs = new CheckpointServices(this.leaseManager, this.options.getCheckpointFrequency());
 
@@ -171,7 +218,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
             e.printStackTrace();
         }
 
-        Hashtable<String, PartitionKeyRange> ranges = this.documentServices.listPartitionRange();
+        Hashtable<String, PartitionKeyRange> ranges = this.documentServices.listPartitionRanges();
 
         this.leaseManager.createLeases(ranges);
 
@@ -192,6 +239,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     @Override
     public Callable<Void> onPartitionAcquired(DocumentServiceLease documentServiceLease) {
 
+        assert documentServiceLease != null && isNullOrEmpty(documentServiceLease.getOwner()) : "lease" ;
         Callable<Void> callable = new Callable<Void>() {
             @Override
             public Void call() throws Exception {
@@ -232,7 +280,11 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         return callable;
     }
 
-    public ExecutorService getExecutorService(){
+    private ExecutorService getExecutorService(){
         return executorService;
+    }
+
+    public static boolean isNullOrEmpty(String s) {
+        return s == null || s.length() == 0;
     }
 }

@@ -3,15 +3,17 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.microsoft.azure.documentdb.changefeedprocessor.internal;
+//package com.microsoft.azure.documentdb.changefeedprocessor.internal;
+package com.microsoft.azure.documentdb.changefeedprocessor;
 
 /**
  *
  * @author yoterada
  */
-public class LeaseLostException extends Exception {
+class LeaseLostException extends Exception {
 
-    private Lease lease;
+	private static final long serialVersionUID = 1L;
+	private Lease lease;
     private Boolean isGone;
 
     public LeaseLostException()
@@ -57,7 +59,7 @@ public class LeaseLostException extends Exception {
         return isGone;
     }
 
-    public void setIsGone(Boolean value) {
+    private void setIsGone(Boolean value) {
     	this.isGone = value;
     }
 }

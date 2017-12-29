@@ -1,4 +1,4 @@
-package com.microsoft.azure.documentdb.changefeedprocessor.services;
+package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
 import com.microsoft.azure.documentdb.ChangeFeedOptions;
 import com.microsoft.azure.documentdb.Document;
@@ -7,10 +7,12 @@ import com.microsoft.azure.documentdb.FeedResponse;
 import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverCloseReason;
 import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverContext;
 import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserver;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.Job;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ChangeFeedThreadFactory;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.StatusCode;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.SubStatusCode;
-import lombok.Getter;
+import com.microsoft.azure.documentdb.changefeedprocessor.CheckpointServices;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
 
 import java.util.List;
 import java.util.concurrent.*;
@@ -18,9 +20,7 @@ import java.util.logging.Logger;
 
 public class ChangeFeedJob implements Job {
 
-    @Getter
     private final DocumentServices client;
-    @Getter
     private final CheckpointServices checkpointSvcs;
 
     private final String partitionId;
@@ -34,6 +34,13 @@ public class ChangeFeedJob implements Job {
     private final int NumThreadsPerCpu = 5;
     private static Logger logger = Logger.getLogger(ChangeFeedJob.class.getName());
 
+    public DocumentServices getClient(){
+        return client;
+    }
+
+    public CheckpointServices getCheckpointSvcs(){
+        return checkpointSvcs;
+    }
     /***
      *
      * @param partitionId
@@ -214,6 +221,7 @@ public class ChangeFeedJob implements Job {
 
     private int getSubStatusCode(DocumentClientException exception)
     {
+        assert exception != null ;
         String SubStatusHeaderName = "x-ms-substatus";
         String valueSubStatus = exception.getResponseHeaders().get(SubStatusHeaderName);
         if (valueSubStatus != null && !valueSubStatus.isEmpty())

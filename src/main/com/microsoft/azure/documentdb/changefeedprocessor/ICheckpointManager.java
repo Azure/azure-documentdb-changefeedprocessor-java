@@ -3,7 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.microsoft.azure.documentdb.changefeedprocessor.internal;
+//package com.microsoft.azure.documentdb.changefeedprocessor.internal;
+package com.microsoft.azure.documentdb.changefeedprocessor;
+
+import java.util.concurrent.Callable;
 
 /**
  *
@@ -21,5 +24,5 @@ public interface ICheckpointManager {
     /// <param name="offset">Current position in the stream.</param>
     /// <param name="sequenceNumber">The sequence number of the partition.</param>
     /// <returns>Returns <see cref="System.Threading.Tasks.Task" />.</returns>
-    Lease checkpoint(Lease lease, String offset, long sequenceNumber);
+    Callable<Lease> checkpoint(Lease lease, String offset, long sequenceNumber);
 }

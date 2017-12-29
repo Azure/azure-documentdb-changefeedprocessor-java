@@ -1,4 +1,4 @@
-package com.microsoft.azure.documentdb.changefeedprocessor.internal;
+package com.microsoft.azure.documentdb.changefeedprocessor;
 
 import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverCloseReason;
 
@@ -26,9 +26,9 @@ final class PartitionObserverManager<T extends Lease> {
     }
 
     @SuppressWarnings({ "unchecked" })
-    public Callable<IDisposable> subscribe(IPartitionObserver<T> observer) {
-    	Callable<IDisposable> subscribeCallable = new Callable<IDisposable>() {
-    		public IDisposable call() {
+    public Callable<AutoCloseable> subscribe(IPartitionObserver<T> observer) {
+    	Callable<AutoCloseable> subscribeCallable = new Callable<AutoCloseable>() {
+    		public AutoCloseable call() {
     			if (!PartitionObserverManager.this.observers.contains(observer)) {
     				PartitionObserverManager.this.observers.add(observer);
     		
@@ -42,16 +42,17 @@ final class PartitionObserverManager<T extends Lease> {
     		            }
     		        }
     		    }
-				IDisposable unsubscriber = new Unsubscriber(PartitionObserverManager.this.observers, observer);
+				AutoCloseable unsubscriber = new Unsubscriber(PartitionObserverManager.this.observers, observer);
     		    return unsubscriber;
     		}
     	};	    
     	return subscribeCallable;
     }
 
-    public Runnable notifyPartitionAcquired(T lease) {
-    	Runnable notifyPartitionAcquiredRunnable = new Runnable() {
-    		public void run() {
+    public Callable<Void> notifyPartitionAcquired(T lease) {
+    	Callable<Void> notifyPartitionAcquiredRunnable = new Callable<Void>() {
+    		@Override
+    		public Void call() {
     			// CR: note that this complexity is not really needed as there is only 1 observer: change feed event host.
     			//     Could be done as simple as wait() like in subscribe method.
     			ExecutorService execSvc = Executors.newFixedThreadPool(PartitionObserverManager.this.observers.size());
@@ -73,14 +74,17 @@ final class PartitionObserverManager<T extends Lease> {
 					e.printStackTrace();
 				}
     			execSvc.shutdown();
+    			
+    			return null;
     		}
     	};    	
     	return notifyPartitionAcquiredRunnable;      
     }
 
-    public Runnable notifyPartitionReleased(T lease, ChangeFeedObserverCloseReason reason) {
-    	Runnable notifyPartitionReleasedRunnable = new Runnable() {
-    		public void run() {
+    public Callable<Void> notifyPartitionReleased(T lease, ChangeFeedObserverCloseReason reason) {
+    	Callable<Void> notifyPartitionReleasedRunnable = new Callable<Void>() {
+    		@Override
+    		public Void call() {
     			ExecutorService execSvc = Executors.newFixedThreadPool(PartitionObserverManager.this.observers.size());
     			List<Callable<Void>> oPR = new ArrayList<>();
     			for (IPartitionObserver<T> obs : PartitionObserverManager.this.observers) {
@@ -100,6 +104,8 @@ final class PartitionObserverManager<T extends Lease> {
 					e.printStackTrace();
 				}
     			execSvc.shutdown();
+    			
+    			return null;
     		}
     	};    	
     	return notifyPartitionReleasedRunnable;
