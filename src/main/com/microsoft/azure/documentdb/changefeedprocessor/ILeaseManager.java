@@ -117,5 +117,5 @@ interface ILeaseManager<T extends Lease> {
 	 */
 	Callable<Boolean> isExpired(T lease);
 
-	void createLeases(Hashtable<String, PartitionKeyRange> ranges);
+	Callable<Void> createLeases(Hashtable<String, PartitionKeyRange> ranges) throws DocumentClientException, Exception;
 }

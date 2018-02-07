@@ -46,9 +46,15 @@ final class PartitionManager<T extends Lease> {
         this.partitionObserverManager = new PartitionObserverManager(this);
     }
 
-    public void initialize() throws Exception {
-    	exec = Executors.newCachedThreadPool();
-    	initialize(exec);
+    public Callable<Void> initialize() throws Exception {
+    	Callable<Void> callable = new Callable<Void>(){
+			public Void call() throws Exception {
+				exec = Executors.newCachedThreadPool();
+				initialize(exec);
+				return null;
+			}
+		};
+		return callable;
     }
     
     private void initialize(ExecutorService execService) throws Exception {

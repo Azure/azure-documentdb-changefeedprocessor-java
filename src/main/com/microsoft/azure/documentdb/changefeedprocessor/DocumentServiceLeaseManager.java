@@ -391,69 +391,74 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
     }
 
     @Override
-    public void createLeases(Hashtable<String, PartitionKeyRange> ranges){
-        assert ranges != null ;
+    public Callable<Void> createLeases(Hashtable<String, PartitionKeyRange> ranges) throws DocumentClientException, Exception {
+        Callable<Void> callable = new Callable<Void>() {
+            @Override
+            public Void call() throws DocumentClientException, Exception {
+                assert ranges != null ;
         
-        // Get leases after getting ranges, to make sure that no other hosts checked in continuation for split partition after we got leases.
-        ConcurrentHashMap existingLeases = new ConcurrentHashMap<String, DocumentServiceLease>();
-        try {
-            listLeases().call().forEach((lease) -> {
-                existingLeases.put(lease.getPartitionId(), lease);
-            });
-        } catch (Exception e) {
-            logger.severe(e.getMessage());	// Why eat exceptions?
-        }
-
-        HashSet<String> gonePartitionIds = new HashSet<>();
-        existingLeases.keySet().forEach((key) -> {
-            String partitionID = (String)key;
-            if(!ranges.contains(partitionID))
-                gonePartitionIds.add(partitionID);
-        });
-
-        ArrayList<String> addedPartitionIds = new ArrayList<>();
-        ranges.keySet().stream().forEach((range) -> {
-            if (!existingLeases.containsKey(range))
-                addedPartitionIds.add(range);
-        });
-
-        ConcurrentHashMap<String, ConcurrentLinkedQueue<DocumentServiceLease>> parentIdToChildLeases = new ConcurrentHashMap<>();
-
-        addedPartitionIds.forEach((addedRangeId) -> {
-            String continuationToken = null;
-            String parentIds = "";
-
-            PartitionKeyRange range = ranges.get(addedRangeId);
-            if (range.getParents()!= null && range.getParents().size() > 0)  { // Check for split.
-                for (String parentRangeId : range.getParents()){
-                    // Transfer ContinuationToken from lease for gone parent to lease for its child partition.
-                    assert gonePartitionIds.contains(parentRangeId);
-                    
-                    parentIds += parentIds.length() == 0 ? parentRangeId : "," + parentRangeId;
-                    DocumentServiceLease parentLease = (DocumentServiceLease)existingLeases.get(parentRangeId);
-                    if (continuationToken != null) {
-                        logger.warning(String.format("Partition {0}: found more than one parent, new continuation '{1}', current '{2}', will use '{3}'", addedRangeId, parentLease.getContinuationToken(), continuationToken, parentLease.getContinuationToken()));
-                    }
-                    continuationToken = parentLease.getContinuationToken();
+                // Get leases after getting ranges, to make sure that no other hosts checked in continuation for split partition after we got leases.
+                ConcurrentHashMap existingLeases = new ConcurrentHashMap<String, DocumentServiceLease>();
+                try {
+                    listLeases().call().forEach((lease) -> {
+                        existingLeases.put(lease.getPartitionId(), lease);
+                    });
+                } catch (Exception e) {
+                    logger.severe(e.getMessage());	// Why eat exceptions?
                 }
+
+                HashSet<String> gonePartitionIds = new HashSet<>();
+                existingLeases.keySet().forEach((key) -> {
+                    String partitionID = (String)key;
+                    if(!ranges.contains(partitionID))
+                        gonePartitionIds.add(partitionID);
+                });
+
+                ArrayList<String> addedPartitionIds = new ArrayList<>();
+                ranges.keySet().stream().forEach((range) -> {
+                    if (!existingLeases.containsKey(range))
+                        addedPartitionIds.add(range);
+                });
+
+                ConcurrentHashMap<String, ConcurrentLinkedQueue<DocumentServiceLease>> parentIdToChildLeases = new ConcurrentHashMap<>();
+
+                addedPartitionIds.forEach((addedRangeId) -> {
+                    String continuationToken = null;
+                    String parentIds = "";
+
+                    PartitionKeyRange range = ranges.get(addedRangeId);
+                    if (range.getParents()!= null && range.getParents().size() > 0)  { // Check for split.
+                        for (String parentRangeId : range.getParents()){
+                            // Transfer ContinuationToken from lease for gone parent to lease for its child partition.
+                            assert gonePartitionIds.contains(parentRangeId);
+                            
+                            parentIds += parentIds.length() == 0 ? parentRangeId : "," + parentRangeId;
+                            DocumentServiceLease parentLease = (DocumentServiceLease)existingLeases.get(parentRangeId);
+                            if (continuationToken != null) {
+                                logger.warning(String.format("Partition {0}: found more than one parent, new continuation '{1}', current '{2}', will use '{3}'", addedRangeId, parentLease.getContinuationToken(), continuationToken, parentLease.getContinuationToken()));
+                            }
+                            continuationToken = parentLease.getContinuationToken();
+                        }
+                    }
+
+                    if (continuationToken == null &&  existingLeases != null && existingLeases.get(addedRangeId) != null)
+                        continuationToken = ((DocumentServiceLease)existingLeases.get(addedRangeId)).getContinuationToken();
+
+                    if (continuationToken == null)
+                        continuationToken = "";
+
+                    boolean test = createLeaseIfNotExist(addedRangeId, continuationToken).call();
+                    //TODO CR: Implement RemoveLeases condition. See .NET implementation
+                });
+                
+                return null;
+
+                // CR: important: must remove gone leases (for every item in gonePartitionIds). 
             }
+        };
 
-            try {
-                if (continuationToken == null &&  existingLeases != null && existingLeases.get(addedRangeId) != null)
-                    continuationToken = ((DocumentServiceLease)existingLeases.get(addedRangeId)).getContinuationToken();
-
-                if (continuationToken == null)
-                    continuationToken = "";
-
-                createLeaseIfNotExist(addedRangeId, continuationToken).call();
-            } catch (DocumentClientException e) {
-                logger.severe(String.format("Error creating lease %s", e.getMessage()));	// CR: why eat exception?
-            } catch (Exception e) {
-                e.printStackTrace();														// CR: why eat exception?
-            }
-        });
+        return callable;
         
-        // CR: important: must remove gone leases (for every item in gonePartitionIds).
     }
 
     @Override

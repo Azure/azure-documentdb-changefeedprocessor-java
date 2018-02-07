@@ -169,7 +169,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         
     }
 
-    private void initializeIntegrations() throws DocumentClientException, LeaseLostException, InterruptedException {
+    private void initializeIntegrations() throws Exception, DocumentClientException, LeaseLostException, InterruptedException, ExecutionException {
         // Grab the options-supplied prefix if present otherwise leave it empty.
         String optionsPrefix = this.options.getLeasePrefix();
         if (optionsPrefix == null) {
@@ -226,14 +226,10 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         logger.info("Initializing partition manager");
         partitionManager = new PartitionManager<DocumentServiceLease>(this.hostName, this.leaseManager, this.options);
-        try {
-        	// CR: why is new ResourcePartitionServices inside try-catch?
-            this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, observerFactory, changeFeedOptions.getPageSize());
-            partitionManager.subscribe(this).call();
-            partitionManager.initialize();
-        } catch (Exception e) {
-            e.printStackTrace();	// CR: eating exceptions.
-        }
+        	// [Done] CR: why is new ResourcePartitionServices inside try-catch?
+        this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, observerFactory, changeFeedOptions.getPageSize());
+        this.executorService.submit(partitionManager.subscribe(this)).get();    //Awaiting the task to be finished.  
+        this.executorService.submit(partitionManager.initialize()).get();       //Awaiting the task to be finished.
     }
 
     @Override
