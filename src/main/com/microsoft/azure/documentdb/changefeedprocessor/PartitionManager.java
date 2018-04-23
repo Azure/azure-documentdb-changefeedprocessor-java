@@ -3,7 +3,8 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.microsoft.azure.documentdb.changefeedprocessor.internal;
+//package com.microsoft.azure.documentdb.changefeedprocessor.internal;
+package com.microsoft.azure.documentdb.changefeedprocessor;
 
 import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedHostOptions;
 import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverCloseReason;
@@ -18,7 +19,7 @@ import java.util.logging.Logger;
  *
  * @author rogirdh
  */
-public class PartitionManager<T extends Lease> {
+final class PartitionManager<T extends Lease> {
 
     final String workerName;
     final ILeaseManager<T> leaseManager;
@@ -45,9 +46,15 @@ public class PartitionManager<T extends Lease> {
         this.partitionObserverManager = new PartitionObserverManager(this);
     }
 
-    public void initialize() throws Exception {
-    	exec = Executors.newCachedThreadPool();
-    	initialize(exec);
+    public Callable<Void> initialize() throws Exception {
+    	Callable<Void> callable = new Callable<Void>(){
+			public Void call() throws Exception {
+				exec = Executors.newCachedThreadPool();
+				initialize(exec);
+				return null;
+			}
+		};
+		return callable;
     }
     
     private void initialize(ExecutorService execService) throws Exception {
@@ -69,10 +76,10 @@ public class PartitionManager<T extends Lease> {
             }
         }
 
-        List<Callable<Object>> addLeaseTasks = new ArrayList<Callable<Object>>();
+        List<Callable<Void>> addLeaseTasks = new ArrayList<Callable<Void>>();
         for (T lease : leases) {
             logger.info(String.format("Host '%s' acquired lease for PartitionId '%s' on startup.", this.workerName, lease.getPartitionId()));
-            addLeaseTasks.add(Executors.callable(this.addLease(lease)));	//TODO: Ensure this converts Runnable to Callable safely
+            addLeaseTasks.add(this.addLease(lease));
         }
 
         try {
@@ -92,7 +99,7 @@ public class PartitionManager<T extends Lease> {
     }
 
     // CR: important: this is never called! Should be called from initializeIntegrations...
-    public void startAsync()
+    public void start()
     {
         if (!this.isStarted.compareAndSet(0, 1))
         {
@@ -103,12 +110,12 @@ public class PartitionManager<T extends Lease> {
   //      this.leaseTakerCancellationTokenSource = new CancellationTokenSource();
   //      this.leaseRenewerCancellationTokenSource = new CancellationTokenSource();
 
-        this.renewTask = exec.submit(new LeaseRenewerAsync());
-        this.takerTask = exec.submit(new LeaseTakerAsync());
+        this.renewTask = exec.submit(new LeaseRenewer());
+        this.takerTask = exec.submit(new LeaseTaker());
     }
 
     // CR: important: this is never called as well.
-    public void stopAsync(ChangeFeedObserverCloseReason reason) throws InterruptedException, ExecutionException {
+    public void stop(ChangeFeedObserverCloseReason reason) throws InterruptedException, ExecutionException {
         if (!this.isStarted.compareAndSet(1, 0)) {
             // idempotent
             return;
@@ -133,18 +140,18 @@ public class PartitionManager<T extends Lease> {
     }
 
     @SuppressWarnings("unchecked")
-	public Callable<IDisposable> subscribe(IPartitionObserver<T> observer) {
+	public Callable<AutoCloseable> subscribe(IPartitionObserver<T> observer) {
         return this.partitionObserverManager.subscribe(observer);
     }
 
     public Callable<Void> tryReleasePartition(String partitionId, boolean hasOwnership, ChangeFeedObserverCloseReason closeReason) {
         Callable<Void> callable = new Callable<Void>() {
         	@Override
-        	public Void call() {
+        	public Void call() throws Exception {
         		T lease = PartitionManager.this.currentlyOwnedPartitions.get(partitionId);
                 
                 if (lease != null) {
-                	PartitionManager.this.removeLease(lease, hasOwnership, closeReason).run();	//TODO: Ensure this is awaiting
+                	PartitionManager.this.removeLease(lease, hasOwnership, closeReason).call();	//TODO: Ensure this is awaiting
                 }             
                 return null;
         	}
@@ -153,7 +160,7 @@ public class PartitionManager<T extends Lease> {
         return callable;
     }
 
-    private class LeaseRenewerAsync implements Callable<Void> {
+    private class LeaseRenewer implements Callable<Void> {
 		@Override
     	public Void call() throws Exception {
 			while (PartitionManager.this.isStarted.equals(1) || !PartitionManager.this.shutdownComplete) {
@@ -222,20 +229,22 @@ public class PartitionManager<T extends Lease> {
                         PartitionManager.this.keepRenewingDuringClose.remove(failedToRenewShutdownLease.getPartitionId());
                     }
 
-                    TimeUnit.SECONDS.sleep(PartitionManager.this.options.getLeaseRenewInterval().getSeconds()); //TODO: Not calling the CancellationTokenSource here. Will have to test to ensure this gets cancelled                	
-                    
-				} catch (CancellationException ex){
-					logger.info(String.format("Host '%s' Renewer task canceled.", PartitionManager.this.workerName));
-	            } catch (Exception ex){
+				}  catch (Exception ex){
 					logger.info(ex.getMessage());
-	            }
-				// CR: eating exceptions: proaby should break out of the loop when getting cancellation/interrupted exception?
+				}
+				
+				TimeUnit.SECONDS.sleep(PartitionManager.this.options.getLeaseRenewInterval().getSeconds()); //TODO: Not calling the CancellationTokenSource here. Will have to test to ensure this gets cancelled                	
+				if(renewTask.isCancelled()){	//Checking to see if the task got cancelled
+					logger.info(String.format("Host '%s' Renewer task canceled.", PartitionManager.this.workerName));
+					break;
+				}	
+				// [Done] CR: eating exceptions: proaby should break out of the loop when getting cancellation/interrupted exception?
 			}
 			return null;
 		}
     }
 			
-    private class LeaseTakerAsync implements Callable<Void> {
+    private class LeaseTaker implements Callable<Void> {
 		public Void call() throws Exception {
 			while (PartitionManager.this.isStarted.equals(1)){
 	            try
@@ -246,30 +255,24 @@ public class PartitionManager<T extends Lease> {
 	                if (i > 0)
 						logger.info(String.format("Host '%s' adding %d leases...", PartitionManager.this.workerName, i));
 
-	                List<Callable<Object>> addLeaseTasks = new ArrayList<Callable<Object>>();
+	                List<Callable<Void>> addLeaseTasks = new ArrayList<Callable<Void>>();
 	                for (T kvp : availableLeases.values()) {
-	                    addLeaseTasks.add(Executors.callable(PartitionManager.this.addLease(kvp)));	//TODO: Ensure this wrapper of Runnable works
+	                    addLeaseTasks.add(PartitionManager.this.addLease(kvp));
 	                }
 
-	                try {
-	        			exec.invokeAll(addLeaseTasks);	//Waits till all tasks are finished
-	        		} catch (InterruptedException e) {	// CR: why do we need this try-catch? There is outer one already.
-	        			// TODO Auto-generated catch block
-	        			e.printStackTrace();
-						logger.warning(e.getMessage());
-	        		}
+	        		exec.invokeAll(addLeaseTasks);	//Waits till all tasks are finished
 	            }
 	            catch (Exception ex) {
+					ex.printStackTrace();
 					logger.warning(ex.getMessage());
 	            }
 
-	            try {
-	                TimeUnit.SECONDS.sleep(PartitionManager.this.options.getLeaseAcquireInterval().getSeconds()); //TODO: Not calling the CancellationTokenSource here. Will have to test to ensure this gets cancelled                	
-	            }
-	            catch (InterruptedException ex) {
+				TimeUnit.SECONDS.sleep(PartitionManager.this.options.getLeaseAcquireInterval().getSeconds()); //TODO: Not calling the CancellationTokenSource here. Will have to test to ensure this gets cancelled                	
+				if(takerTask.isCancelled()){
 					logger.info(String.format("Host '%s' AcquireLease task canceled.", PartitionManager.this.workerName));
-					// CR: should we break out of the loop?
-	            }
+					break;
+				}
+					// [Done] CR: should we break out of the loop?
 	        }
 
 			logger.info(String.format("Host '%s' AcquireLease task completed.", PartitionManager.this.workerName));
@@ -284,7 +287,7 @@ public class PartitionManager<T extends Lease> {
         List<T> expiredLeases = new ArrayList<T>();
 
         for (T lease : this.leaseManager.listLeases().call()) {
-            assert lease.getPartitionId() != null : "TakeLeasesAsync: lease.PartitionId cannot be null.";
+            assert lease.getPartitionId() != null : "takeLeases: lease.PartitionId cannot be null.";
 
             allPartitions.put(lease.getPartitionId(), lease);
             if (isNullOrWhitespace(lease.getOwner()) || this.leaseManager.isExpired(lease).call()){
@@ -331,7 +334,6 @@ public class PartitionManager<T extends Lease> {
             int myCount = workerToPartitionCount.get(this.workerName);
             int partitionsNeededForMe = target - myCount;
             
-            //TODO: Start Here
 			logger.info(
                     String.format(
                             "Host '%s' %d partitions, %d hosts, %d available leases, target = %d, min = %d, max = %d, min = %d, will try to take %d lease(s) for myself'.",
@@ -409,9 +411,9 @@ public class PartitionManager<T extends Lease> {
 
     private void shutdown(ChangeFeedObserverCloseReason reason)
     {
-        List<Callable<Object>> shutdownTasks = new ArrayList<Callable<Object>>();
+        List<Callable<Void>> shutdownTasks = new ArrayList<Callable<Void>>();
         for(T value : this.currentlyOwnedPartitions.values()) {
-        	shutdownTasks.add(Executors.callable(this.removeLease(value, true, reason)));	//TODO: Test this wrapper works. If it doesn't, change the list of Callable<Object> to Callable<Void>
+        	shutdownTasks.add(this.removeLease(value, true, reason));
         }
 
         try {
@@ -490,17 +492,17 @@ public class PartitionManager<T extends Lease> {
     	return callable;
     }
 
-    Runnable addLease(T lease){
-    	Runnable addLeaseRunnable = new Runnable() {
+    Callable<Void> addLease(T lease){
+    	Callable<Void> addLeaseRunnable = new Callable<Void>() {
     		@Override
-    		public void run() {
+    		public Void call() {
     			if (!PartitionManager.this.currentlyOwnedPartitions.containsKey(lease.getPartitionId())) {	//Replacing TryAdd method for Dictionary in C#
     				PartitionManager.this.currentlyOwnedPartitions.put(lease.getPartitionId(), lease);
     	            boolean failedToInitialize = false;
     	            try {
 						logger.info(String.format("Host '%s' opening event processor for PartitionId '%s' and lease token '%s'", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
 
-    	                PartitionManager.this.partitionObserverManager.notifyPartitionAcquired(lease).run();	//TODO: Make notifyPartitionAcquired async and add await equivalent?
+    	                PartitionManager.this.partitionObserverManager.notifyPartitionAcquired(lease).call();	//TODO: Make notifyPartitionAcquired async and add await equivalent?
 
 						logger.info(String.format("Host '%s' opened event processor for PartitionId '%s' and lease token '%s'", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
     	            }
@@ -536,6 +538,8 @@ public class PartitionManager<T extends Lease> {
 						logger.warning(ex.getMessage());
     	            }
     	        }
+    			
+    			return null;
     		}
     	};
         
@@ -543,11 +547,11 @@ public class PartitionManager<T extends Lease> {
         return addLeaseRunnable;
     }
 
-    Runnable removeLease(T lease, boolean hasOwnership, ChangeFeedObserverCloseReason closeReason){
+    Callable<Void> removeLease(T lease, boolean hasOwnership, ChangeFeedObserverCloseReason closeReason){
     	
-    	Runnable removeLeaseRunnable = new Runnable() {
+    	Callable<Void> removeLeaseRunnable = new Callable<Void>() {
     		@Override
-    		public void run() {
+    		public Void call() {
     			T thisLease = lease;
     			if (thisLease != null && PartitionManager.this.currentlyOwnedPartitions != null){
     	        	
@@ -603,13 +607,15 @@ public class PartitionManager<T extends Lease> {
     	        		
     	        	}
     	        }
+    			
+    			return null;
     		}
     	};
     	
     	return removeLeaseRunnable;
     }
     
-    public static boolean isNullOrWhitespace(String s) {
+    private static boolean isNullOrWhitespace(String s) {
         return s == null || isWhitespace(s);
     }
     

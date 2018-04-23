@@ -1,6 +1,8 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
 import com.microsoft.azure.documentdb.DocumentClientException;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.ChangeFeedJob;
+import com.microsoft.azure.documentdb.changefeedprocessor.CheckpointServices;
 import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserverFactory;
 
 import java.util.concurrent.ConcurrentHashMap;

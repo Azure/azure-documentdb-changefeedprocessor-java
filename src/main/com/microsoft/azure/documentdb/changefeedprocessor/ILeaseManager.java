@@ -3,30 +3,30 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.microsoft.azure.documentdb.changefeedprocessor.internal;
+//package com.microsoft.azure.documentdb.changefeedprocessor.internal;
+package com.microsoft.azure.documentdb.changefeedprocessor;
 
 
 import com.microsoft.azure.documentdb.DocumentClientException;
 import com.microsoft.azure.documentdb.PartitionKeyRange;
 
 import java.util.Hashtable;
-import java.util.List;
 import java.util.concurrent.Callable;
 
 /**
  *
  * @author rogirdh
  */
-/// TODO: All of these functions used to be async
-public interface ILeaseManager<T extends Lease> {
+
+interface ILeaseManager<T extends Lease> {
 
 	/***
 	 * Initialize the LeaseManager properties creating the LeaseCollection if the parameter createLeaseCollection is equal to true.
-	 * @param createLeaseCollection - If true it will create the LeaseCollection, if the collection is not present.
+	 * @param createLeaseCollection - Commented out for now. If uncommented and If true it will create the LeaseCollection, if the collection is not present.
 	 * @return Nothing to return
 	 * @throws DocumentClientException
 	 */
-	void initialize(boolean createLeaseCollection) throws DocumentClientException;
+	void initialize(/*boolean createLeaseCollection*/) throws DocumentClientException;
 
 	/***
 	 * Checks whether lease store exists
@@ -117,5 +117,5 @@ public interface ILeaseManager<T extends Lease> {
 	 */
 	Callable<Boolean> isExpired(T lease);
 
-	void createLeases(Hashtable<String, PartitionKeyRange> ranges);
+	Callable<Void> createLeases(Hashtable<String, PartitionKeyRange> ranges) throws DocumentClientException, Exception;
 }

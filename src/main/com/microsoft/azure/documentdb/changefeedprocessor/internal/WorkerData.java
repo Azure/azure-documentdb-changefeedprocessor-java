@@ -5,27 +5,29 @@ import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserver;
 
 import java.util.concurrent.Future;
 
-public class WorkerData
+//Note (rogirdh): Removing CancellationTokenSource here. Not sure we need it since the task has a cancel method.
+
+class WorkerData
 {
-    private Future task;
+    private Future<Void> task;
     private IChangeFeedObserver observer;
     private ChangeFeedObserverContext context;
-    private CancellationTokenSource cancellation;
+    //private CancellationTokenSource cancellation;
 
-    public WorkerData(Future task, IChangeFeedObserver observer, ChangeFeedObserverContext context, CancellationTokenSource cancellation)
+    public WorkerData(Future<Void> task, IChangeFeedObserver observer, ChangeFeedObserverContext context/*, CancellationTokenSource cancellation*/)
     {
         this.task = task;
         this.observer = observer;
         this.context = context;
-        this.cancellation = cancellation;
+      //  this.cancellation = cancellation;
     }
 
 
-    public Future getTask() {
+    public Future<Void> getTask() {
         return task;
     }
 
-    public void setTask(Future _task) {
+    private void setTask(Future<Void> _task) {
         this.task = _task;
     }
 
@@ -33,7 +35,7 @@ public class WorkerData
         return observer;
     }
 
-    public void setObserver(IChangeFeedObserver _observer) {
+    private void setObserver(IChangeFeedObserver _observer) {
         this.observer = _observer;
     }
 
@@ -41,15 +43,18 @@ public class WorkerData
         return context;
     }
 
-    public void setContext(ChangeFeedObserverContext _context) {
+    private void setContext(ChangeFeedObserverContext _context) {
         this.context = _context;
     }
 
+    /*
     public CancellationTokenSource getCancellation() {
         return cancellation;
+        return task.
     }
 
-    public void setCancellation(CancellationTokenSource cancellation) {
+    private void setCancellation(CancellationTokenSource cancellation) {
         this.cancellation = cancellation;
     }
+    */
 }

@@ -20,8 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
-package com.microsoft.azure.documentdb.changefeedprocessor;
+//package com.microsoft.azure.documentdb.changefeedprocessor;
+package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
 import com.microsoft.azure.documentdb.ConnectionMode;
 import com.microsoft.azure.documentdb.ConnectionPolicy;

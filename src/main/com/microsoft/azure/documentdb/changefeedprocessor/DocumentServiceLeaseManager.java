@@ -20,10 +20,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore;
+//package com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore;
+package com.microsoft.azure.documentdb.changefeedprocessor;
 
 import com.microsoft.azure.documentdb.*;
-import com.microsoft.azure.documentdb.changefeedprocessor.DocumentCollectionInfo;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentCollectionInfo;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.*;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
 import org.apache.http.HttpStatus;
@@ -41,9 +42,11 @@ import java.util.logging.Logger;
  *
  * @author yoterada
  */
-// CR: why is this class public? Should be internal. Or it this some sort of Java thing making all classes public?
-// CR: also, there are lots of classes that are internal in C# are public in Java version.
-public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>, ICheckpointManager {
+//[Done] CR: why is this class public? Should be internal. Or it this some sort of Java thing making all classes public?
+//[Done] CR: also, there are lots of classes that are internal in C# are public in Java version.
+//rogirdh: Moved it into the main package and removed public
+
+class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>, ICheckpointManager {
     private final static String DATE_HEADER_NAME = "Date";
     private final static String CONTAINER_SEPARATOR = ".";
     private final static String PARTITION_PREFIX = ".";
@@ -76,33 +79,35 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     public void dispose() {
     }
 
-    // CR: createLeaseColection = true has an issue that we don't know which collection to create (offerThroughput, etc)
+    // [Done: commented out for now. This will be of use in the future] CR: createLeaseColection = true has an issue that we don't know which collection to create (offerThroughput, etc)
     //     that's why in C# version we always use pre-created lease collection.
     //     Do we really need this scenario (true)?
-    public void initialize(boolean createLeaseCollection) throws DocumentClientException {
+    public void initialize(/*boolean createLeaseCollection*/) throws DocumentClientException {
 
         //Create URI String
         String uri = String.format("/dbs/%s/colls/%s", leaseStoreCollectionInfo.getDatabaseName(), leaseStoreCollectionInfo.getCollectionName());
 
         try {
-            ResourceResponse response = documentServices.readCollection(uri, new RequestOptions());
+            ResourceResponse<DocumentCollection> response = documentServices.readCollection(uri, new RequestOptions());
             if (response != null)
                 leaseStoreCollectionLink = response.getResource().getSelfLink();
         } catch (DocumentClientException ex) {
-            if (createLeaseCollection && ex.getStatusCode() == 404 ) { //Collection Lease Not Found)
+          /*  if (createLeaseCollection && ex.getStatusCode() == 404 ) { //Collection Lease Not Found)
                 logger.info("Parameter createLeaseCollection is true! Creating lease collection");
 
                 DocumentCollection leaseColl = new DocumentCollection();
                 leaseColl.setId(leaseStoreCollectionInfo.getCollectionName());
 
-                ResourceResponse response = documentServices.createCollection(String.format("/dbs/%s", leaseStoreCollectionInfo.getDatabaseName()),leaseColl,new RequestOptions());
+                ResourceResponse<DocumentCollection> response = documentServices.createCollection(String.format("/dbs/%s", leaseStoreCollectionInfo.getDatabaseName()),leaseColl,new RequestOptions());
                 leaseStoreCollectionLink = response.getResource().getSelfLink();
 
             } else {
                 if (!createLeaseCollection)
                     logger.info("Parameter createLeaseCollection is false! Creating lease collection");
                 throw ex;
-            }
+            } */
+            this.logger.info("Lease collection not found.");
+            ex.printStackTrace();
         }
 
         // Get the current time
@@ -259,7 +264,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     @Override
     public Callable<DocumentServiceLease> renew(DocumentServiceLease lease) throws LeaseLostException, DocumentClientException {
 
-        if (lease == null) throw new AssertionError("lease");
+        assert lease == null : "lease";
 
         Callable<DocumentServiceLease> callable = new Callable<DocumentServiceLease>() {
             @Override
@@ -364,7 +369,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
 
     @Override
     public Callable<Boolean> isExpired(DocumentServiceLease lease) {
-        if ((lease == null)) throw new AssertionError();
+        assert lease == null;
 
         Callable<Boolean> callable = new Callable<Boolean>() {
             @Override
@@ -386,89 +391,98 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     }
 
     @Override
-    public void createLeases(Hashtable<String, PartitionKeyRange> ranges){
-        // Get leases after getting ranges, to make sure that no other hosts checked in continuation for split partition after we got leases.
-        ConcurrentHashMap existingLeases = new ConcurrentHashMap<String, DocumentServiceLease>();
-        try {
-            listLeases().call().forEach((lease) -> {
-                existingLeases.put(lease.getPartitionId(), lease);
-            });
-        } catch (Exception e) {
-            logger.severe(e.getMessage());	// Why eat exceptions?
-        }
-
-        HashSet<String> gonePartitionIds = new HashSet<>();
-        existingLeases.keySet().forEach((key) -> {
-            String partitionID = (String)key;
-            if(!ranges.contains(partitionID))
-                gonePartitionIds.add(partitionID);
-        });
-
-        ArrayList<String> addedPartitionIds = new ArrayList<>();
-        ranges.keySet().stream().forEach((range) -> {
-            if (!existingLeases.containsKey(range))
-                addedPartitionIds.add(range);
-        });
-
-        ConcurrentHashMap<String, ConcurrentLinkedQueue<DocumentServiceLease>> parentIdToChildLeases = new ConcurrentHashMap<>();
-
-        addedPartitionIds.forEach((addedRangeId) -> {
-            String continuationToken = null;
-            String parentIds = "";
-
-            PartitionKeyRange range = ranges.get(addedRangeId);
-            if (range.getParents()!= null && range.getParents().size() > 0)   // Check for split.
-            {
-                for (String parentRangeId : range.getParents()){
-                    if (gonePartitionIds.contains(parentRangeId))
-                    {
-                        // Transfer ContinuationToken from lease for gone parent to lease for its child partition.
-                        parentIds += parentIds.length() == 0 ? parentRangeId : "," + parentRangeId;
-                        DocumentServiceLease parentLease = (DocumentServiceLease)existingLeases.get(parentRangeId);
-                        if (continuationToken != null)
-                        {
-                            logger.warning(String.format("Partition {0}: found more than one parent, new continuation '{1}', current '{2}', will use '{3}'", addedRangeId, parentLease.getContinuationToken(), continuationToken, parentLease.getContinuationToken()));
-                        }
-                        continuationToken = parentLease.getContinuationToken();
-                    }
-                }
-            }
-
-            try {
-                if (continuationToken == null &&  existingLeases != null && existingLeases.get(addedRangeId) != null)
-                    continuationToken = ((DocumentServiceLease)existingLeases.get(addedRangeId)).getContinuationToken();
-
-                if (continuationToken == null)
-                    continuationToken = "";
-
-                createLeaseIfNotExist(addedRangeId, continuationToken).call();
-            } catch (DocumentClientException e) {
-                logger.severe(String.format("Error creating lease %s", e.getMessage()));	// CR: why eat exception?
-            } catch (Exception e) {
-                e.printStackTrace();														// CR: why eat exception?
-            }
-        });
+    public Callable<Void> createLeases(Hashtable<String, PartitionKeyRange> ranges) throws DocumentClientException, Exception {
+        Callable<Void> callable = new Callable<Void>() {
+            @Override
+            public Void call() throws DocumentClientException, Exception {
+                assert ranges != null ;
         
-        // CR: important: must remove gone leases (for every item in gonePartitionIds).
+                // Get leases after getting ranges, to make sure that no other hosts checked in continuation for split partition after we got leases.
+                ConcurrentHashMap existingLeases = new ConcurrentHashMap<String, DocumentServiceLease>();
+                try {
+                    listLeases().call().forEach((lease) -> {
+                        existingLeases.put(lease.getPartitionId(), lease);
+                    });
+                } catch (Exception e) {
+                    logger.severe(e.getMessage());	// Why eat exceptions?
+                }
+
+                HashSet<String> gonePartitionIds = new HashSet<>();
+                existingLeases.keySet().forEach((key) -> {
+                    String partitionID = (String)key;
+                    if(!ranges.contains(partitionID))
+                        gonePartitionIds.add(partitionID);
+                });
+
+                ArrayList<String> addedPartitionIds = new ArrayList<>();
+                ranges.keySet().stream().forEach((range) -> {
+                    if (!existingLeases.containsKey(range))
+                        addedPartitionIds.add(range);
+                });
+
+                ConcurrentHashMap<String, ConcurrentLinkedQueue<DocumentServiceLease>> parentIdToChildLeases = new ConcurrentHashMap<>();
+
+                addedPartitionIds.forEach((addedRangeId) -> {
+                    String continuationToken = null;
+                    String parentIds = "";
+
+                    PartitionKeyRange range = ranges.get(addedRangeId);
+                    if (range.getParents()!= null && range.getParents().size() > 0)  { // Check for split.
+                        for (String parentRangeId : range.getParents()){
+                            // Transfer ContinuationToken from lease for gone parent to lease for its child partition.
+                            assert gonePartitionIds.contains(parentRangeId);
+                            
+                            parentIds += parentIds.length() == 0 ? parentRangeId : "," + parentRangeId;
+                            DocumentServiceLease parentLease = (DocumentServiceLease)existingLeases.get(parentRangeId);
+                            if (continuationToken != null) {
+                                logger.warning(String.format("Partition {0}: found more than one parent, new continuation '{1}', current '{2}', will use '{3}'", addedRangeId, parentLease.getContinuationToken(), continuationToken, parentLease.getContinuationToken()));
+                            }
+                            continuationToken = parentLease.getContinuationToken();
+                        }
+                    }
+
+                    if (continuationToken == null &&  existingLeases != null && existingLeases.get(addedRangeId) != null)
+                        continuationToken = ((DocumentServiceLease)existingLeases.get(addedRangeId)).getContinuationToken();
+
+                    if (continuationToken == null)
+                        continuationToken = "";
+
+                    boolean test = createLeaseIfNotExist(addedRangeId, continuationToken).call();
+                    //TODO CR: Implement RemoveLeases condition. See .NET implementation
+                });
+                
+                return null;
+
+                // CR: important: must remove gone leases (for every item in gonePartitionIds). 
+            }
+        };
+
+        return callable;
+        
     }
 
     @Override
-    public Lease checkpoint(Lease lease, String continuationToken, long sequenceNumber) {
-        DocumentServiceLease documentLease = (DocumentServiceLease) lease;
-        assert documentLease != null : "documentLease";
-        try {
-            documentLease.setContinuationToken(continuationToken);
-            documentLease.setSequenceNumber(sequenceNumber);
-            DocumentServiceLease result = updateInternal(documentLease, (DocumentServiceLease serverLease) -> {
-                serverLease.setContinuationToken(continuationToken);
-                serverLease.setSequenceNumber(sequenceNumber);
-                return serverLease;
-            }, DATE_HEADER_NAME);
-            return result;
-        } catch (LeaseLostException | DocumentClientException ex) {
-            Logger.getLogger(DocumentServiceLeaseManager.class.getName()).log(Level.SEVERE, null, ex);	// CR: eating exceptions.
-        }
-        return null;
+    public Callable<Lease> checkpoint(Lease lease, String continuationToken, long sequenceNumber) {
+        Callable<Lease> callable = new Callable<Lease>(){
+            public Lease call(){
+                DocumentServiceLease documentLease = (DocumentServiceLease) lease;
+                assert documentLease != null : "documentLease";
+                try {
+                    documentLease.setContinuationToken(continuationToken);
+                    documentLease.setSequenceNumber(sequenceNumber);
+                    DocumentServiceLease result = updateInternal(documentLease, (DocumentServiceLease serverLease) -> {
+                        serverLease.setContinuationToken(continuationToken);
+                        serverLease.setSequenceNumber(sequenceNumber);
+                        return serverLease;
+                    }, DATE_HEADER_NAME);
+                    return result;
+                } catch (LeaseLostException | DocumentClientException ex) {
+                    Logger.getLogger(DocumentServiceLeaseManager.class.getName()).log(Level.SEVERE, null, ex);	// CR: eating exceptions.
+                }
+                return null;
+            }
+        };
+        return callable;     
     }
 
 
@@ -558,7 +572,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
                 if (HttpStatus.SC_PRECONDITION_FAILED != ex.getStatusCode()) {
                     handleLeaseOperationException(lease, ex);
 
-                    assert false : "UpdateInternalAsync: should never reach this!";
+                    assert false : "UpdateInternal: should never reach this!";
                     throw new LeaseLostException(lease);
                 }
             }

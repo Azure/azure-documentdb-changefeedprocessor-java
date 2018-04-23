@@ -1,9 +1,7 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
 import com.microsoft.azure.documentdb.*;
-import com.microsoft.azure.documentdb.changefeedprocessor.*;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
-import lombok.Getter;
+import com.microsoft.azure.documentdb.DocumentClient;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -24,20 +22,32 @@ public class DocumentServices {
     private DocumentCollection documentCollection;
     private ResourceResponse<DocumentCollection> collectionResponse;
 
-    // CR: can we do plain java (without lombok)? I installed lombox for Eclipse and Eclipse still generates build errors for getDatabaseID(), etc.
+    // [Done] CR: can we do plain java (without lombok)? I installed lombox for Eclipse and Eclipse still generates build errors for getDatabaseID(), etc.
     //     This means lombok integration is sort of glitchy/not ready yet, customers may face this issue as well, so let's not use it.
-    @Getter
     private String collectionSelfLink;
-    @Getter
-    private String collectionID;	// Is it common in Java to use ID instead of Id like in .Net?
-    @Getter
+    private String collectionId;
     private String databaseSelfLink;
-    @Getter
-    private String databaseID;
+    private String databaseId;
+
+    public String getCollectionSelfLink(){
+        return collectionSelfLink;
+    }
+
+    public String getCollectionId(){
+        return collectionId;
+    }
+
+    public String getDatabaseSelfLink(){
+        return databaseSelfLink;
+    }
+
+    public String getDatabaseId(){
+        return databaseId;
+    }
 
     private Logger logger = Logger.getLogger(DocumentServices.class.getName());
 
-    public DocumentServices(DocumentCollectionInfo collectionLocation) {
+    public DocumentServices(DocumentCollectionInfo collectionLocation) throws DocumentClientException {
         this.url = collectionLocation.getUri().toString();
         this.database = collectionLocation.getDatabaseName();
         this.collection = collectionLocation.getCollectionName();
@@ -53,25 +63,18 @@ public class DocumentServices {
      * this information will be used after in getDocumentCount method, (obs: the value returned can be different from the number of records at the collection)
      * It also update the collection selflink info.
      */
-    private void Initialize() {
+    private void Initialize() throws DocumentClientException {
 
-        try {
-            ResourceResponse databaseResponse = client.readDatabase(databaseLink, new RequestOptions());
-            this.databaseID = databaseResponse.getResource().getId();
-            this.databaseSelfLink = databaseResponse.getResource().getSelfLink();
-        } catch (DocumentClientException e) {
-            e.printStackTrace();	// CR: why do we eat all exceptions? Should just throw-through, right?
-        }
+        ResourceResponse<Database> databaseResponse = client.readDatabase(databaseLink, new RequestOptions());
+        this.databaseId = databaseResponse.getResource().getId();
+        this.databaseSelfLink = databaseResponse.getResource().getSelfLink();
 
         RequestOptions options = new RequestOptions();
         options.setPopulateQuotaInfo(true);
 
         ResourceResponse<DocumentCollection> response = null;
-        try {
-            response = client.readCollection(collectionLink, options);
-        } catch (DocumentClientException e) {
-            e.printStackTrace();	// CR: again, is there specific reason not to throw?
-        }
+        response = client.readCollection(collectionLink, options);
+        
         // CR: IMPORTANT: from now on, we should use collectionSelfLink (to avoid cases when collection/db is removed, then added with same name).
         // CR: remove collectionLink and databaseLink from fields, move them to variables in this method.
         
@@ -79,17 +82,17 @@ public class DocumentServices {
             collectionResponse = response;
             documentCollection = collectionResponse.getResource();
             collectionSelfLink = documentCollection.getSelfLink();
-            collectionID = documentCollection.getId();
+            collectionId = documentCollection.getId();
         }
     }
 
-    public Hashtable<String, PartitionKeyRange> listPartitionRange() {	// CR: listPartitionRanges?
+    public Hashtable<String, PartitionKeyRange> listPartitionRanges() {	// [Done] CR: listPartitionRanges?
 
         String checkpointContinuation = null;
         FeedOptions options = new FeedOptions();
 
-        List<PartitionKeyRange> partitionKeys = new ArrayList();
-        Hashtable<String, PartitionKeyRange> partitionsId = new Hashtable();	// CR: is there special Java naming convention that tells to use partitions in plural. Why not partitionIds?
+        List<PartitionKeyRange> partitionKeys = new ArrayList<PartitionKeyRange>();
+        Hashtable<String, PartitionKeyRange> partitionsId = new Hashtable<String, PartitionKeyRange>();	// CR: is there special Java naming convention that tells to use partitions in plural. Why not partitionIds?
 
         do {
             options.setRequestContinuation(checkpointContinuation);
@@ -127,24 +130,23 @@ public class DocumentServices {
         return query;
     }
 
-    public ResourceResponse createDocument(Object document, boolean disableIdGeneration) throws DocumentClientException {
+    public ResourceResponse<Document> createDocument(Object document, boolean disableIdGeneration) throws DocumentClientException {
 
         RequestOptions options = new RequestOptions();
-        ResourceResponse response = client.createDocument(collectionSelfLink, document, options, disableIdGeneration);
+        ResourceResponse<Document> response = client.createDocument(collectionSelfLink, document, options, disableIdGeneration);
         return response;
     }
 
-    public ResourceResponse createDocument(String collectionLink, Object document, RequestOptions options, boolean disableIdGeneration) throws DocumentClientException {
+    public ResourceResponse<Document> createDocument(String collectionLink, Object document, RequestOptions options, boolean disableIdGeneration) throws DocumentClientException {
 
-        ResourceResponse response = client.createDocument(collectionLink, document, options, disableIdGeneration);
+        ResourceResponse<Document> response = client.createDocument(collectionLink, document, options, disableIdGeneration);
         return response;
     }
 
-    // CR: change return type to int64. There are collections with # of docs greater than INT_MAX.
-    public int getDocumentCount(){
+    // [Done] CR: change return type to int64. There are collections with # of docs greater than INT_MAX.
+    public long getDocumentCount(){
 
-        if (collectionResponse == null)
-            return -1;
+        assert collectionResponse != null ;
 
         int result = -1;
 
@@ -171,9 +173,9 @@ public class DocumentServices {
         return result;
     }
 
-    public ResourceResponse readCollection(String uri, RequestOptions requestOptions) throws DocumentClientException {
+    public ResourceResponse<DocumentCollection> readCollection(String uri, RequestOptions requestOptions) throws DocumentClientException {
 
-        ResourceResponse response = null;
+        ResourceResponse<DocumentCollection> response = null;
 
         try {
             response = client.readCollection(uri, new RequestOptions());
@@ -189,7 +191,7 @@ public class DocumentServices {
         return response;
     }
 
-    public ResourceResponse createCollection(String databaseLink, DocumentCollection leaseColl, RequestOptions requestOptions) throws DocumentClientException {
+    public ResourceResponse<DocumentCollection> createCollection(String databaseLink, DocumentCollection leaseColl, RequestOptions requestOptions) throws DocumentClientException {
 
         return client.createCollection(databaseLink, leaseColl, requestOptions );
     }
