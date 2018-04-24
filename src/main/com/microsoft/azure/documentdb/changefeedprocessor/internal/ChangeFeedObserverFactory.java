@@ -20,7 +20,8 @@ public class ChangeFeedObserverFactory<T extends IChangeFeedObserver> implements
         this.type = type;
     }
 
-    @Override
+    @SuppressWarnings("deprecation")
+	@Override
     public IChangeFeedObserver createObserver() throws IllegalAccessException, InstantiationException {
         return (IChangeFeedObserver) type.newInstance();
     }

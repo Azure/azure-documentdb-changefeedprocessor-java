@@ -56,7 +56,8 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
     private DocumentCollectionInfo leaseStoreCollectionInfo;
     private Duration leaseIntervalAllowance = Duration.ofMillis(25);
     private Duration leaseInterval;
-    private Duration renewInterval;
+    @SuppressWarnings("unused")
+	private Duration renewInterval;
     private DocumentServices documentServices;
 
     private String leaseStoreCollectionLink;
@@ -190,11 +191,11 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
      * Checks whether lease exists and creates if does not exist.
      * @return true if created, false otherwise. */
     @Override
-    public Callable<Boolean> createLeaseIfNotExist(String partitionId, String continuationToken) throws DocumentClientException {
+    public Callable<Boolean> createLeaseIfNotExists(String partitionId, String continuationToken) {
 
         Callable<Boolean> callable = new Callable<Boolean>() {
             @Override
-            public Boolean call() throws Exception {
+            public Boolean call() throws Exception, DocumentClientException {
                 Boolean wasCreated = false;
                 String leaseDocId = getDocumentId(partitionId);
 
@@ -391,7 +392,7 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
     }
 
     @Override
-    public Callable<Void> createLeases(Hashtable<String, PartitionKeyRange> ranges) throws DocumentClientException, Exception {
+    public Callable<Void> createLeases(ConcurrentHashMap<String, PartitionKeyRange> ranges) throws Exception, DocumentClientException {
         Callable<Void> callable = new Callable<Void>() {
             @Override
             public Void call() throws DocumentClientException, Exception {
@@ -447,13 +448,27 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
                     if (continuationToken == null)
                         continuationToken = "";
 
-                    boolean test = createLeaseIfNotExist(addedRangeId, continuationToken).call();
-                    //TODO CR: Implement RemoveLeases condition. See .NET implementation
-                });
-                
+                    
+					try {
+						boolean wasCreated = createLeaseIfNotExists(addedRangeId, continuationToken).call();
+						if(wasCreated) {
+							if(parentIds.length() == 0) {
+								logger.info(String.format("Created lease for partition '{0}', contrinuation '{1}'", addedRangeId, continuationToken));
+							} else {
+								logger.info(String.format("Created lease for partition '{0}' as child of split partition(s) '{1}', continuation '{2}'", addedRangeId, parentIds, continuationToken));
+							}
+						} else {
+							logger.info(String.format("Created lease for partition '{0}' as child of split partition(s) '{1}', continuation '{2}'", addedRangeId, parentIds, continuationToken));
+						}
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+                    	//CR: important: must remove gone leases (for every item in gonePartitionIds). 
+                    	//TODO: Implement RemoveLeases condition. See .NET implementation
+                    
+                });   
                 return null;
-
-                // CR: important: must remove gone leases (for every item in gonePartitionIds). 
             }
         };
 
