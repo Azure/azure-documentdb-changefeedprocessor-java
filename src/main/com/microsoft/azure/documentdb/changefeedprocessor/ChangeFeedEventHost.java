@@ -16,7 +16,6 @@ import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServi
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentCollectionInfo;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartitionServices;
 
-import java.util.Hashtable;
 import java.util.concurrent.*;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -218,7 +217,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
             e.printStackTrace();
         }
 
-        Hashtable<String, PartitionKeyRange> ranges = this.documentServices.listPartitionRanges();
+        ConcurrentHashMap<String, PartitionKeyRange> ranges = this.documentServices.listPartitionRanges();
 
         this.leaseManager.createLeases(ranges);
 

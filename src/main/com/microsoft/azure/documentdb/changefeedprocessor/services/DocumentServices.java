@@ -4,8 +4,8 @@ import com.microsoft.azure.documentdb.*;
 import com.microsoft.azure.documentdb.DocumentClient;
 
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 // CR: please put a comment what this class is used for, in particular, why we need same exact methods as in DocumentClient.
@@ -86,13 +86,13 @@ public class DocumentServices {
         }
     }
 
-    public Hashtable<String, PartitionKeyRange> listPartitionRanges() {	// [Done] CR: listPartitionRanges?
+    public ConcurrentHashMap<String, PartitionKeyRange> listPartitionRanges() {	// [Done] CR: listPartitionRanges?
 
         String checkpointContinuation = null;
         FeedOptions options = new FeedOptions();
 
         List<PartitionKeyRange> partitionKeys = new ArrayList<PartitionKeyRange>();
-        Hashtable<String, PartitionKeyRange> partitionsId = new Hashtable<String, PartitionKeyRange>();	// CR: is there special Java naming convention that tells to use partitions in plural. Why not partitionIds?
+        ConcurrentHashMap<String, PartitionKeyRange> partitionsId = new ConcurrentHashMap<String, PartitionKeyRange>();	// CR: is there special Java naming convention that tells to use partitions in plural. Why not partitionIds?
 
         do {
             options.setRequestContinuation(checkpointContinuation);

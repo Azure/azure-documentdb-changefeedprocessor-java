@@ -10,8 +10,8 @@ package com.microsoft.azure.documentdb.changefeedprocessor;
 import com.microsoft.azure.documentdb.DocumentClientException;
 import com.microsoft.azure.documentdb.PartitionKeyRange;
 
-import java.util.Hashtable;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *
@@ -55,7 +55,7 @@ interface ILeaseManager<T extends Lease> {
 	 * @return true if created, false otherwise.
 	 * @throws DocumentClientException
 	 */
-	Callable<Boolean> createLeaseIfNotExist(String partitionId, String continuationToken) throws DocumentClientException;
+	Callable<Boolean> createLeaseIfNotExists(String partitionId, String continuationToken);// throws DocumentClientException;
 
 	/***
 	 *
@@ -117,5 +117,5 @@ interface ILeaseManager<T extends Lease> {
 	 */
 	Callable<Boolean> isExpired(T lease);
 
-	Callable<Void> createLeases(Hashtable<String, PartitionKeyRange> ranges) throws DocumentClientException, Exception;
+	Callable<Void> createLeases(ConcurrentHashMap<String, PartitionKeyRange> ranges) throws DocumentClientException, Exception;
 }

@@ -40,18 +40,7 @@ public abstract class AbstractBag<E> extends AbstractCollection<E> implements Ba
 			}
 			return true;
 		}
-		
-		// [Done] CR: what is this for (empty try)?
-	/*	try {
-			
-		} catch(ClassCastException unused) {
-			return false;
-		} catch(NullPointerException unused) {
-			return false;
-		} 
-		return true;
-		*/
-		
+
 		return false;
 	}
 	
