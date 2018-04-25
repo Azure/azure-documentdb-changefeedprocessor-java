@@ -642,57 +642,5 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
     }
 }
 
-class PartitionInfo implements Partition {	// CR: move to separate file. Is this actually used anywhere? If not, let's remove.
 
-    public String Etag;
-    public String DatabaseName;
-    public String CollName;
-    public String ID;
-    public PartitionStatus Status;
-    public Date LastExecution;
 
-    public PartitionInfo() {
-        Etag = null;
-        DatabaseName = null;
-        CollName = null;
-        ID = null;
-        Status = PartitionStatus.SYNCING;
-    }
-
-    public PartitionInfo(String databaseName, String collName, String id, String partitionEtag, PartitionStatus status) {
-        this.Etag = partitionEtag;
-        this.DatabaseName = databaseName;
-        this.CollName = collName;
-        this.ID = id;
-        this.Status = status;
-        this.LastExecution = null;
-    }
-
-    @Override
-    public Date lastExcetution() {
-        return this.LastExecution;
-    }
-
-    @Override
-    public void updateExecution() {
-        this.LastExecution = new Date(System.currentTimeMillis());
-    }
-
-    @Override
-    public String key() {
-        return String.format("%s,%s,%s", this.DatabaseName, this.CollName, this.ID);
-    }
-
-    public enum PartitionStatus {
-        COMPLETED, SYNCING;
-    }
-}
-
-interface Partition {	// CR: move to separate file
-
-    public Date lastExcetution();
-
-    public void updateExecution();
-
-    public String key();
-}

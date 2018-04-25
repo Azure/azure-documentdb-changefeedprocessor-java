@@ -116,15 +116,15 @@ public class ChangeFeedHostOptions {
         return maxPartitionCount;
     }
 
-    void setMaxPartitionCount(int maxPartitionCount) {
+    public void setMaxPartitionCount(int maxPartitionCount) {
         this.maxPartitionCount = maxPartitionCount;
     }
 
-    void setDiscardExistingLeases(boolean discardExistingLeases) {
+    public void setDiscardExistingLeases(boolean discardExistingLeases) {
         this.discardExistingLeases = discardExistingLeases;
     }
 
-    boolean getDiscardExistingLeases() {
+    public boolean getDiscardExistingLeases() {
         return discardExistingLeases;
     }
 }
