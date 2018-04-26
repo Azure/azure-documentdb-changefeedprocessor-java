@@ -1,5 +1,5 @@
 /*
- *
+ * *
  * The MIT License (MIT)
  * Copyright (c) 2016 Microsoft Corporation
  * 
@@ -19,18 +19,27 @@
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *   SOFTWARE.
+ * SOFTWARE.
  *  
  */
 
-package com.microsoft.azure.documentdb.changefeedprocessor;
+package com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore;
 
-import com.microsoft.azure.documentdb.Document;
+public enum LeaseState {
 
-import java.util.List;
+    /**
+     * The lease is in unknown state.
+     */
+    UNSPECIFIED,
 
-public interface IChangeFeedObserver {
-    void open(ChangeFeedObserverContext context);
-    void close(ChangeFeedObserverContext context, ChangeFeedObserverCloseReason reason);
-    void processChanges(ChangeFeedObserverContext context, List<Document> docs);
+    /**
+     * The lease is available in the sense that it is not own, or leased, by any host.
+     */
+    AVAILABLE,
+
+    /**
+     * The lease is leased to, or owned by some host.
+     */
+    LEASED,
+
 }

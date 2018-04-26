@@ -1,12 +1,11 @@
-//package com.microsoft.azure.documentdb.changefeedprocessor.services;
-package com.microsoft.azure.documentdb.changefeedprocessor;
+package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
 import com.microsoft.azure.documentdb.DocumentClientException;
 import com.microsoft.azure.documentdb.changefeedprocessor.CheckpointFrequency;
 import com.microsoft.azure.documentdb.changefeedprocessor.CheckpointStats;
-import com.microsoft.azure.documentdb.changefeedprocessor.ICheckpointManager;
-import com.microsoft.azure.documentdb.changefeedprocessor.ILeaseManager;
-import com.microsoft.azure.documentdb.changefeedprocessor.DocumentServiceLease;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.ICheckpointManager;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.ILeaseManager;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
 
 import java.time.Instant;
 import java.util.logging.Logger;
@@ -15,10 +14,10 @@ public class CheckpointServices {
 
     private CheckpointFrequency checkpointOptions;
     private ICheckpointManager checkpointManager;
-    private ILeaseManager<DocumentServiceLease> leaseManager;
+    private ILeaseManager leaseManager;
     private Logger logger = Logger.getLogger(CheckpointServices.class.getName());
 
-    public CheckpointServices(ILeaseManager<DocumentServiceLease> leaseManager, CheckpointFrequency checkpointOptions){
+    public CheckpointServices(ILeaseManager leaseManager, CheckpointFrequency checkpointOptions){
         this.leaseManager = leaseManager;
         this.checkpointManager = (ICheckpointManager)leaseManager;
         this.checkpointOptions = checkpointOptions;
@@ -37,11 +36,8 @@ public class CheckpointServices {
         logger.info(String.format("Saving Checkpoint partitionId: %s, data: %s",partitionId,data));
         DocumentServiceLease lease = null;
         try {
-        	// CR: perf/RU impact: if we kept the lease in the loop in checkpoint job, we didn't have to get it every time.
-        	//     Probably OK for now, but we'll need to fix that.
             lease = (DocumentServiceLease)leaseManager.getLease(partitionId).call();
         } catch (Exception e) {
-        	// CR: add a comment that checkpoint will throw if lease is null.
             e.printStackTrace();
         }
         String continuation = data;
@@ -59,19 +55,17 @@ public class CheckpointServices {
         return lease.getContinuationToken();
     }
 
-    void checkpoint(DocumentServiceLease lease, String continuation) {
-        assert lease == null;
-        assert continuation == null || continuation == "";
+    public void checkpoint(DocumentServiceLease lease, String continuation) {
+        if ((lease == null)) throw new AssertionError();
+        if ((continuation == null || continuation == "")) throw new AssertionError();
 
         DocumentServiceLease result = null;
         try
         {
             result = (DocumentServiceLease) this.checkpointManager.checkpoint(lease, continuation, lease.getSequenceNumber() + 1);
 
-            if(result.getConcurrencyToken() == continuation) {
-                assert result.getConcurrencyToken() == continuation : "ContinuationToken was not updated" ;
+            if(result.getConcurrencyToken() == continuation )
                 logger.info(String.format("Checkpoint: partition %s, continuation token '%s' was not updated!", lease.getPartitionId(), continuation));
-            }
             else
                 logger.info(String.format("Checkpoint: partition %s, new continuation '%s'", lease.getPartitionId(), continuation));
         }
@@ -81,14 +75,12 @@ public class CheckpointServices {
             throw ex;
         }
     }
-    
-    // CR: this doesn't seem to be called from anywhere. Need to implement the feature.
-    boolean isCheckpointNeeded(DocumentServiceLease lease, CheckpointStats checkpointStats)
+    public boolean isCheckpointNeeded(DocumentServiceLease lease, CheckpointStats checkpointStats)
     {
         CheckpointFrequency options = this.checkpointOptions;
 
-        assert lease != null;
-        assert checkpointStats != null;
+        assert (lease != null);
+        assert (checkpointStats != null);
 
         if (checkpointStats.getProcessedDocCount() == 0) {
             return false;

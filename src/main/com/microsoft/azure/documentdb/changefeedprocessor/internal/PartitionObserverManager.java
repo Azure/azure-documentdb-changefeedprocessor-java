@@ -1,4 +1,4 @@
-package com.microsoft.azure.documentdb.changefeedprocessor;
+package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
 import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverCloseReason;
 
@@ -25,38 +25,37 @@ final class PartitionObserverManager<T extends Lease> {
         this.observers = new ArrayList<IPartitionObserver<T>>();
     }
 
+    // TODO: implement subscribeAsync ,notifyPartitionAcquiredAsync,  notifyPartitionReleasedAsync
+
     @SuppressWarnings({ "unchecked" })
-    public Callable<AutoCloseable> subscribe(IPartitionObserver<T> observer) {
-    	Callable<AutoCloseable> subscribeCallable = new Callable<AutoCloseable>() {
-    		public AutoCloseable call() {
+    public Callable<IDisposable> subscribe(IPartitionObserver<T> observer){
+    	Callable<IDisposable> subscribeCallable = new Callable<IDisposable>() {
+    		public IDisposable call() {
     			if (!PartitionObserverManager.this.observers.contains(observer)) {
     				PartitionObserverManager.this.observers.add(observer);
     		
-    		        for (T lease : PartitionObserverManager.this.partitionManager.currentlyOwnedPartitions.values()) {	// CR: what "PartitionObserverManager." is here for?
+    		        for (T lease : PartitionObserverManager.this.partitionManager.currentlyOwnedPartitions.values()) {
     		            try {
-    		                //  Wait till the runnable completes
-    		            	observer.onPartitionAcquired(lease).wait();	// CR: who signals the wait to finish?
+    		              //  Wait till the runnable completes
+    		            	observer.onPartitionAcquired(lease).wait();
     		            } catch (Exception ex) {
     		                // Eat any exceptions during notification of observers
 							logger.warning(ex.getMessage());
     		            }
     		        }
     		    }
-				AutoCloseable unsubscriber = new Unsubscriber(PartitionObserverManager.this.observers, observer);
+				IDisposable unsubscriber = new Unsubscriber(PartitionObserverManager.this.observers, observer);
     		    return unsubscriber;
     		}
     	};	    
     	return subscribeCallable;
     }
 
-    public Callable<Void> notifyPartitionAcquired(T lease) {
-    	Callable<Void> notifyPartitionAcquiredRunnable = new Callable<Void>() {
-    		@Override
-    		public Void call() {
-    			// CR: note that this complexity is not really needed as there is only 1 observer: change feed event host.
-    			//     Could be done as simple as wait() like in subscribe method.
+    public Runnable notifyPartitionAcquired(T lease){
+    	Runnable notifyPartitionAcquiredRunnable = new Runnable() {
+    		public void run() {
     			ExecutorService execSvc = Executors.newFixedThreadPool(PartitionObserverManager.this.observers.size());
-    			List<Callable<Void>> oPA = new ArrayList<>();	// CR: rename, what is OPA BTW? :)
+    			List<Callable<Void>> oPA = new ArrayList<>();
     			for (IPartitionObserver<T> obs : PartitionObserverManager.this.observers) {
     				oPA.add(obs.onPartitionAcquired(lease));  //TODO: Check if this works as expected. If not, change the return type of onPartitionAcquired to callable
     	        }
@@ -74,17 +73,14 @@ final class PartitionObserverManager<T extends Lease> {
 					e.printStackTrace();
 				}
     			execSvc.shutdown();
-    			
-    			return null;
     		}
     	};    	
     	return notifyPartitionAcquiredRunnable;      
     }
 
-    public Callable<Void> notifyPartitionReleased(T lease, ChangeFeedObserverCloseReason reason) {
-    	Callable<Void> notifyPartitionReleasedRunnable = new Callable<Void>() {
-    		@Override
-    		public Void call() {
+    public Runnable notifyPartitionReleased(T lease, ChangeFeedObserverCloseReason reason){
+    	Runnable notifyPartitionReleasedRunnable = new Runnable() {
+    		public void run() {
     			ExecutorService execSvc = Executors.newFixedThreadPool(PartitionObserverManager.this.observers.size());
     			List<Callable<Void>> oPR = new ArrayList<>();
     			for (IPartitionObserver<T> obs : PartitionObserverManager.this.observers) {
@@ -104,8 +100,6 @@ final class PartitionObserverManager<T extends Lease> {
 					e.printStackTrace();
 				}
     			execSvc.shutdown();
-    			
-    			return null;
     		}
     	};    	
     	return notifyPartitionReleasedRunnable;

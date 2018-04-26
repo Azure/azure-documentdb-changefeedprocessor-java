@@ -20,8 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-//package com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore;
-package com.microsoft.azure.documentdb.changefeedprocessor;
+package com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -29,8 +28,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.microsoft.azure.documentdb.Document;
-import com.microsoft.azure.documentdb.changefeedprocessor.Lease;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.LeaseState;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.Lease;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -40,9 +40,9 @@ import java.util.Locale;
 
 /**
  *
- * @author yoterada		// rogirdh: Let's keep for now. Let's remove once it's ready to be published. CR: should we remove all @author attributes?
+ * @author yoterada
  */
-class DocumentServiceLease extends Lease {   //rogirdh: Moved it into the main package and removed public
+public class DocumentServiceLease extends Lease {
 	
 	private static final Instant unixStartTime = Instant.EPOCH;
 
@@ -66,13 +66,13 @@ class DocumentServiceLease extends Lease {   //rogirdh: Moved it into the main p
     }
 
     @JsonProperty("id")
-    public String id;
+    @Getter @Setter public String id;
 
     @JsonProperty("_etag")
-    public String eTag;
+    @Getter @Setter public String eTag;
     
     @JsonProperty("state")
-    public LeaseState state;
+    @Getter @Setter public LeaseState state;
 
     @JsonIgnore
     public Instant timestamp;
@@ -81,32 +81,8 @@ class DocumentServiceLease extends Lease {   //rogirdh: Moved it into the main p
     public String concurrencyToken;
     
     @JsonProperty("_ts")
-    private long ts;
-    
-    public String getId(){
-        return id;
-    }
-
-    public void setId(String _id){
-        this.id = _id;
-    }
-
-    public String geteTag(){
-        return eTag;
-    }
-
-    public void setETag(String _etag){
-        this.eTag = _etag;
-    }
-
-    public LeaseState getState(){
-        return state;
-    }
-
-    public void setState(LeaseState _state){
-        this.state = _state;
-    }
-
+    @Getter @Setter private long ts;
+        
     public Instant getTimestamp() {
     	return unixStartTime.plusSeconds(ts);
     }
@@ -141,7 +117,7 @@ class DocumentServiceLease extends Lease {   //rogirdh: Moved it into the main p
 			return mapper.readValue(json, DocumentServiceLease.class);
 		} catch (IOException e) {
 			e.printStackTrace();
-			return null;	// CR: is there specific reason to eat IOException?
+			return null;
 		}
     } 
 }

@@ -3,30 +3,30 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-//package com.microsoft.azure.documentdb.changefeedprocessor.internal;
-package com.microsoft.azure.documentdb.changefeedprocessor;
+package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
 
 import com.microsoft.azure.documentdb.DocumentClientException;
 import com.microsoft.azure.documentdb.PartitionKeyRange;
 
+import java.util.Hashtable;
+import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *
  * @author rogirdh
  */
-
-interface ILeaseManager<T extends Lease> {
+/// TODO: All of these functions used to be async
+public interface ILeaseManager<T extends Lease> {
 
 	/***
 	 * Initialize the LeaseManager properties creating the LeaseCollection if the parameter createLeaseCollection is equal to true.
-	 * @param createLeaseCollection - Commented out for now. If uncommented and If true it will create the LeaseCollection, if the collection is not present.
+	 * @param createLeaseCollection - If true it will create the LeaseCollection, if the collection is not present.
 	 * @return Nothing to return
 	 * @throws DocumentClientException
 	 */
-	void initialize(/*boolean createLeaseCollection*/) throws DocumentClientException;
+	void initialize(boolean createLeaseCollection) throws DocumentClientException;
 
 	/***
 	 * Checks whether lease store exists
@@ -48,6 +48,7 @@ interface ILeaseManager<T extends Lease> {
 	 */
 	Callable<Iterable<T>> listLeases();
 
+
 	/***
 	 * Checks whether lease exists and creates if does not exist.
 	 * @param partitionId: The ID of the partition
@@ -55,7 +56,7 @@ interface ILeaseManager<T extends Lease> {
 	 * @return true if created, false otherwise.
 	 * @throws DocumentClientException
 	 */
-	Callable<Boolean> createLeaseIfNotExists(String partitionId, String continuationToken);// throws DocumentClientException;
+	Callable<Boolean> createLeaseIfNotExist(String partitionId, String continuationToken) throws DocumentClientException;
 
 	/***
 	 *
@@ -117,5 +118,6 @@ interface ILeaseManager<T extends Lease> {
 	 */
 	Callable<Boolean> isExpired(T lease);
 
-	Callable<Void> createLeases(ConcurrentHashMap<String, PartitionKeyRange> ranges) throws DocumentClientException, Exception;
+	void createLeases(Hashtable<String, PartitionKeyRange> ranges);
+
 }
