@@ -1,26 +1,26 @@
-package com.microsoft.azure.documentdb.changefeedprocessor.services;
+package com.microsoft.azure.documentdb.changefeedprocessor;
 
 import com.microsoft.azure.documentdb.DocumentClientException;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.ChangeFeedJob;
-import com.microsoft.azure.documentdb.changefeedprocessor.CheckpointServices;
-import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserverFactory;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.*;
 
 public class ResourcePartitionServices {
     private CheckpointServices checkpointSvcs;
     private ConcurrentHashMap<String, ResourcePartition> resourcePartitions;
     private DocumentServices client;
+    private ILeaseManager<DocumentServiceLease> leaseMgr;
     private IChangeFeedObserverFactory factory;
     private int pageSize;
     private Logger logger = Logger.getLogger(ResourcePartitionServices.class.getName());
 
-    public ResourcePartitionServices(DocumentServices client, CheckpointServices checkpointSvcs, IChangeFeedObserverFactory factory, int pageSize) {
+    public ResourcePartitionServices(DocumentServices client, CheckpointServices checkpointSvcs, ILeaseManager<DocumentServiceLease> dslm,  IChangeFeedObserverFactory factory, int pageSize) {
 
         resourcePartitions = new ConcurrentHashMap<>();
         this.client = client;
         this.checkpointSvcs = checkpointSvcs;
+        this.leaseMgr = dslm;
         this.factory = factory;
         this.pageSize = pageSize;
     }
@@ -29,7 +29,7 @@ public class ResourcePartitionServices {
         logger.info(String.format("Creating job for Partition %s", partitionId));
         Job job = null;
         try {
-            job = new ChangeFeedJob(partitionId, client, checkpointSvcs, factory.createObserver(), pageSize);
+            job = new ChangeFeedJob(partitionId, client, checkpointSvcs, (DocumentServiceLeaseManager) leaseMgr, factory.createObserver(), pageSize);
         } catch (IllegalAccessException e) {
             logger.severe(e.getMessage());
             e.printStackTrace();
@@ -50,11 +50,11 @@ public class ResourcePartitionServices {
         return resourcePartitions.get(partitionId);
     }
 
-    public void start(String partitionId) throws DocumentClientException, InterruptedException {
+    public void start(String partitionId, DocumentServiceLease docSvcLease) throws DocumentClientException, InterruptedException {
         ResourcePartition resourcePartition = this.get(partitionId);
         String initialData = checkpointSvcs.getCheckpointData(partitionId);
         logger.info(String.format("Starting partition %s - Checkpoint %s ",partitionId, initialData));
-        resourcePartition.start(initialData);
+        resourcePartition.start(initialData, docSvcLease);
     }
 
     public void stop(String partitionId) {

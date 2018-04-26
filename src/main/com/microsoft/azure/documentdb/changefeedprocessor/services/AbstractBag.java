@@ -29,6 +29,7 @@ public abstract class AbstractBag<E> extends AbstractCollection<E> implements Ba
 			return false;
 		}
 		
+		@SuppressWarnings("unchecked")
 		Bag<E> bag = (Bag<E>) o;
 		if(bag.size() != size()) {
 			return false;

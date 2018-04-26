@@ -100,7 +100,7 @@ interface ILeaseManager<T extends Lease> {
 	 * @throws DocumentClientException
 	 * @throws LeaseLostException
 	 */
-	Callable<Void> delete(T lease) throws DocumentClientException, LeaseLostException;
+	Callable<Void> delete(T lease) throws DocumentClientException;
 
 	/***
 	 *
