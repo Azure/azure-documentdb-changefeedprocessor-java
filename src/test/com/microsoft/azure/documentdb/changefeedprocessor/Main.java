@@ -24,6 +24,7 @@ package com.microsoft.azure.documentdb.changefeedprocessor;
 
 import com.microsoft.azure.documentdb.*;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ChangeFeedObserverFactory;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentCollectionInfo;
 
 import java.lang.*;
 import java.net.URI;
@@ -71,7 +72,7 @@ public class Main {
 
         ChangeFeedEventHost host = new ChangeFeedEventHost(hostname, docColInfo, docColInfoaux, defaultFeedOptions, defaultHostOptions);
 
-        host.registerObserver(TestChangeFeedObserver.class);
+        host.registerObserver(MockChangeFeedObserver.class);
     }
 
 }

@@ -31,6 +31,7 @@ import com.microsoft.azure.documentdb.ResourceResponse;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ChangeFeedThreadFactory;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationException;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationFile;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentCollectionInfo;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
 import org.junit.Assert;
 import org.junit.Test;
@@ -59,7 +60,7 @@ public class SplitPartitionTest
     private final int CPUs = Runtime.getRuntime().availableProcessors();
 
     @Test
-    public void writeColletionRecords() {
+    public void writeColletionRecords() throws DocumentClientException {
 
         //Read properties from app.secrets
         ConfigurationFile config = null;

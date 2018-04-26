@@ -229,6 +229,18 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, observerFactory, changeFeedOptions.getPageSize());
         this.executorService.submit(partitionManager.subscribe(this)).get();    //Awaiting the task to be finished.  
         this.executorService.submit(partitionManager.initialize()).get();       //Awaiting the task to be finished.
+        // this.executorService.submit(partitionManager.start()).get();
+        
+        this.executorService.execute(() -> {    // TODO: verify difference between execute and submit
+            try {
+                partitionManager.start();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+
+        while (!this.executorService.awaitTermination(24L, TimeUnit.HOURS)) {   //Waiting for Executor to finish
+        }
     }
 
     @Override
@@ -275,7 +287,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         return callable;
     }
 
-    private ExecutorService getExecutorService(){
+    ExecutorService getExecutorService(){
         return executorService;
     }
 
