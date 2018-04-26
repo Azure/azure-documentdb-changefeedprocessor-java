@@ -2,13 +2,12 @@ package com.microsoft.azure.documentdb.changefeedprocessor;
 
 import java.time.Instant;
 
-class CheckpointStats
+public class CheckpointStats
 {
     private int processedDocCount;
     private Instant lastCheckpointTime;
 
-    @SuppressWarnings("unused")
-	private void reset() {
+    public void reset() {
         this.processedDocCount = 0;
         this.lastCheckpointTime = Instant.now();
     }

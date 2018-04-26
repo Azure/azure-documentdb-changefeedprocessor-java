@@ -40,8 +40,16 @@ public abstract class AbstractBag<E> extends AbstractCollection<E> implements Ba
 			}
 			return true;
 		}
-
-		return false;
+		
+		try {
+			
+		} catch(ClassCastException unused) {
+			return false;
+		} catch(NullPointerException unused) {
+			return false;
+		}
+		
+		return true;
 	}
 	
 	@Override

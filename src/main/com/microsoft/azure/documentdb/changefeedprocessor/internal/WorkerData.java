@@ -5,29 +5,27 @@ import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserver;
 
 import java.util.concurrent.Future;
 
-//Note (rogirdh): Removing CancellationTokenSource here. Not sure we need it since the task has a cancel method.
-
-class WorkerData
+public class WorkerData
 {
-    private Future<Void> task;
+    private Future task;
     private IChangeFeedObserver observer;
     private ChangeFeedObserverContext context;
-    //private CancellationTokenSource cancellation;
+    private CancellationTokenSource cancellation;
 
-    public WorkerData(Future<Void> task, IChangeFeedObserver observer, ChangeFeedObserverContext context/*, CancellationTokenSource cancellation*/)
+    public WorkerData(Future task, IChangeFeedObserver observer, ChangeFeedObserverContext context, CancellationTokenSource cancellation)
     {
         this.task = task;
         this.observer = observer;
         this.context = context;
-      //  this.cancellation = cancellation;
+        this.cancellation = cancellation;
     }
 
 
-    public Future<Void> getTask() {
+    public Future getTask() {
         return task;
     }
 
-    private void setTask(Future<Void> _task) {
+    public void setTask(Future _task) {
         this.task = _task;
     }
 
@@ -35,7 +33,7 @@ class WorkerData
         return observer;
     }
 
-    private void setObserver(IChangeFeedObserver _observer) {
+    public void setObserver(IChangeFeedObserver _observer) {
         this.observer = _observer;
     }
 
@@ -43,18 +41,15 @@ class WorkerData
         return context;
     }
 
-    private void setContext(ChangeFeedObserverContext _context) {
+    public void setContext(ChangeFeedObserverContext _context) {
         this.context = _context;
     }
 
-    /*
     public CancellationTokenSource getCancellation() {
         return cancellation;
-        return task.
     }
 
-    private void setCancellation(CancellationTokenSource cancellation) {
+    public void setCancellation(CancellationTokenSource cancellation) {
         this.cancellation = cancellation;
     }
-    */
 }

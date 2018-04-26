@@ -1,5 +1,5 @@
 /*
- *
+ * *
  * The MIT License (MIT)
  * Copyright (c) 2016 Microsoft Corporation
  * 
@@ -19,18 +19,24 @@
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *   SOFTWARE.
+ * SOFTWARE.
  *  
  */
 
-package com.microsoft.azure.documentdb.changefeedprocessor;
+package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
-import com.microsoft.azure.documentdb.Document;
+import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverCloseReason;
 
-import java.util.List;
+import java.util.concurrent.Callable;
 
-public interface IChangeFeedObserver {
-    void open(ChangeFeedObserverContext context);
-    void close(ChangeFeedObserverContext context, ChangeFeedObserverCloseReason reason);
-    void processChanges(ChangeFeedObserverContext context, List<Document> docs);
+/**
+*
+* @author rogirdh
+*/
+public interface IPartitionObserver<T extends Lease> {
+        Callable<Void> onPartitionAcquired(T lease);
+        //void onPatitionAcquiredAsync(T lease);
+        Callable<Void> onPartitionReleased(T lease, ChangeFeedObserverCloseReason reason);
+       // void onPartitionReleasedAsync(T lease, ChangeFeedObserverCloseReason reason);
 }
+

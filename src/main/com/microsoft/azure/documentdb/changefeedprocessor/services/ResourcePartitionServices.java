@@ -1,8 +1,6 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
 import com.microsoft.azure.documentdb.DocumentClientException;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.ChangeFeedJob;
-import com.microsoft.azure.documentdb.changefeedprocessor.CheckpointServices;
 import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserverFactory;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,7 +35,6 @@ public class ResourcePartitionServices {
             logger.severe(e.getMessage());
             e.printStackTrace();
         }
-        
         ResourcePartition resourcePartition = new ResourcePartition(partitionId, job);
 
         logger.info("Adding partition to the resourcePartitions dictionary");
@@ -58,7 +55,6 @@ public class ResourcePartitionServices {
     }
 
     public void stop(String partitionId) {
-    	// CR: how do we wait for the stop to finish?
         // TODO: improve it
         ResourcePartition resourcePartition = this.get(partitionId);
         resourcePartition.stop();

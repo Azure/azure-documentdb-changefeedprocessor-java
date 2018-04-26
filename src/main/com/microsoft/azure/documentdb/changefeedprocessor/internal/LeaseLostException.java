@@ -3,19 +3,18 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-//package com.microsoft.azure.documentdb.changefeedprocessor.internal;
-package com.microsoft.azure.documentdb.changefeedprocessor;
+package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
 /**
  *
  * @author yoterada
  */
-class LeaseLostException extends Exception {
+public class LeaseLostException extends Exception {
 
-	private static final long serialVersionUID = 1L;
-	private Lease lease;
+    private Lease lease;
     private Boolean isGone;
 
+    /// <summary>Initializes a new instance of the <see cref="DocumentDB.ChangeFeedProcessor.LeaseLostException" /> class using default values.</summary>
     public LeaseLostException()
     {
     }
@@ -47,10 +46,14 @@ class LeaseLostException extends Exception {
     	new Exception(message, innerException);
     }
 
+//    protected LeaseLostException(SerializationInfo info, StreamingContext context)
+//    {
+//        this.Lease = (Lease)info.GetValue("Lease", typeof(Lease));
+//    }
+
     public Lease getLease() {
         return lease;
     }
-    
     private void setLease(Lease value) {
     	this.lease = value;
     }
@@ -59,7 +62,17 @@ class LeaseLostException extends Exception {
         return isGone;
     }
 
-    private void setIsGone(Boolean value) {
+    public void setIsGone(Boolean value) {
     	this.isGone = value;
     }
+
+//    public override void GetObjectData(SerializationInfo info, StreamingContext context)
+//    {
+//        base.GetObjectData(info, context);
+//
+//        if (Lease != null)
+//        {
+//            info.AddValue("Lease", this.Lease);
+//        }
+//    }
 }
