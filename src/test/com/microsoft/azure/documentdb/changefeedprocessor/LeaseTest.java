@@ -3,7 +3,8 @@ package com.microsoft.azure.documentdb.changefeedprocessor;
 import com.microsoft.azure.documentdb.DocumentClientException;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationException;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationFile;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLeaseManager;
+import com.microsoft.azure.documentdb.changefeedprocessor.DocumentServiceLeaseManager;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentCollectionInfo;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
 import org.junit.Assert;
 import org.junit.Test;
@@ -14,10 +15,8 @@ import java.net.URISyntaxException;
 public class LeaseTest {
 
     @Test
-    public void LeaseInitialization() {
-        //fail("Not yet implemented");
-
-        ConfigurationFile config = null;
+    public void LeaseInitialization() throws DocumentClientException {
+    	ConfigurationFile config = null;
 
         try {
             config = new ConfigurationFile("app.secrets");
@@ -48,18 +47,11 @@ public class LeaseTest {
                 documentServices);
 
         try {
-            leaseManager.initialize(true);
+            leaseManager.initialize();
         } catch (DocumentClientException e) {
             e.printStackTrace();
 
             Assert.fail(e.getMessage());
         }
-
     }
-
-
-
-
-
-
 }

@@ -5,20 +5,22 @@ import com.microsoft.azure.documentdb.Document;
 import java.util.List;
 import java.util.concurrent.*;
 
-public class TestChangeFeedObserver implements IChangeFeedObserver {
+import org.junit.Test;
+
+public class MockChangeFeedObserver implements IChangeFeedObserver {
 
     private ExecutorService exec = null;
 
-    public  TestChangeFeedObserver(){
+    public  MockChangeFeedObserver(){
         exec = Executors.newFixedThreadPool(1);
 
     }
 
-    public void open(ChangeFeedObserverContext context) {
-
+    public Callable<Void> open(ChangeFeedObserverContext context) {
+    	return null;	// TODO: fix this
     }
 
-    public void close(ChangeFeedObserverContext context, ChangeFeedObserverCloseReason reason) {
+    public Callable<Void> close(ChangeFeedObserverContext context, ChangeFeedObserverCloseReason reason) {
 
         switch (reason){
             case OBSERVER_ERROR:
@@ -38,9 +40,11 @@ public class TestChangeFeedObserver implements IChangeFeedObserver {
                 }
             break;
         }
+        
+        return null;	// TODO: fix this
     }
 
-    public void processChanges(ChangeFeedObserverContext context, List<Document> docs) {
+    public Callable<Void> processChanges(ChangeFeedObserverContext context, List<Document> docs) {
 
         if (exec == null)
             throw new NullPointerException("Exec is null, initiate the class properly before using it!");
@@ -61,7 +65,6 @@ public class TestChangeFeedObserver implements IChangeFeedObserver {
                 e.printStackTrace();
             }
         }
-
+        return null;	// TODO: fix this
     }
-
 }

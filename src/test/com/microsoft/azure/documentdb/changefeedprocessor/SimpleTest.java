@@ -3,6 +3,8 @@ package com.microsoft.azure.documentdb.changefeedprocessor;
 import com.microsoft.azure.documentdb.ChangeFeedOptions;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationException;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationFile;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentCollectionInfo;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -50,7 +52,7 @@ public class SimpleTest {
         Assert.assertNotNull(host);
 
         try {
-            host.registerObserver(TestChangeFeedObserver.class);
+            host.registerObserver(MockChangeFeedObserver.class);
 
             System.out.println("Press ENTER to finish");
             Scanner scanner = new Scanner(System.in);

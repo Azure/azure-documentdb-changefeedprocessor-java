@@ -163,6 +163,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         partitionManager = new PartitionManager<DocumentServiceLease>(this.hostName, this.leaseManager, this.options);
         	// [Done] CR: why is new ResourcePartitionServices inside try-catch?
         this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, observerFactory, changeFeedOptions.getPageSize());
+
 //        this.executorService.submit(partitionManager.subscribe(this)).get();    //Awaiting the task to be finished.  
 //        this.executorService.submit(partitionManager.initialize()).get();       //Awaiting the task to be finished.
         
@@ -175,9 +176,6 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         executorServicevice.shutdown();
         logger.info("Initializaition done!");
         partitionManager.start();
-        
-        
-        
     }
 
     @Override
