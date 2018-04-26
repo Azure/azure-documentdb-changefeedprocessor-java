@@ -38,14 +38,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- *
- * @author yoterada
- */
-//[Done] CR: why is this class public? Should be internal. Or it this some sort of Java thing making all classes public?
-//[Done] CR: also, there are lots of classes that are internal in C# are public in Java version.
-//rogirdh: Moved it into the main package and removed public
-
 class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>, ICheckpointManager {
     private final static String DATE_HEADER_NAME = "Date";
     private final static String CONTAINER_SEPARATOR = ".";
@@ -141,7 +133,7 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
         Callable<Boolean> callable = new Callable<Boolean>() {
             @Override
             public Boolean call() throws Exception {
-                //TODO: Fix with callable	// CR: is there still any issue to address?
+                
                 DocumentServiceLease containerDocument = tryGetLease(getDocumentId());
                 return new Boolean(containerDocument != null);
             }
@@ -325,7 +317,7 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
     }
 
     @Override
-    public Callable<Void> delete(DocumentServiceLease lease) throws DocumentClientException, LeaseLostException {
+    public Callable<Void> delete(DocumentServiceLease lease) throws DocumentClientException {
         if (lease == null || lease.getId() == null) {
             throw new IllegalArgumentException("lease");
         }

@@ -14,9 +14,9 @@ import com.microsoft.azure.documentdb.changefeedprocessor.DocumentServiceLeaseMa
 import com.microsoft.azure.documentdb.changefeedprocessor.CheckpointServices;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentCollectionInfo;
-import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartitionServices;
 
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -38,6 +38,8 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     private IChangeFeedObserverFactory observerFactory;
     private ExecutorService executorService;
     private Logger logger = Logger.getLogger(ChangeFeedEventHost.class.getName());
+    @SuppressWarnings("unused")
+	private AtomicInteger isShutdown ;
 
     public ChangeFeedEventHost( String hostName, DocumentCollectionInfo documentCollectionLocation, DocumentCollectionInfo auxCollectionLocation){
         this(hostName, documentCollectionLocation, auxCollectionLocation, new ChangeFeedOptions(), new ChangeFeedHostOptions());
@@ -65,6 +67,8 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         this.changeFeedOptions = changeFeedOptions;
         this.options = hostOptions;
         this.hostName = hostName;
+        this.isShutdown = new AtomicInteger(0);
+        
         try{
             this.documentServices = new DocumentServices(documentCollectionLocation);
         }
@@ -98,13 +102,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         return result;
     }
 
-    // CR: Can we fix ALL compiler warnings across both projects, so that "Problems" window is clean (currently shows 198 items)?
-    //     e.g. this one on registerObserver: Start the 'Infer Generic Type Arguments' refactoring
     
-    // CR: remove this comment?
-    /**
-     * This code used to be async
-     */
     public <T extends IChangeFeedObserver> Callable<Void> registerObserver(Class<T>  type) throws Exception, InterruptedException {	// CR: can we use generics? 
         Callable<Void> callable = new Callable<Void>() {
             public Void call() throws InterruptedException {
@@ -167,7 +165,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         }
         
     }
-
+    
     private void initializeIntegrations() throws Exception, DocumentClientException, LeaseLostException, InterruptedException, ExecutionException {
         // Grab the options-supplied prefix if present otherwise leave it empty.
         String optionsPrefix = this.options.getLeasePrefix();
@@ -225,8 +223,8 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         logger.info("Initializing partition manager");
         partitionManager = new PartitionManager<DocumentServiceLease>(this.hostName, this.leaseManager, this.options);
-        	// [Done] CR: why is new ResourcePartitionServices inside try-catch?
-        this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, observerFactory, changeFeedOptions.getPageSize());
+        	
+        this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, this.leaseManager, observerFactory, changeFeedOptions.getPageSize());
         this.executorService.submit(partitionManager.subscribe(this)).get();    //Awaiting the task to be finished.  
         this.executorService.submit(partitionManager.initialize()).get();       //Awaiting the task to be finished.
     }
@@ -242,7 +240,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
                 String partitionId = parts[parts.length-1];
                 try {
                     resourcePartitionSvcs.create(partitionId);
-                    resourcePartitionSvcs.start(partitionId);
+                    resourcePartitionSvcs.start(partitionId, documentServiceLease);
                     // CR: we need to track new task for shutdown scenario.
                 } catch (DocumentClientException e) {
                     e.printStackTrace();
@@ -275,9 +273,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         return callable;
     }
 
-    private ExecutorService getExecutorService(){
-        return executorService;
-    }
+
 
     public static boolean isNullOrEmpty(String s) {
         return s == null || s.length() == 0;

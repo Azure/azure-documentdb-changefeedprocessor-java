@@ -38,10 +38,6 @@ import java.time.Instant;
 import java.time.LocalTime;
 import java.util.Locale;
 
-/**
- *
- * @author yoterada		// rogirdh: Let's keep for now. Let's remove once it's ready to be published. CR: should we remove all @author attributes?
- */
 class DocumentServiceLease extends Lease {   //rogirdh: Moved it into the main package and removed public
 	
 	private static final Instant unixStartTime = Instant.EPOCH;
