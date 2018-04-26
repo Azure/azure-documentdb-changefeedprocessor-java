@@ -66,8 +66,6 @@ The basic usage of this library is covered at [samples folder](samples/README.md
 
 * org.slf4j.slf4j-simple  1.7.25
 
-* org.projectlombok.lombok    1.16.18
-
 ## Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a

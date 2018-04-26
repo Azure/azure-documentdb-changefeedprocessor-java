@@ -4,7 +4,7 @@ import com.microsoft.azure.documentdb.DocumentClientException;
 
 import java.util.logging.Logger;
 
-public class JobRunnable implements Runnable {
+public class JobRunnable implements Runnable {	// CR: RunnableJob sounds better.
 
     private final Job job;
     private String initialData;
@@ -30,6 +30,9 @@ public class JobRunnable implements Runnable {
             e.printStackTrace();
         }
     }
-
+    
+    // CR: eating exceptions.
+    // CR: fix all TODOs across the project.
+    
     // TODO: stop thread
 }

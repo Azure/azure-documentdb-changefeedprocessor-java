@@ -120,10 +120,6 @@ public class ChangeFeedHostOptions {
         this.maxPartitionCount = maxPartitionCount;
     }
 
-    boolean isDiscardExistingLeases() {
-        return discardExistingLeases;
-    }
-
     void setDiscardExistingLeases(boolean discardExistingLeases) {
         this.discardExistingLeases = discardExistingLeases;
     }

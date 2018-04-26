@@ -1,4 +1,4 @@
-package com.microsoft.azure.documentdb.changefeedprocessor.services;
+package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
 import com.microsoft.azure.documentdb.ChangeFeedOptions;
 import com.microsoft.azure.documentdb.Document;
@@ -7,10 +7,12 @@ import com.microsoft.azure.documentdb.FeedResponse;
 import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverCloseReason;
 import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverContext;
 import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserver;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.Job;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ChangeFeedThreadFactory;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.StatusCode;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.SubStatusCode;
-import lombok.Getter;
+import com.microsoft.azure.documentdb.changefeedprocessor.CheckpointServices;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
 
 import java.util.List;
 import java.util.concurrent.*;
@@ -18,9 +20,7 @@ import java.util.logging.Logger;
 
 public class ChangeFeedJob implements Job {
 
-    @Getter
     private final DocumentServices client;
-    @Getter
     private final CheckpointServices checkpointSvcs;
 
     private final String partitionId;
@@ -34,6 +34,13 @@ public class ChangeFeedJob implements Job {
     private final int NumThreadsPerCpu = 5;
     private static Logger logger = Logger.getLogger(ChangeFeedJob.class.getName());
 
+    public DocumentServices getClient(){
+        return client;
+    }
+
+    public CheckpointServices getCheckpointSvcs(){
+        return checkpointSvcs;
+    }
     /***
      *
      * @param partitionId
@@ -114,9 +121,9 @@ public class ChangeFeedJob implements Job {
         context.setPartitionKeyRangeId(partitionId);
         FeedResponse<Document> query = null;
 
-        boolean HasMoreResults = false;
+        boolean HasMoreResults = false;	// should be hasMoreResults.
 
-        while(!(exec.isTerminated() || exec.isShutdown())) {
+        while (!(exec.isTerminated() || exec.isShutdown())) {
             do {
                 try {
                     logger.info(String.format("client.createDocumentChangeFeedQuery(%s, %s, %d)",partitionId, checkpointSvcs.getCheckpointData(partitionId), this.pageSize));
@@ -130,17 +137,22 @@ public class ChangeFeedJob implements Job {
                             logger.info(String.format("Docs Loaded #%d - HasMoreResults: %s",docs.size(), HasMoreResults));
                             observer.processChanges(context, docs);
                             this.checkpoint(query.getResponseContinuation());
-                        }else{
+                        } else {
                             logger.info(String.format("Docs is null & HasMoreResults = %s", HasMoreResults));
                         }
                     }
-                } catch (DocumentClientException dce) {
+                // CR: can't mix up exceptions from change feed query and from observer. Must split processing, like in C# version.
+                } catch (DocumentClientException dce) { 
                     int subStatusCode = getSubStatusCode(dce);
                     if ((dce.getStatusCode() == StatusCode.NOTFOUND.Value() &&
                             SubStatusCode.ReadSessionNotAvailable.Value() != subStatusCode) ||
-                            dce.getStatusCode() == StatusCode.GONE.Value()){
+                            dce.getStatusCode() == StatusCode.GONE.Value()) {
                         this.stop(ChangeFeedObserverCloseReason.RESOURCE_GONE);
-                        observer.close(context,ChangeFeedObserverCloseReason.RESOURCE_GONE );
+                    	// CR: important: shouldn't call observer.close here, should call as part of stop.
+                        //     besides, need to catch all observer exceptions.
+                        // CR: important: do we need to break out of the loop?
+                        // CR: important: where is handle split? SubStatusCode.PartitionKeyRangeGone is not used anywhere in the project!
+                        observer.close(context, ChangeFeedObserverCloseReason.RESOURCE_GONE );
                     }
                     else if (SubStatusCode.Splitting.Value() == subStatusCode)
                     {
@@ -152,7 +164,8 @@ public class ChangeFeedJob implements Job {
                         try {
                             exec.awaitTermination(this.DEFAULT_THREAD_WAIT, TimeUnit.MILLISECONDS);
                             logger.info(String.format("Too many requests during change feed for Partition: %s - Waiting for %d milliseconds before perform another query.", this.partitionId, this.DEFAULT_THREAD_WAIT));
-                        }catch (InterruptedException e){
+                        } catch (InterruptedException e) {
+                        	// CR: is it OK to eat this exception here? Will we break the loop due to exec.IsTerminated() == true? Add a comment.
                             logger.warning(String.format("Too Many requests InterruptedException trying to wait the thread: %s", e.getMessage()));
                         }
                     }
@@ -160,24 +173,24 @@ public class ChangeFeedJob implements Job {
                     {
                         throw dce;
                     }
-                }catch (Exception ex){
+                } catch (Exception ex) {
+                	// CR: we should close the observer if we get unknown exception.
                     logger.severe(String.format("Other exception not handled happened: %s ",ex.getMessage()));
                     ex.printStackTrace();
                 }
 
-            }while (HasMoreResults && !(exec.isTerminated() || exec.isShutdown()) );
+            } while (HasMoreResults && !(exec.isTerminated() || exec.isShutdown()));
 
             if (!(exec.isTerminated() || exec.isShutdown()))
             {
                 try {
                     exec.awaitTermination(this.DEFAULT_THREAD_WAIT, TimeUnit.MILLISECONDS);
                     logger.info(String.format("There are no changes for Partition: %s - Waiting for %d milliseconds before perform another query.", this.partitionId, this.DEFAULT_THREAD_WAIT));
-                }catch (InterruptedException e){
+                } catch (InterruptedException e) {
                     logger.warning(String.format(" InterruptedException trying to wait the thread: %s", e.getMessage()));
                 }
             }
-
-        }// while(!(exec.isTerminated() || exec.isShutdown()))
+        } // while(!(exec.isTerminated() || exec.isShutdown()))
     }
 
     void checkpoint(String data) throws DocumentClientException {
@@ -204,11 +217,11 @@ public class ChangeFeedJob implements Job {
                 exec.shutdownNow();
                 break;
         }
-
     }
 
     private int getSubStatusCode(DocumentClientException exception)
     {
+        assert exception != null ;
         String SubStatusHeaderName = "x-ms-substatus";
         String valueSubStatus = exception.getResponseHeaders().get(SubStatusHeaderName);
         if (valueSubStatus != null && !valueSubStatus.isEmpty())
@@ -224,5 +237,4 @@ public class ChangeFeedJob implements Job {
 
         return -1;
     }
-
 }
