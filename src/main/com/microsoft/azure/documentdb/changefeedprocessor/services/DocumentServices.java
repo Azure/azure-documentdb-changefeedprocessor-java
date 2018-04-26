@@ -215,4 +215,8 @@ public class DocumentServices {
 
         return client.queryDocuments(collectionLink, querySpec, feedOptions);
     }
+    
+    public void shudown() {
+    	client.close();
+    }
 }

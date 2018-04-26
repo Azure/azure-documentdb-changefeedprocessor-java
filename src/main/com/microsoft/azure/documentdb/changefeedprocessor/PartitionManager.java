@@ -27,7 +27,7 @@ final class PartitionManager<T extends Lease> {
     final ConcurrentHashMap<String, T> currentlyOwnedPartitions;
     final ConcurrentHashMap<String, T> keepRenewingDuringClose;
     final PartitionObserverManager partitionObserverManager;
-    private AtomicInteger isStarted;
+    private AtomicInteger isStarted  =new AtomicInteger(0);
     boolean shutdownComplete;	// CR: isShutdownComplete, for consistency with isStarted.
 	private Future<Void> renewTask;
 	private Future<Void> takerTask;
@@ -98,6 +98,7 @@ final class PartitionManager<T extends Lease> {
     	// CR: what will happen if one of the tasks throws DocumentClientException?
     }
 
+    // [Done] call it when host starting
     // [Done] CR: important: this is never called! Should be called from initializeIntegrations...
     public void start()
     {
@@ -115,6 +116,7 @@ final class PartitionManager<T extends Lease> {
         this.takerTask = exec.submit(new LeaseTaker());
     }
 
+    // [Done] call it when the host shutdown 
     // CR: important: this is never called as well.
     public void stop(ChangeFeedObserverCloseReason reason) throws InterruptedException, ExecutionException {
         if (!this.isStarted.compareAndSet(1, 0)) {

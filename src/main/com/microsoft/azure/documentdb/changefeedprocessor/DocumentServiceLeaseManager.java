@@ -642,6 +642,7 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
     }
 }
 
+
 //class PartitionInfo implements Partition {	// [Done] CR: move to separate file. Is this actually used anywhere? If not, let's remove.
 //
 //    public String Etag;
