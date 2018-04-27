@@ -38,6 +38,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 //    private IChangeFeedObserverFactory observerFactory;
 //    private ExecutorService executorServicevice; not need as a property
     private Logger logger = Logger.getLogger(ChangeFeedEventHost.class.getName());
+    private AtomicInteger isShutdown ;
 
     public ChangeFeedEventHost( String hostName, DocumentCollectionInfo documentCollectionLocation, DocumentCollectionInfo auxCollectionLocation) throws DocumentClientException{
         this(hostName, documentCollectionLocation, auxCollectionLocation, new ChangeFeedOptions(), new ChangeFeedHostOptions());
@@ -121,7 +122,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     }
     
     
-    private void initializeIntegrations() throws Exception, DocumentClientException, LeaseLostException, InterruptedException, ExecutionException {
+    private void initializeIntegrations(IChangeFeedObserverFactory observerFactory) throws Exception, DocumentClientException, LeaseLostException, InterruptedException, ExecutionException {
         // Grab the options-supplied prefix if present otherwise leave it empty.
         
     	List<Callable<?>> initialTasks = new ArrayList<Callable<?>>();
@@ -176,11 +177,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         logger.info("Initializing partition manager");
         partitionManager = new PartitionManager<DocumentServiceLease>(this.hostName, this.leaseManager, this.options);
       
-        	// [Done] CR: why is new ResourcePartitionServices inside try-catch?
-        this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, observerFactory, changeFeedOptions.getPageSize());
-
-//        this.executorService.submit(partitionManager.subscribe(this)).get();    //Awaiting the task to be finished.  
-//        this.executorService.submit(partitionManager.initialize()).get();       //Awaiting the task to be finished.
+        this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, this.leaseManager, observerFactory, changeFeedOptions.getPageSize());
         
         partitionManager.subscribe(this);
         partitionManager.initialize();
@@ -199,18 +196,12 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         assert documentServiceLease != null && isNullOrEmpty(documentServiceLease.getOwner()) : "lease" ;
         Callable<Void> callable = new Callable<Void>() {
             @Override
-            public Void call() throws Exception {
+            public Void call() throws Exception, DocumentClientException, InterruptedException {
                 String[] parts = documentServiceLease.id.split(Pattern.quote("."));
                 String partitionId = parts[parts.length-1];
-                try {
-                    resourcePartitionSvcs.create(partitionId);
-                    // CR: we need to track new task for shutdown scenario.
-                } catch (DocumentClientException e) {
-                    e.printStackTrace();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                // CR: eating exceptions.
+                
+                resourcePartitionSvcs.create(partitionId);
+                resourcePartitionSvcs.start(partitionId, documentServiceLease);
 
                 return null;
             }
@@ -238,24 +229,5 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
     public static boolean isNullOrEmpty(String s) {
         return s == null || s.length() == 0;
-    }
-    
-    public <T extends IChangeFeedObserver> void registerObserver(Class<T>  type) throws Exception, InterruptedException {	// CR: can we use generics? 
-    	ChangeFeedObserverFactory<T> factory = new ChangeFeedObserverFactory<T>(type);
-    	initializeIntegrations(factory);
-    }
-    
-    public boolean unregisterObservers() {
-    	logger.info("shutdown...");
-    	boolean succ = true;
-        try {
-			this.partitionManager.stop(ChangeFeedObserverCloseReason.SHUTDOWN);
-		} catch (InterruptedException | ExecutionException e) {
-			succ = false;
-		}
-        this.documentServices.shudown();
-        this.resourcePartitionSvcs.shutdown();
-        logger.info("shutdown OK!");
-        return succ;
     }
 }
