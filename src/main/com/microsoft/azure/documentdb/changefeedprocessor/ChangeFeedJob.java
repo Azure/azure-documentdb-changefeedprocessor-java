@@ -11,7 +11,8 @@ import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServi
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.stream.Collectors;
 
 //This class contains the job definition(QueryChangeFeed() method) that reads data from Cosmos DB Changefeed.
@@ -19,17 +20,17 @@ public class ChangeFeedJob implements Job {
 
     private final DocumentServices client;
     private final CheckpointServices checkpointSvcs;
-    private ILeaseManager<DocumentServiceLease> documentLeaseMgr;
+    private LeaseManagerInterface<DocumentServiceLease> documentLeaseMgr;
 
     private final String partitionId;
-    private final IChangeFeedObserver observer;
+    private final ChangeFeedObserverInterface observer;
     private int pageSize;
     private final int DEFAULT_PAGE_SIZE = 100;
     private final int DEFAULT_THREAD_WAIT = 1000;
     private ExecutorService exec;
     private final int CPUs = Runtime.getRuntime().availableProcessors();
     private final int NumThreadsPerCpu = 5;
-    private static Logger logger = Logger.getLogger(ChangeFeedJob.class.getName());
+    private static Logger logger = LoggerFactory.getLogger(ChangeFeedJob.class.getName());
 
     public DocumentServices getClient(){
         return client;
@@ -51,7 +52,7 @@ public class ChangeFeedJob implements Job {
                           DocumentServices client,
                           CheckpointServices checkpointSvcs,
                           DocumentServiceLeaseManager docLeaseMgr,
-                          IChangeFeedObserver observer,
+                          ChangeFeedObserverInterface observer,
                           int pageSize) {
         this.client = client;
         this.checkpointSvcs = checkpointSvcs;
@@ -75,7 +76,7 @@ public class ChangeFeedJob implements Job {
                           DocumentServices client,
                           CheckpointServices checkpointSvcs,
                           DocumentServiceLeaseManager docLeaseMgr,
-                          IChangeFeedObserver observer) {
+                          ChangeFeedObserverInterface observer) {
         this.client = client;
         this.checkpointSvcs = checkpointSvcs;
         this.documentLeaseMgr = docLeaseMgr;
@@ -108,19 +109,19 @@ public class ChangeFeedJob implements Job {
                 try {
                     QueryChangeFeed(this.documentLeaseMgr, initialData, dsl);
                 } catch (DocumentClientException e) {
-                    logger.severe(e.getMessage());
+                    logger.error(e.getMessage());
                     e.printStackTrace();
                 } catch (InterruptedException e) {
-                    logger.severe(e.getMessage());
+                    logger.error(e.getMessage());
                     e.printStackTrace();
                 } catch (Exception e) {
-                	logger.severe(e.getMessage());
+                	logger.error(e.getMessage());
                 }
             });
         }
     }
 
-    private void QueryChangeFeed(ILeaseManager<DocumentServiceLease> dslm, String initialData, DocumentServiceLease dsl) throws Exception{
+    private void QueryChangeFeed(LeaseManagerInterface<DocumentServiceLease> dslm, String initialData, DocumentServiceLease dsl) throws Exception{
         logger.info(String.format("PartitionID: %s - QueryChangeFeed - Initiate", partitionId));
         ChangeFeedObserverContext context = new ChangeFeedObserverContext();
         context.setPartitionKeyRangeId(partitionId);
@@ -138,24 +139,24 @@ public class ChangeFeedJob implements Job {
                     //Calling the Changefeed API and getting documents
                     query = client.createDocumentChangeFeedQuery(partitionId, checkpointSvcs.getCheckpointData(partitionId), this.pageSize);
                     if (query != null) {
-                        logger.info(String.format("Query is not null query.getActivityId: %s ", query.getActivityId()));
+                        logger.debug(String.format("Query is not null query.getActivityId: %s ", query.getActivityId()));
                         context.setFeedResponse(query);
                         List<Document> docs = query.getQueryIterable().toList();
                         continuationToken = query.getResponseContinuation();
                         hasMoreResults = query.getQueryIterator().hasNext();
                         if (docs != null) {
-                            logger.info(String.format("Docs Loaded #%d - HasMoreResults: %s",docs.size(), hasMoreResults));
+                            logger.debug(String.format("Docs Loaded #%d - HasMoreResults: %s",docs.size(), hasMoreResults));
                             observer.processChanges(context, docs);	//Calling the client's processChanges() implementation and sending over the documents
                             this.checkpoint(query.getResponseContinuation());
                         } else {
-                            logger.info(String.format("Docs is null & HasMoreResults = %s", hasMoreResults));
+                            logger.debug(String.format("Docs is null & HasMoreResults = %s", hasMoreResults));
                         }
                     }
                 } catch (DocumentClientException dce) { 
                 	dcex = dce;
                 } catch (Exception ex) {
                 	//Closing the observer since we ran into an unknown issue
-                    logger.severe(String.format("Other exception not handled has happened: %s ",ex.getMessage()));
+                    logger.error(String.format("Other exception not handled has happened: %s ",ex.getMessage()));
                     observer.close(context, ChangeFeedObserverCloseReason.UNKNOWN);
                     
                 }
@@ -166,7 +167,7 @@ public class ChangeFeedJob implements Job {
                     	// Most likely, the database or collection was removed while we were enumerating.
                         // Shut down. The user will need to start over.
                         // Note: this has to be a new task, can't await for shutdown here, as shudown awaits for all worker tasks.
-                    	logger.warning(String.format("Partition {0}: resource gone (subStatus={1}). Aborting.", context.getPartitionKeyRangeId(), getSubStatusCode(dcex)));
+                    	logger.error(String.format("Partition {0}: resource gone (subStatus={1}). Aborting.", context.getPartitionKeyRangeId(), getSubStatusCode(dcex)));
                         this.stop(ChangeFeedObserverCloseReason.RESOURCE_GONE);
                         break;
                         // CR: important: where is handle split? SubStatusCode.PartitionKeyRangeGone is not used anywhere in the project!
@@ -174,7 +175,7 @@ public class ChangeFeedJob implements Job {
 	                	if(SubStatusCode.PartitionKeyRangeGone.Value() == subStatusCode) {
 	                		boolean isSuccess = handleSplits(dslm, context.getPartitionKeyRangeId(), continuationToken, dsl.id); 
 	                		if (!isSuccess) {
-	                            logger.warning(String.format("Partition {0}: HandleSplit failed! Aborting.", context.getPartitionKeyRangeId()));
+	                            logger.error(String.format("Partition {0}: HandleSplit failed! Aborting.", context.getPartitionKeyRangeId()));
 	                            this.stop(ChangeFeedObserverCloseReason.RESOURCE_GONE);
 	                            break;
 	                        }
@@ -182,12 +183,12 @@ public class ChangeFeedJob implements Job {
 	                        // Throw LeaseLostException so that we take the lease down.
 	                        throw new LeaseLostException(dsl, dcex, true);
 	                	} else if (SubStatusCode.Splitting.Value() == subStatusCode) {
-	                        logger.warning(String.format("Partition %s is splitting. Will retry to read changes until split finishes. %s", context.getPartitionKeyRangeId(), dcex.getMessage()));
+	                        logger.error(String.format("Partition %s is splitting. Will retry to read changes until split finishes. %s", context.getPartitionKeyRangeId(), dcex.getMessage()));
 	                	} else {
 	                		throw dcex;
 	                	}
 	                } else if (dcex.getStatusCode() == StatusCode.TOO_MANY_REQUESTS.Value() || dcex.getStatusCode() == StatusCode.SERVICE_UNAVAILABLE.Value()) {
-	                	logger.warning(String.format("Partition {0}: retriable exception : {1}", context.getPartitionKeyRangeId(), dcex.getMessage()));
+	                	logger.error(String.format("Partition {0}: retriable exception : {1}", context.getPartitionKeyRangeId(), dcex.getMessage()));
 	                	exec.awaitTermination(this.DEFAULT_THREAD_WAIT, TimeUnit.MILLISECONDS);
 	                } else if (dcex.getMessage().contains("Reduce page size and try again.")) {
 	                	
@@ -203,7 +204,7 @@ public class ChangeFeedJob implements Job {
                     exec.awaitTermination(this.DEFAULT_THREAD_WAIT, TimeUnit.MILLISECONDS);
                     logger.info(String.format("There are no changes for Partition: %s - Waiting for %d milliseconds before perform another query.", this.partitionId, this.DEFAULT_THREAD_WAIT));
                 } catch (InterruptedException e) {
-                    logger.warning(String.format(" InterruptedException trying to wait the thread: %s", e.getMessage()));
+                    logger.error(String.format(" InterruptedException trying to wait the thread: %s", e.getMessage()));
                 }
             }
         }
@@ -225,11 +226,11 @@ public class ChangeFeedJob implements Job {
         switch (CloseReason){
             case SHUTDOWN:
             case RESOURCE_GONE:
-                logger.warning(String.format("CloseReason %s Shutting down executor", CloseReason));
+                logger.warn(String.format("CloseReason %s Shutting down executor", CloseReason));
                 exec.shutdown();//maybe need to add a timeout
                 break;
             default:
-                logger.warning(String.format("CloseReason %s Shutting down executor NOW", CloseReason));
+                logger.warn(String.format("CloseReason %s Shutting down executor NOW", CloseReason));
                 exec.shutdownNow();
                 break;
         }
@@ -246,48 +247,41 @@ public class ChangeFeedJob implements Job {
             try {
                 return Integer.parseInt(valueSubStatus);
             }catch (Exception e){
-                logger.severe(String.format("Not able to parse the error code %s to int", valueSubStatus));
+                logger.error(String.format("Not able to parse the error code %s to int", valueSubStatus));
             }
         }
 
         return -1;
     }
     
-    private /*Callable<Boolean>*/ boolean handleSplits(ILeaseManager<DocumentServiceLease> dslm, String partitionKeyRangeId, String continuationToken, String leaseId) throws InterruptedException, ExecutionException, DocumentClientException {
-    /*	Callable<Boolean> callable = new Callable<Boolean>() {
-    		@Override
-    		public Boolean call() throws InterruptedException, ExecutionException, DocumentClientException { */
-    			assert partitionKeyRangeId != null && partitionKeyRangeId.isEmpty();
-    	    	assert leaseId != null && leaseId.isEmpty();
-    	    	logger.info(String.format("Partition {0} is gone due to split, continuation '{1}'",partitionKeyRangeId, continuationToken));
-    	    	ExecutorService exec = Executors.newFixedThreadPool(1);
-    	    	List<PartitionKeyRange> allRange = exec.submit(CollectionHelper.enumPartitionKeyRangesAsync(ChangeFeedJob.this.client.getDocumentClient(), ChangeFeedJob.this.client.getCollectionSelfLink())).get();
-    	    	List<PartitionKeyRange> childRanges = new ArrayList<PartitionKeyRange>(allRange.stream().filter(range -> range.getParents().contains(partitionKeyRangeId)).collect(Collectors.toList()));
-    	    	
-                if (childRanges.size() < 2) {
-                    logger.warning(String.format("Partition {0} had split but we failed to find at least 2 child paritions.", partitionKeyRangeId));
-                    return false;
-                }
-
-                List<Callable<Boolean>> callables = new ArrayList<Callable<Boolean>>();
-                for (PartitionKeyRange childRange : childRanges) {
-                    callables.add(dslm.createLeaseIfNotExists(childRange.getId(), continuationToken));
-                    logger.info(String.format("Creating lease for partition '{0}' as child of partition '{1}', continuation '{2}'", childRange.getId(), partitionKeyRangeId, continuationToken));
-                }
-
-                exec = Executors.newCachedThreadPool();
-                exec.invokeAll(callables);
-                DocumentServiceLease dsl = new DocumentServiceLease();
-                dsl.setId(leaseId);
-                dslm.delete(dsl);
-
-                logger.info(String.format("Deleted lease for gone (splitted) partition '{0}' continuation '{1}'", partitionKeyRangeId, continuationToken));
-
-                // Note: the rest is up to lease taker, that after waking up would consume these new leases.
-                return true;
-                }
-   /* 	};
+    private boolean handleSplits(LeaseManagerInterface<DocumentServiceLease> dslm, String partitionKeyRangeId, String continuationToken, String leaseId) throws InterruptedException, ExecutionException, DocumentClientException {
+		assert partitionKeyRangeId != null && partitionKeyRangeId.isEmpty();
+    	assert leaseId != null && leaseId.isEmpty();
+    	logger.info(String.format("Partition {0} is gone due to split, continuation '{1}'",partitionKeyRangeId, continuationToken));
+    	ExecutorService exec = Executors.newFixedThreadPool(1);
+    	List<PartitionKeyRange> allRange = exec.submit(CollectionHelper.enumPartitionKeyRangesAsync(ChangeFeedJob.this.client.getDocumentClient(), ChangeFeedJob.this.client.getCollectionSelfLink())).get();
+    	List<PartitionKeyRange> childRanges = new ArrayList<PartitionKeyRange>(allRange.stream().filter(range -> range.getParents().contains(partitionKeyRangeId)).collect(Collectors.toList()));
     	
-    	return callable; 
-    } */
+        if (childRanges.size() < 2) {
+            logger.warn(String.format("Partition {0} had split but we failed to find at least 2 child paritions.", partitionKeyRangeId));
+            return false;
+        }
+
+        List<Callable<Boolean>> callables = new ArrayList<Callable<Boolean>>();
+        for (PartitionKeyRange childRange : childRanges) {
+            callables.add(dslm.createLeaseIfNotExists(childRange.getId(), continuationToken));
+            logger.info(String.format("Creating lease for partition '{0}' as child of partition '{1}', continuation '{2}'", childRange.getId(), partitionKeyRangeId, continuationToken));
+        }
+
+        exec = Executors.newCachedThreadPool();
+        exec.invokeAll(callables);
+        DocumentServiceLease dsl = new DocumentServiceLease();
+        dsl.setId(leaseId);
+        dslm.delete(dsl);
+
+        logger.info(String.format("Deleted lease for gone (splitted) partition '{0}' continuation '{1}'", partitionKeyRangeId, continuationToken));
+
+        // Note: the rest is up to lease taker, that after waking up would consume these new leases.
+        return true;
+        }
 }

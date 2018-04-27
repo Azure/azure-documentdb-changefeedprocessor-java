@@ -7,7 +7,7 @@ import java.util.concurrent.*;
 
 import org.junit.Test;
 
-public class MockChangeFeedObserver implements IChangeFeedObserver {
+public class MockChangeFeedObserver implements ChangeFeedObserverInterface {
 
     private ExecutorService exec = null;
 

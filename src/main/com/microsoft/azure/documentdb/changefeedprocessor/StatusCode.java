@@ -5,10 +5,6 @@
  */
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
-/**
- *
- * @author yoterada
- */
 enum StatusCode {
 
     /**

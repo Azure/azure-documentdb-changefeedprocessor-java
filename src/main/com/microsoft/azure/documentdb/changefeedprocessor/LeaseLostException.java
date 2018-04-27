@@ -6,10 +6,6 @@
 //package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
-/**
- *
- * @author yoterada
- */
 class LeaseLostException extends Exception {
 
 	private static final long serialVersionUID = 1L;

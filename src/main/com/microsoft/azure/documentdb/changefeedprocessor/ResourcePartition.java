@@ -2,12 +2,13 @@ package com.microsoft.azure.documentdb.changefeedprocessor;
 
 import com.microsoft.azure.documentdb.DocumentClientException;
 
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class ResourcePartition {
+class ResourcePartition {
     private String partitionId;
     private Job resourceJob;
-    private Logger logger = Logger.getLogger(ResourcePartition.class.getName());
+    private Logger logger = LoggerFactory.getLogger(ResourcePartition.class.getName());
 
     public ResourcePartition(String partitionId, Job resourceJob) {
         this.partitionId = partitionId;

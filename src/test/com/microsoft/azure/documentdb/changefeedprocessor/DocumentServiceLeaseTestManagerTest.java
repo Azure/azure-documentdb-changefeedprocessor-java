@@ -26,10 +26,6 @@ import java.util.logging.Logger;
 
 import static org.junit.Assert.*;
 
-/**
- *
- * @author yoterada
- */
 public class DocumentServiceLeaseTestManagerTest {
     private DocumentServiceLeaseManager instance = null;
     static final Duration DEFAULT_EXPIRATION_INTERVAL = Duration.ofSeconds(60);

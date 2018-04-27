@@ -1,12 +1,13 @@
 package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
 import java.util.concurrent.ThreadFactory;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ChangeFeedThreadFactory implements ThreadFactory {
 
     private String threadSuffixName;
-    private Logger logger = Logger.getLogger(ChangeFeedThreadFactory.class.getName());
+    private Logger logger = LoggerFactory.getLogger(ChangeFeedThreadFactory.class.getName());
 
     public ChangeFeedThreadFactory(String threadSuffixName){
         this.threadSuffixName = threadSuffixName;

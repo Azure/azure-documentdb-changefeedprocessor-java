@@ -25,7 +25,7 @@ public class PartitionManagerTest {
 
     private PartitionManager<DocumentServiceLease> instance = null;
     private ChangeFeedHostOptions options = null;
-    private ILeaseManager<DocumentServiceLease> leaseManager = null;
+    private LeaseManagerInterface<DocumentServiceLease> leaseManager = null;
     static final Duration DEFAULT_EXPIRATION_INTERVAL = Duration.ofSeconds(60);
     static final Duration DEFAULT_RENEW_INTERVAL = Duration.ofSeconds(17);
     static final String OWNER_NAME = "worker";

@@ -1,26 +1,26 @@
-//package com.microsoft.azure.documentdb.changefeedprocessor.services;
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
 import com.microsoft.azure.documentdb.DocumentClientException;
 import com.microsoft.azure.documentdb.changefeedprocessor.CheckpointFrequency;
 import com.microsoft.azure.documentdb.changefeedprocessor.CheckpointStats;
-import com.microsoft.azure.documentdb.changefeedprocessor.ICheckpointManager;
-import com.microsoft.azure.documentdb.changefeedprocessor.ILeaseManager;
+import com.microsoft.azure.documentdb.changefeedprocessor.CheckpointManagerInterface;
+import com.microsoft.azure.documentdb.changefeedprocessor.LeaseManagerInterface;
 import com.microsoft.azure.documentdb.changefeedprocessor.DocumentServiceLease;
 
 import java.time.Instant;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CheckpointServices {
 
     private CheckpointFrequency checkpointOptions;
-    private ICheckpointManager checkpointManager;
-    private ILeaseManager<DocumentServiceLease> leaseManager;
-    private Logger logger = Logger.getLogger(CheckpointServices.class.getName());
+    private CheckpointManagerInterface checkpointManager;
+    private LeaseManagerInterface<DocumentServiceLease> leaseManager;
+    private Logger logger = LoggerFactory.getLogger(CheckpointServices.class.getName());
 
-    public CheckpointServices(ILeaseManager<DocumentServiceLease> leaseManager, CheckpointFrequency checkpointOptions){
+    public CheckpointServices(LeaseManagerInterface<DocumentServiceLease> leaseManager, CheckpointFrequency checkpointOptions){
         this.leaseManager = leaseManager;
-        this.checkpointManager = (ICheckpointManager)leaseManager;
+        this.checkpointManager = (CheckpointManagerInterface)leaseManager;
         this.checkpointOptions = checkpointOptions;
     }
 
@@ -28,13 +28,13 @@ public class CheckpointServices {
         String data = getCheckpoint(partitionId);
         if (data == null)
             data = "";
-        logger.info(String.format("Retrieving Checkpoint partitionId: %s, data: %s",partitionId,data));
+        logger.debug(String.format("Retrieving Checkpoint partitionId: %s, data: %s",partitionId,data));
 
         return data;
     }
 
     public void setCheckpointData(String partitionId, String data) throws DocumentClientException {
-        logger.info(String.format("Saving Checkpoint partitionId: %s, data: %s",partitionId,data));
+        logger.debug(String.format("Saving Checkpoint partitionId: %s, data: %s",partitionId,data));
         DocumentServiceLease lease = null;
         try {
         	// CR: perf/RU impact: if we kept the lease in the loop in checkpoint job, we didn't have to get it every time.
@@ -53,7 +53,7 @@ public class CheckpointServices {
         try {
             lease = (DocumentServiceLease) this.leaseManager.getLease(partitionId).call();
         } catch (Exception e) {
-            logger.severe(String.format("Error!! %s", e.getMessage()));
+            logger.error(String.format("Error!! %s", e.getMessage()));
             e.printStackTrace();
         }
         return lease.getContinuationToken();
@@ -70,14 +70,14 @@ public class CheckpointServices {
 
             if(result.getConcurrencyToken() == continuation) {
                 assert result.getConcurrencyToken() == continuation : "ContinuationToken was not updated" ;
-                logger.info(String.format("Checkpoint: partition %s, continuation token '%s' was not updated!", lease.getPartitionId(), continuation));
+                logger.debug(String.format("Checkpoint: partition %s, continuation token '%s' was not updated!", lease.getPartitionId(), continuation));
             }
             else
                 logger.info(String.format("Checkpoint: partition %s, new continuation '%s'", lease.getPartitionId(), continuation));
         }
         catch (Exception ex)
         {
-            logger.severe(String.format("Partition %s: failed to checkpoint due to unexpected error: $s", lease.getPartitionId(), ex.getMessage()));
+            logger.error(String.format("Partition %s: failed to checkpoint due to unexpected error: $s", lease.getPartitionId(), ex.getMessage()));
             
         }
     }

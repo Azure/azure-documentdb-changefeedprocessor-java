@@ -50,10 +50,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
-/**
- * @author Visouza
- *
- */
 public class SplitPartitionTest
 {
     private Logger logger = Logger.getLogger(SplitPartitionTest.class.getName());

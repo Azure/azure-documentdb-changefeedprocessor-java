@@ -6,7 +6,8 @@ import com.microsoft.azure.documentdb.DocumentClient;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // CR: please put a comment what this class is used for, in particular, why we need same exact methods as in DocumentClient.
 // CR: add comments for all other classes which are not trivial.
@@ -47,7 +48,7 @@ public class DocumentServices {
     	return this.client;
     }
 
-    private Logger logger = Logger.getLogger(DocumentServices.class.getName());
+    private Logger logger = LoggerFactory.getLogger(DocumentServices.class.getName());
 
     public DocumentServices(DocumentCollectionInfo collectionLocation) throws DocumentClientException {
         this.url = collectionLocation.getUri().toString();
@@ -164,7 +165,7 @@ public class DocumentServices {
                     try {
                         result = Integer.parseInt(name[1]);
                     } catch (NumberFormatException ex) {
-                        logger.warning(String.format("Failed to get document count from response, cant Integer.parseInt('%s')", name[1]));
+                        logger.debug(String.format("Failed to get document count from response, cant Integer.parseInt('%s')", name[1]));
                     }
 
                     break;
@@ -186,7 +187,7 @@ public class DocumentServices {
             // CR: make 404 a constant.
             // CR: why does the comment in line above say about lease collection?
             // CR: is there specific reason to special case not found and throw and in other cases return null?
-                logger.info("Parameter createLeaseCollection is true! Creating lease collection");
+                logger.debug("Parameter createLeaseCollection is true! Creating lease collection");
                 throw ex;
             }
         }

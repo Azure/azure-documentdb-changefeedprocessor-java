@@ -1,18 +1,17 @@
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
-
 import com.microsoft.azure.documentdb.*;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class CollectionHelper {
 	
 	
 	static long getDocumentCount(ResourceResponse<DocumentCollection> response) {
-		Logger logger = Logger.getLogger(CollectionHelper.class.getName());
+		Logger logger = LoggerFactory.getLogger(CollectionHelper.class.getName());
 		assert response != null;
 		String resourceUsage = response.getResponseHeaders().get("x-ms-resource-usage");
 		if(resourceUsage != null) {
@@ -25,7 +24,7 @@ class CollectionHelper {
 						result = Integer.parseInt(name[1]);
 						return result;
 					} catch (NumberFormatException e) {
-						logger.warning(String.format("Failed to get document count from response, can't Int64.TryParse('{0}')", part));
+						logger.error(String.format("Failed to get document count from response, can't Int64.TryParse('{0}')", part));
 					}
 					
 					break;
