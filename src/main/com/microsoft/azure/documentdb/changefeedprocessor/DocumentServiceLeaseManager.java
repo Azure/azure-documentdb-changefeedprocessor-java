@@ -257,7 +257,7 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
     @Override
     public Callable<DocumentServiceLease> renew(DocumentServiceLease lease) throws LeaseLostException, DocumentClientException {
 
-        assert lease == null : "lease";
+        assert lease != null : "lease";
 
         Callable<DocumentServiceLease> callable = new Callable<DocumentServiceLease>() {
             @Override
@@ -362,7 +362,7 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
 
     @Override
     public Callable<Boolean> isExpired(DocumentServiceLease lease) {
-        assert lease == null;
+        assert lease != null;
 
         Callable<Boolean> callable = new Callable<Boolean>() {
             @Override

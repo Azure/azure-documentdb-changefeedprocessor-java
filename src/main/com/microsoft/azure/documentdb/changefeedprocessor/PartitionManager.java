@@ -36,8 +36,12 @@ final class PartitionManager<T extends Lease> {
 
     public PartitionManager(String workerName, ILeaseManager<T> leaseManager, ChangeFeedHostOptions options)
     {
-    	// CR: asserts for input validation.
-        this.workerName = workerName;
+    	// [Done] CR: asserts for input validation.
+        if (workerName == null || workerName.isEmpty()) throw new IllegalArgumentException("workerName");
+        if (leaseManager == null) throw new IllegalArgumentException("leaseManager");
+        if (options == null) throw new IllegalArgumentException("changeFeedHostOptions");
+    	
+    	this.workerName = workerName;
         this.leaseManager = leaseManager;
         this.options = options;
 
@@ -58,7 +62,7 @@ final class PartitionManager<T extends Lease> {
     }
     
     private void initialize(ExecutorService execService) throws Exception {
-        List<T> leases = new ArrayList<T>();	// CR: rename to more specific, it not clear what kind of leases these are.
+        List<T> ownedLeases = new ArrayList<T>();	// [Done] CR: rename to more specific, it not clear what kind of leases these are.
         List<T> allLeases = new ArrayList<T>();
 
 		logger.info(String.format("Host '%s' starting renew leases assigned to this host on initialize.", this.workerName));
@@ -69,7 +73,7 @@ final class PartitionManager<T extends Lease> {
             	Future<T> newLeaseFuture = execService.submit(this.renewLease(lease));
             	T newLease = newLeaseFuture.get();		//TODO: Ensure that this is not blocking other threads in the for loop	// CR: is this done?
                 if (newLease != null) {
-                    leases.add(newLease);
+                    ownedLeases.add(newLease);
                 } else {
 					logger.info(String.format("Host '%s' unable to renew lease '%s' on startup.", this.workerName, lease.getPartitionId()));
                 }
@@ -77,7 +81,7 @@ final class PartitionManager<T extends Lease> {
         }
 
         List<Callable<Void>> addLeaseTasks = new ArrayList<Callable<Void>>();
-        for (T lease : leases) {
+        for (T lease : ownedLeases) {
             logger.info(String.format("Host '%s' acquired lease for PartitionId '%s' on startup.", this.workerName, lease.getPartitionId()));
             addLeaseTasks.add(this.addLease(lease));
         }
