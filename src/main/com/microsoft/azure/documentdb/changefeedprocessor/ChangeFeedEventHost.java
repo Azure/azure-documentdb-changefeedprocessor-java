@@ -119,15 +119,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
                 this.options.getLeaseRenewInterval(),
                 this.documentServices);
 
-        initialTasks.add(new Callable<Boolean>() {
-
-			@Override
-			public Boolean call() throws Exception {
-				leaseManager.initialize();
-				return true;
-			}
-        	
-        });
+        leaseManager.initialize();
 
         this.checkpointSvcs = new CheckpointServices(this.leaseManager, this.options.getCheckpointFrequency());
 
@@ -151,7 +143,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 //            e.printStackTrace();
 //        }
         
-        initialTasks.add(this.leaseManager.createLeaseStoreIfNotExists());
+        this.leaseManager.createLeaseStoreIfNotExists();
 
         ConcurrentHashMap<String, PartitionKeyRange> ranges = this.documentServices.listPartitionRanges();
 
@@ -166,14 +158,14 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 //        this.executorService.submit(partitionManager.subscribe(this)).get();    //Awaiting the task to be finished.  
 //        this.executorService.submit(partitionManager.initialize()).get();       //Awaiting the task to be finished.
         
-        initialTasks.add(partitionManager.subscribe(this));
-        initialTasks.add(partitionManager.initialize());
+        partitionManager.subscribe(this);
+        partitionManager.initialize();
         
-        ExecutorService executorServicevice = Executors.newFixedThreadPool(1);
-        logger.info("Initializing....");
-        executorServicevice.invokeAll(initialTasks); //can add return to check the result of init
-        executorServicevice.shutdown();
-        logger.info("Initializaition done!");
+//        ExecutorService executorServicevice = Executors.newFixedThreadPool(1);
+//        logger.info("Initializing....");
+//        executorServicevice.invokeAll(initialTasks); //can add return to check the result of init
+//        executorServicevice.shutdown();
+//        logger.info("Initializaition done!");
         partitionManager.start();
         
         

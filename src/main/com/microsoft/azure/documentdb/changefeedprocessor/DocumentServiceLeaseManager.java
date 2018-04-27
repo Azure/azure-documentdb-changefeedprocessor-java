@@ -128,9 +128,9 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
         Instant dummyTimestamp = Instant.ofEpochSecond(dummyDocument.getTimestamp().getTime()); // Instant defaults to UTC
         Instant currentTimeDiff = Instant.ofEpochSecond(snapshot1.plusSeconds(snapshot2.getEpochSecond()).getEpochSecond() / 2);
         serverToLocalTimeDelta = Duration.between(currentTimeDiff, dummyTimestamp);
-
+        
         documentServices.deleteDocument(dummyDocument.getSelfLink(), new RequestOptions());
-       // client.deleteDocument(dummyDocument.getSelfLink(), new RequestOptions());
+        
 
         logger.info(String.format("Server to local time delta: {0}", serverToLocalTimeDelta));
     }
@@ -180,7 +180,8 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
         Callable<Iterable<DocumentServiceLease>> callable = new Callable<Iterable<DocumentServiceLease>>() {
             @Override
             public Iterable<DocumentServiceLease> call() throws Exception {
-                return listDocuments(getPartitionLeasePrefix());
+                Iterable<DocumentServiceLease> documents = listDocuments(getPartitionLeasePrefix());
+				return documents;
             }
         };
 
@@ -393,9 +394,9 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
 
     @Override
     public Callable<Void> createLeases(ConcurrentHashMap<String, PartitionKeyRange> ranges) throws Exception, DocumentClientException {
-        Callable<Void> callable = new Callable<Void>() {
-            @Override
-            public Void call() throws DocumentClientException, Exception {
+//        Callable<Void> callable = new Callable<Void>() {
+//            @Override
+//            public Void call() throws DocumentClientException, Exception {
                 assert ranges != null ;
         
                 // Get leases after getting ranges, to make sure that no other hosts checked in continuation for split partition after we got leases.
@@ -469,10 +470,10 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
                     
                 });   
                 return null;
-            }
-        };
-
-        return callable;
+//            }
+//        };
+//
+//        return callable;
         
     }
 
@@ -528,6 +529,7 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
 
     private Iterable<DocumentServiceLease> listDocuments(String prefix) {//    private Task<IEnumerable<DocumentServiceLease>> ListDocuments(string prefix)
         assert prefix != null && !prefix.isEmpty() : "prefix";
+        List<DocumentServiceLease> docs = new ArrayList<>();
 
         SqlParameter param = new SqlParameter();
         param.setName("@PartitionLeasePrefix");
@@ -538,7 +540,7 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
 
         FeedResponse<Document> queryResults = documentServices.queryDocuments(leaseStoreCollectionLink, querySpec, null);
 
-        List<DocumentServiceLease> docs = new ArrayList<>();
+        
         queryResults.getQueryIterable().forEach((Document d) -> {	
         	docs.add(new DocumentServiceLease(d));
         });

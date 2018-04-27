@@ -66,7 +66,7 @@ public class CheckpointServices {
         DocumentServiceLease result = null;
         try
         {
-            result = (DocumentServiceLease) this.checkpointManager.checkpoint(lease, continuation, lease.getSequenceNumber() + 1);
+            result = (DocumentServiceLease) (this.checkpointManager.checkpoint(lease, continuation, lease.getSequenceNumber() + 1)).call();
 
             if(result.getConcurrencyToken() == continuation) {
                 assert result.getConcurrencyToken() == continuation : "ContinuationToken was not updated" ;
@@ -78,7 +78,7 @@ public class CheckpointServices {
         catch (Exception ex)
         {
             logger.severe(String.format("Partition %s: failed to checkpoint due to unexpected error: $s", lease.getPartitionId(), ex.getMessage()));
-            throw ex;
+            
         }
     }
     
