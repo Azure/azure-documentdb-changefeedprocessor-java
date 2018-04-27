@@ -27,7 +27,7 @@ final class PartitionManager<T extends Lease> {
     final ConcurrentHashMap<String, T> currentlyOwnedPartitions;
     final ConcurrentHashMap<String, T> keepRenewingDuringClose;
     final PartitionObserverManager partitionObserverManager;
-    private AtomicInteger isStarted;
+    private AtomicInteger isStarted  =new AtomicInteger(0);
     boolean shutdownComplete;	// CR: isShutdownComplete, for consistency with isStarted.
 	private Future<Void> renewTask;
 	private Future<Void> takerTask;
@@ -98,7 +98,8 @@ final class PartitionManager<T extends Lease> {
     	// CR: what will happen if one of the tasks throws DocumentClientException?
     }
 
-    // CR: important: this is never called! Should be called from initializeIntegrations...
+    // [Done] call it when host starting
+    // [Done] CR: important: this is never called! Should be called from initializeIntegrations...
     public void start()
     {
         if (!this.isStarted.compareAndSet(0, 1))
@@ -107,13 +108,15 @@ final class PartitionManager<T extends Lease> {
         }
         
         this.shutdownComplete = false;
-  //      this.leaseTakerCancellationTokenSource = new CancellationTokenSource();
-  //      this.leaseRenewerCancellationTokenSource = new CancellationTokenSource();
+        //this.leaseTakerCancellationTokenSource = new CancellationTokenSource();   // TODO: find out if we need to add this back
+        //this.leaseRenewerCancellationTokenSource = new CancellationTokenSource();
 
+        // TODO: Are these calls blocking? Seems like they aren't
         this.renewTask = exec.submit(new LeaseRenewer());
         this.takerTask = exec.submit(new LeaseTaker());
     }
 
+    // [Done] call it when the host shutdown 
     // CR: important: this is never called as well.
     public void stop(ChangeFeedObserverCloseReason reason) throws InterruptedException, ExecutionException {
         if (!this.isStarted.compareAndSet(1, 0)) {
@@ -424,7 +427,7 @@ final class PartitionManager<T extends Lease> {
 		}
     }
 
-    Callable<T> renewLease(T lease)	
+    private Callable<T> renewLease(T lease)	
     {
     	Callable<T> callable = new Callable<T>() {
     		public T call() {
@@ -457,7 +460,7 @@ final class PartitionManager<T extends Lease> {
         return callable;
     }
 
-    Callable<T> tryAcquireLease(T lease){
+    private Callable<T> tryAcquireLease(T lease){
         Callable<T> callable = new Callable<T>() {
         	public T call() {
         		try {
@@ -474,7 +477,7 @@ final class PartitionManager<T extends Lease> {
     	return callable;
     }
 
-    Callable<T> tryStealLease(T lease){
+    private Callable<T> tryStealLease(T lease){
     	Callable<T> callable = new Callable<T>() {
         	public T call() {
         		try {
@@ -492,7 +495,7 @@ final class PartitionManager<T extends Lease> {
     	return callable;
     }
 
-    Callable<Void> addLease(T lease){
+    private Callable<Void> addLease(T lease){
     	Callable<Void> addLeaseRunnable = new Callable<Void>() {
     		@Override
     		public Void call() {
@@ -547,7 +550,7 @@ final class PartitionManager<T extends Lease> {
         return addLeaseRunnable;
     }
 
-    Callable<Void> removeLease(T lease, boolean hasOwnership, ChangeFeedObserverCloseReason closeReason){
+    private Callable<Void> removeLease(T lease, boolean hasOwnership, ChangeFeedObserverCloseReason closeReason){
     	
     	Callable<Void> removeLeaseRunnable = new Callable<Void>() {
     		@Override

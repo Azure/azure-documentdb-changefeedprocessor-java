@@ -226,7 +226,7 @@ public class ChangeFeedJob implements Job {
             case SHUTDOWN:
             case RESOURCE_GONE:
                 logger.warning(String.format("CloseReason %s Shutting down executor", CloseReason));
-                exec.shutdown();
+                exec.shutdown();//maybe need to add a timeout
                 break;
             default:
                 logger.warning(String.format("CloseReason %s Shutting down executor NOW", CloseReason));

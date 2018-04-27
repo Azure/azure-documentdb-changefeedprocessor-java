@@ -1,26 +1,26 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.microsoft.azure.documentdb.changefeedprocessor;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import com.microsoft.azure.documentdb.ChangeFeedOptions;
 import com.microsoft.azure.documentdb.DocumentClientException;
 import com.microsoft.azure.documentdb.PartitionKeyRange;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.*;
-import com.microsoft.azure.documentdb.changefeedprocessor.DocumentServiceLease;
-import com.microsoft.azure.documentdb.changefeedprocessor.DocumentServiceLeaseManager;
-import com.microsoft.azure.documentdb.changefeedprocessor.CheckpointServices;
-import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.ChangeFeedObserverFactory;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentCollectionInfo;
 
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
-import java.util.regex.Pattern;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
 
-public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLease> {
+
+public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLease> { 
 
     private final String DefaultUserAgentSuffix = "changefeed-java-0.2";
     private final int DEFAULT_PAGE_SIZE = 100;
@@ -35,13 +35,13 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     private DocumentServices documentServices;
     private ResourcePartitionServices resourcePartitionSvcs;
     private CheckpointServices checkpointSvcs;
-    private IChangeFeedObserverFactory observerFactory;
-    private ExecutorService executorService;
+//    private IChangeFeedObserverFactory observerFactory;
+//    private ExecutorService executorServicevice; not need as a property
     private Logger logger = Logger.getLogger(ChangeFeedEventHost.class.getName());
     @SuppressWarnings("unused")
 	private AtomicInteger isShutdown ;
 
-    public ChangeFeedEventHost( String hostName, DocumentCollectionInfo documentCollectionLocation, DocumentCollectionInfo auxCollectionLocation){
+    public ChangeFeedEventHost( String hostName, DocumentCollectionInfo documentCollectionLocation, DocumentCollectionInfo auxCollectionLocation) throws DocumentClientException{
         this(hostName, documentCollectionLocation, auxCollectionLocation, new ChangeFeedOptions(), new ChangeFeedHostOptions());
     }
 
@@ -50,8 +50,10 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
             DocumentCollectionInfo documentCollectionLocation,
             DocumentCollectionInfo auxCollectionLocation,
             ChangeFeedOptions changeFeedOptions,
-            ChangeFeedHostOptions hostOptions) {
+            ChangeFeedHostOptions hostOptions) throws DocumentClientException {
 
+    	
+    	
     	if (hostName == null || hostName.isEmpty()) throw new IllegalArgumentException("hostName");
         if (documentCollectionLocation == null) throw new IllegalArgumentException("documentCollectionLocation");
         if (documentCollectionLocation.getUri() == null) throw new IllegalArgumentException("documentCollectionLocation.getUri()");
@@ -67,6 +69,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         this.changeFeedOptions = changeFeedOptions;
         this.options = hostOptions;
         this.hostName = hostName;
+        
         this.isShutdown = new AtomicInteger(0);
         
         try{
@@ -85,7 +88,6 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
             this.changeFeedOptions.setPageSize(this.DEFAULT_PAGE_SIZE);
         }
 
-        this.executorService = Executors.newFixedThreadPool(1);
     }
 
     private DocumentCollectionInfo canonicalizeCollectionInfo(DocumentCollectionInfo collectionInfo) {
@@ -101,74 +103,32 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         return result;
     }
-
     
-    public <T extends IChangeFeedObserver> Callable<Void> registerObserver(Class<T>  type) throws Exception, InterruptedException {	// CR: can we use generics? 
-        Callable<Void> callable = new Callable<Void>() {
-            public Void call() throws InterruptedException {
-                ChangeFeedEventHost.this.logger.info(String.format("Registering Observer of type %s", type));	// CR: change this this.logger for consistency.       
-                ChangeFeedObserverFactory<T> factory = new ChangeFeedObserverFactory<T>(type);
-                ChangeFeedEventHost.this.observerFactory = factory;
-            // registerObserverFactory(factory);      //TODO CR: Do we need this here?
-
-                ChangeFeedEventHost.this.executorService.execute(() -> {
-                    try {
-                        start();
-                    } catch (Exception e) {
-                        e.printStackTrace();	// CR: does Java support pluggable tracing like .Net (different trace sources, levels, etc)? What is Logger?
-                    }
-                });
-
-                while (!ChangeFeedEventHost.this.executorService.awaitTermination(24L, TimeUnit.HOURS)) {   //Waiting for Executor to finish
-                }
-
-                return null;
-            }
-        };
-        
-        return callable;
-    }
-
-    // [Done] CR: must have a public registerObserverFactory method, C# version has it and quite a few customers use it.
-    
-    // CR: important: unregisterObservers is missing. Looks like currently there is no way to stop the host...
-    public Callable<Void> unregisterObservers(){
-        Callable<Void> callable = new Callable<Void>() {
-            public Void call(){
-             //   ChangeFeedEventHost.this.stop();    //TODO CR: stopAsync method seems to be missing
-                ChangeFeedEventHost.this.observerFactory = null;
-                return null;
-            }
-        };
-
-        return callable;
-    }
-
-
-    // [Done] CR: this method is not needed. Remove, just set the factory instead.
-  /*  public void registerObserverFactory(ChangeFeedObserverFactory factory) {
-        this.observerFactory = factory;
-        //TODO CR: Check out the .NET implementation. Need to call Start() method
-    } */
-
-    private void start() throws Exception{
-        logger.info(String.format("Starting..."));
-        this.executorService.execute(() -> {
-            try {
-                initializeIntegrations();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-
-        while (!this.executorService.awaitTermination(24L, TimeUnit.HOURS)) {   //Waiting for Executor to finish
-        }
-        
+    public <T extends IChangeFeedObserver> void registerObserver(Class<T>  type) throws Exception, InterruptedException {	// CR: can we use generics? 
+    	ChangeFeedObserverFactory<T> factory = new ChangeFeedObserverFactory<T>(type);
+    	initializeIntegrations(factory);
     }
     
-    private void initializeIntegrations() throws Exception, DocumentClientException, LeaseLostException, InterruptedException, ExecutionException {
+    public boolean unregisterObservers() {
+    	logger.info("shutdown...");
+    	boolean succ = true;
+        try {
+			this.partitionManager.stop(ChangeFeedObserverCloseReason.SHUTDOWN);
+		} catch (InterruptedException | ExecutionException e) {
+			succ = false;
+		}
+        this.documentServices.shudown();
+        this.resourcePartitionSvcs.shutdown();
+        logger.info("shutdown OK!");
+        return succ;
+    }
+    
+    private void initializeIntegrations(IChangeFeedObserverFactory observerFactory) throws Exception, DocumentClientException, LeaseLostException, InterruptedException, ExecutionException {
         // Grab the options-supplied prefix if present otherwise leave it empty.
-        String optionsPrefix = this.options.getLeasePrefix();
+        
+    	List<Callable<?>> initialTasks = new ArrayList<Callable<?>>();
+    	
+    	String optionsPrefix = this.options.getLeasePrefix();
         if (optionsPrefix == null) {
             optionsPrefix = "";
         }
@@ -183,37 +143,39 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
                 this.options.getLeaseRenewInterval(),
                 this.documentServices);
 
-        //leaseManager.initialize(true);
-        this.executorService.execute(() -> {
-            try {
-                leaseManager.initialize();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
+        initialTasks.add(new Callable<Boolean>() {
 
-        while (!this.executorService.awaitTermination(24L, TimeUnit.HOURS)) {   //Waiting for Executor to finish
-        }
+			@Override
+			public Boolean call() throws Exception {
+				leaseManager.initialize();
+				return true;
+			}
+        	
+        });
 
         this.checkpointSvcs = new CheckpointServices(this.leaseManager, this.options.getCheckpointFrequency());
 
         if (this.options.getDiscardExistingLeases()) {
             logger.warning(String.format("Host '%s': removing all leases, as requested by ChangeFeedHostOptions", this.hostName));
-            try {
-                this.leaseManager.deleteAll().call();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+//            try {
+//                this.leaseManager.deleteAll().call();
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+            
+            initialTasks.add(this.leaseManager.deleteAll());
         }
 
         // Note: lease store is never stale as we use monitored collection Rid as id prefix for aux collection.
         // Collection was removed and re-created, the rid would change.
         // If it's not deleted, it's not stale. If it's deleted, it's not stale as it doesn't exist.
-        try {
-            this.leaseManager.createLeaseStoreIfNotExists().call();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+//        try {
+//            this.leaseManager.createLeaseStoreIfNotExists().call();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+        
+        initialTasks.add(this.leaseManager.createLeaseStoreIfNotExists());
 
         ConcurrentHashMap<String, PartitionKeyRange> ranges = this.documentServices.listPartitionRanges();
 
@@ -225,8 +187,19 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         partitionManager = new PartitionManager<DocumentServiceLease>(this.hostName, this.leaseManager, this.options);
         	
         this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, this.leaseManager, observerFactory, changeFeedOptions.getPageSize());
-        this.executorService.submit(partitionManager.subscribe(this)).get();    //Awaiting the task to be finished.  
-        this.executorService.submit(partitionManager.initialize()).get();       //Awaiting the task to be finished.
+
+//        this.executorService.submit(partitionManager.subscribe(this)).get();    //Awaiting the task to be finished.  
+//        this.executorService.submit(partitionManager.initialize()).get();       //Awaiting the task to be finished.
+        
+        initialTasks.add(partitionManager.subscribe(this));
+        initialTasks.add(partitionManager.initialize());
+        
+        ExecutorService executorServicevice = Executors.newFixedThreadPool(1);
+        logger.info("Initializing....");
+        executorServicevice.invokeAll(initialTasks); //can add return to check the result of init
+        executorServicevice.shutdown();
+        logger.info("Initializaition done!");
+        partitionManager.start();
     }
 
     @Override
@@ -273,8 +246,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         return callable;
     }
 
-
-
+    
     public static boolean isNullOrEmpty(String s) {
         return s == null || s.length() == 0;
     }

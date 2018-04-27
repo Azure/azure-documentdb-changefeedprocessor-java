@@ -3,6 +3,8 @@ package com.microsoft.azure.documentdb.changefeedprocessor;
 import com.microsoft.azure.documentdb.ChangeFeedOptions;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationException;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationFile;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentCollectionInfo;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.TimeUnit;
@@ -30,7 +32,6 @@ public class Sample {
             System.out.println("COSMOSDB URI FAIL: " + e.getMessage());
         } catch (ConfigurationException e) {
             System.out.println("Configuration Error " + e.getMessage());
-
         }
 
         DocumentCollectionInfo docAux = new DocumentCollectionInfo(docInfo);
@@ -50,7 +51,7 @@ public class Sample {
         ChangeFeedEventHost host = new ChangeFeedEventHost("hostname", docInfo, docAux, options, hostOptions );
 
         try {
-            host.registerObserver(TestChangeFeedObserver.class);
+            host.registerObserver(MockChangeFeedObserver.class);
 
             while(!host.getExecutorService().isTerminated() &&
                     !host.getExecutorService().isShutdown()){

@@ -3,14 +3,16 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore;
+package com.microsoft.azure.documentdb.changefeedprocessor;
 
 import com.microsoft.azure.documentdb.DocumentClientException;
-import com.microsoft.azure.documentdb.changefeedprocessor.DocumentCollectionInfo;
+import com.microsoft.azure.documentdb.changefeedprocessor.DocumentServiceLeaseManager;
+import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentCollectionInfo;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationException;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationFile;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.Lease;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.LeaseLostException;
+import com.microsoft.azure.documentdb.changefeedprocessor.internal.LeaseState;
+import com.microsoft.azure.documentdb.changefeedprocessor.Lease;
+import com.microsoft.azure.documentdb.changefeedprocessor.LeaseLostException;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
 import org.junit.Assert;
 import org.junit.Before;
@@ -19,6 +21,7 @@ import org.junit.Test;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.logging.Logger;
 
 import static org.junit.Assert.*;
@@ -64,7 +67,7 @@ public class DocumentServiceLeaseTestManagerTest {
         DocumentServices documentServices = new DocumentServices(docInfo);
 
         instance = new DocumentServiceLeaseManager(docInfo, "leases", DEFAULT_EXPIRATION_INTERVAL, DEFAULT_RENEW_INTERVAL,documentServices);
-        instance.initialize(true);
+        instance.initialize();
         
         // Clean up lease store before each test
 		instance.deleteAll();
@@ -116,8 +119,8 @@ public class DocumentServiceLeaseTestManagerTest {
         String partitionId = "test";
         String partitionId2 = "test2";
         String continuationToken = "1234";
-        instance.createLeaseIfNotExist(partitionId, continuationToken);
-        instance.createLeaseIfNotExist(partitionId2, continuationToken);
+        instance.createLeaseIfNotExists(partitionId, continuationToken);
+        instance.createLeaseIfNotExists(partitionId2, continuationToken);
 
         Iterable<DocumentServiceLease> result = null;
         try {
@@ -139,7 +142,7 @@ public class DocumentServiceLeaseTestManagerTest {
         
         String partitionId = "test";
         String continuationToken = "1234";
-        boolean result = instance.createLeaseIfNotExist(partitionId, continuationToken).call();
+        boolean result = instance.createLeaseIfNotExists(partitionId, continuationToken).call();
         
         assert(result);
     }
@@ -154,10 +157,10 @@ public class DocumentServiceLeaseTestManagerTest {
         // Add a lease to the store      
         String partitionId = "test";
         String continuationToken = "1234";
-        instance.createLeaseIfNotExist(partitionId, continuationToken);  
+        instance.createLeaseIfNotExists(partitionId, continuationToken);  
         
         // Try to add the lease again, should return false since it already exists
-        boolean result = instance.createLeaseIfNotExist(partitionId, continuationToken).call();
+        boolean result = instance.createLeaseIfNotExists(partitionId, continuationToken).call();
         
         // A lease with this partitionId already exists so it should return false
         assertFalse(result);
@@ -189,7 +192,7 @@ public class DocumentServiceLeaseTestManagerTest {
         // Add a lease to the store      
         String partitionId = "test";
         String continuationToken = "1234";
-        instance.createLeaseIfNotExist(partitionId, continuationToken); 
+        instance.createLeaseIfNotExists(partitionId, continuationToken); 
         
         DocumentServiceLease result = instance.getLease(partitionId).call();
         
@@ -207,7 +210,7 @@ public class DocumentServiceLeaseTestManagerTest {
         // Add a lease to the store      
         String partitionId = "test";
         String continuationToken = "1234";
-        instance.createLeaseIfNotExist(partitionId, continuationToken);  
+        instance.createLeaseIfNotExists(partitionId, continuationToken);  
 
         // Get a lease from the lease store and pass it to acquire with owner name expOwner
         String expOwner = "testOwner";
@@ -228,19 +231,19 @@ public class DocumentServiceLeaseTestManagerTest {
         // Add a lease to the store and add an owner
         String partitionId = "test";
         String continuationToken = "1234";
-        instance.createLeaseIfNotExist(partitionId, continuationToken);  
+        instance.createLeaseIfNotExists(partitionId, continuationToken);  
         String expOwner = "testOwner";
         instance.acquire(instance.getLease(partitionId).call(), expOwner);
         
         // Get the lease back from the store and store the timestamp of it's last alteration time
         DocumentServiceLease lease = instance.getLease(partitionId).call();
-        long previousTimestamp = lease.getTs();
+        Instant previousTimestamp = lease.getTimestamp();
         
         // Renew the lease for this owner
         DocumentServiceLease result = instance.renew(lease).call();
         
         // Check timestamp was updated and that the lease state is still leased
-        assert result.getTs() > previousTimestamp : "timestamp not updated";
+        assert result.getTimestamp().isAfter(previousTimestamp) : "timestamp not updated";
         assertEquals(LeaseState.LEASED, result.getState());
         assertEquals(expOwner, result.getOwner());
     }
@@ -256,7 +259,7 @@ public class DocumentServiceLeaseTestManagerTest {
         // Add a lease to the store and add an owner
         String partitionId = "test";
         String continuationToken = "1234";
-        instance.createLeaseIfNotExist(partitionId, continuationToken);  
+        instance.createLeaseIfNotExists(partitionId, continuationToken);  
         String expOwner = "testOwner";
         instance.acquire(instance.getLease(partitionId).call(), expOwner);
         
@@ -283,13 +286,13 @@ public class DocumentServiceLeaseTestManagerTest {
         // Add a lease to the store
         String partitionId = "test";
         String continuationToken = "1234";
-        instance.createLeaseIfNotExist(partitionId, continuationToken); 
+        instance.createLeaseIfNotExists(partitionId, continuationToken); 
         
         // Get the lease back from the lease store and delete it
         instance.delete(instance.getLease(partitionId).call());
         
         // This should return true if the lease was previously deleted
-        assert(instance.createLeaseIfNotExist(partitionId, continuationToken).call());
+        assert(instance.createLeaseIfNotExists(partitionId, continuationToken).call());
     }
 
     /**
@@ -303,8 +306,8 @@ public class DocumentServiceLeaseTestManagerTest {
         String partitionId = "test";
         String partitionId2 = "test2";
         String continuationToken = "1234";
-        instance.createLeaseIfNotExist(partitionId, continuationToken);
-        instance.createLeaseIfNotExist(partitionId2, continuationToken);
+        instance.createLeaseIfNotExists(partitionId, continuationToken);
+        instance.createLeaseIfNotExists(partitionId2, continuationToken);
         
         // Delete all leases in the store
         instance.deleteAll();
@@ -325,7 +328,7 @@ public class DocumentServiceLeaseTestManagerTest {
         // Add a lease to the store
         String partitionId = "test";
         String continuationToken = "1234";
-        instance.createLeaseIfNotExist(partitionId, continuationToken); 
+        instance.createLeaseIfNotExists(partitionId, continuationToken); 
         
         // Wait 1 min for the lease to expire
         Thread.sleep(60000);
@@ -355,7 +358,7 @@ public class DocumentServiceLeaseTestManagerTest {
         // Add a lease to the store
         String partitionId = "test";
         String continuationToken = "1234";
-        instance.createLeaseIfNotExist(partitionId, continuationToken); 
+        instance.createLeaseIfNotExists(partitionId, continuationToken); 
         
         // The new lease shouldn't be expired yet
         boolean result = false;
@@ -369,16 +372,16 @@ public class DocumentServiceLeaseTestManagerTest {
 
     /**
      * Test of checkpoint method, of class DocumentServiceLeaseManager.
-     * @throws DocumentClientException 
+     * @throws Exception 
      */
     @Test
-    public void testCheckpoint() throws DocumentClientException {
+    public void testCheckpoint() throws Exception {
         logger.info("checkpoint");
         
         // Add a lease to the store and add an owner
         String partitionId = "test";
         String continuationToken = "1234";
-        instance.createLeaseIfNotExist(partitionId, continuationToken);
+        instance.createLeaseIfNotExists(partitionId, continuationToken);
         String expOwner = "testOwner";
 
         try {
@@ -397,7 +400,7 @@ public class DocumentServiceLeaseTestManagerTest {
 
         String newContinuationToken = "12345";
         long sequenceNumber = 0L;
-        Lease result = instance.checkpoint(lease, newContinuationToken, sequenceNumber);
+        Lease result = instance.checkpoint(lease, newContinuationToken, sequenceNumber).call();
         
         assertEquals(newContinuationToken, result.getContinuationToken());
         assertEquals(sequenceNumber, result.getSequenceNumber());
