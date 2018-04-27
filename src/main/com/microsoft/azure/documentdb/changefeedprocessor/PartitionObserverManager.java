@@ -8,25 +8,21 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.Logger;
-
-/**
-*
-* @author rogirdh
-*/
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class PartitionObserverManager<T extends Lease> {
     final PartitionManager<T> partitionManager;
-    final List<IPartitionObserver<T>> observers;
-    private Logger logger = Logger.getLogger(PartitionObserverManager.class.getName());
+    final List<PartitionObserverInterface<T>> observers;
+    private Logger logger = LoggerFactory.getLogger(PartitionObserverManager.class.getName());
 
     public PartitionObserverManager(PartitionManager<T> partitionManager){
         this.partitionManager = partitionManager;
-        this.observers = new ArrayList<IPartitionObserver<T>>();
+        this.observers = new ArrayList<PartitionObserverInterface<T>>();
     }
 
     @SuppressWarnings({ "unchecked" })
-    public Callable<AutoCloseable> subscribe(IPartitionObserver<T> observer) {
+    public Callable<AutoCloseable> subscribe(PartitionObserverInterface<T> observer) {
 //    	Callable<AutoCloseable> subscribeCallable = new Callable<AutoCloseable>() {
 //    		public AutoCloseable call() {
     			if (!PartitionObserverManager.this.observers.contains(observer)) {
@@ -38,7 +34,7 @@ final class PartitionObserverManager<T extends Lease> {
     		            	observer.onPartitionAcquired(lease).wait();	// CR: who signals the wait to finish?
     		            } catch (Exception ex) {
     		                // Eat any exceptions during notification of observers
-							logger.warning(ex.getMessage());
+							logger.error(ex.getMessage());
     		            }
     		        }
     		    }
@@ -57,7 +53,7 @@ final class PartitionObserverManager<T extends Lease> {
     			//     Could be done as simple as wait() like in subscribe method.
     			ExecutorService execSvc = Executors.newFixedThreadPool(PartitionObserverManager.this.observers.size());
     			List<Callable<Void>> oPA = new ArrayList<>();	// CR: rename, what is OPA BTW? :)
-    			for (IPartitionObserver<T> obs : PartitionObserverManager.this.observers) {
+    			for (PartitionObserverInterface<T> obs : PartitionObserverManager.this.observers) {
     				oPA.add(obs.onPartitionAcquired(lease));  //TODO: Check if this works as expected. If not, change the return type of onPartitionAcquired to callable
     	        }
     			try {
@@ -87,7 +83,7 @@ final class PartitionObserverManager<T extends Lease> {
     		public Void call() {
     			ExecutorService execSvc = Executors.newFixedThreadPool(PartitionObserverManager.this.observers.size());
     			List<Callable<Void>> oPR = new ArrayList<>();
-    			for (IPartitionObserver<T> obs : PartitionObserverManager.this.observers) {
+    			for (PartitionObserverInterface<T> obs : PartitionObserverManager.this.observers) {
     				oPR.add(obs.onPartitionReleased(lease, reason));  //TODO: Check if this works as expected. If not, change the return type of onPartitionAcquired to callable
     	        }
     			try {

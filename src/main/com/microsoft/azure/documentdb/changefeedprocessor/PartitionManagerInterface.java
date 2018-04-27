@@ -6,13 +6,8 @@
 //package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
-/**
-*
-* @author rogirdh
-*/
-
-interface IPartitionManager<T extends Lease> {
+interface PartitionManagerInterface<T extends Lease> {
     void start();
     void stop();
-    AutoCloseable subscribe(IPartitionObserver<T> observer);
+    AutoCloseable subscribe(PartitionObserverInterface<T> observer);
 }

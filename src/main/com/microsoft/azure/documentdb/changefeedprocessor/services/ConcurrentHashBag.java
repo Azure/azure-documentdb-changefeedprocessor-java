@@ -8,10 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/**
-*
-* @author rogirdh
-*/
 public class ConcurrentHashBag<E> extends AbstractBag<E> implements ConcurrentBag<E>, Serializable {
 	
 	private static final long serialVersionUID = 1L;

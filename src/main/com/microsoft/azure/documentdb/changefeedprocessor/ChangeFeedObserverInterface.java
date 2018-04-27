@@ -30,7 +30,7 @@ import com.microsoft.azure.documentdb.Document;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-public interface IChangeFeedObserver {
+public interface ChangeFeedObserverInterface {
     Callable<Void> open(ChangeFeedObserverContext context);
     Callable<Void> close(ChangeFeedObserverContext context, ChangeFeedObserverCloseReason reason);
     Callable<Void> processChanges(ChangeFeedObserverContext context, List<Document> docs);

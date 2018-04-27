@@ -5,10 +5,6 @@
  */
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
-/**
- *
- * @author fcatae
- */
 enum SubStatusCode {
     /**
      * 410: partition key range is gone

@@ -8,15 +8,10 @@ package com.microsoft.azure.documentdb.changefeedprocessor;
 
 import java.util.concurrent.Callable;
 
-/**
- *
- * @author fcatae
- */
 /// <summary>
 /// Provides methods for running checkpoint asynchronously. Extensibility is provided to specify host-specific storage for storing the offset.
 /// </summary>
-//TODO: Need to convert this to Async
-public interface ICheckpointManager {
+public interface CheckpointManagerInterface {
 
 	// CR: convert C# xmldoc comments into Java doc comments.
     /// <summary>Stores the offset of a particular partition in the host-specific store.</summary>

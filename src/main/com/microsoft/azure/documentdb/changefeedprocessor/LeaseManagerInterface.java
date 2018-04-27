@@ -13,12 +13,8 @@ import com.microsoft.azure.documentdb.PartitionKeyRange;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- *
- * @author rogirdh
- */
 
-interface ILeaseManager<T extends Lease> {
+interface LeaseManagerInterface<T extends Lease> {
 
 	/***
 	 * Initialize the LeaseManager properties creating the LeaseCollection if the parameter createLeaseCollection is equal to true.
@@ -117,5 +113,5 @@ interface ILeaseManager<T extends Lease> {
 	 */
 	Callable<Boolean> isExpired(T lease);
 
-	Callable<Void> createLeases(ConcurrentHashMap<String, PartitionKeyRange> ranges) throws DocumentClientException, Exception;
+	void createLeases(ConcurrentHashMap<String, PartitionKeyRange> ranges) throws DocumentClientException, Exception;
 }

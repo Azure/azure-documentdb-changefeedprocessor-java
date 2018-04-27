@@ -34,11 +34,10 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>, ICheckpointManager {
+class DocumentServiceLeaseManager implements LeaseManagerInterface<DocumentServiceLease>, CheckpointManagerInterface {
     private final static String DATE_HEADER_NAME = "Date";
     private final static String CONTAINER_SEPARATOR = ".";
     private final static String PARTITION_PREFIX = ".";
@@ -54,7 +53,7 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
 
     private String leaseStoreCollectionLink;
     private Duration serverToLocalTimeDelta;
-    private Logger logger = Logger.getLogger(DocumentServiceLeaseManager.class.getName());
+    private Logger logger = LoggerFactory.getLogger(DocumentServiceLeaseManager.class.getName());
 
     @FunctionalInterface
     private interface LeaseConflictResolver {
@@ -99,7 +98,7 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
                     logger.info("Parameter createLeaseCollection is false! Creating lease collection");
                 throw ex;
             } */
-            this.logger.info("Lease collection not found.");
+            this.logger.error("Lease collection not found.");
             ex.printStackTrace();
         }
 
@@ -124,14 +123,15 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
         documentServices.deleteDocument(dummyDocument.getSelfLink(), new RequestOptions());
         
 
-        logger.info(String.format("Server to local time delta: {0}", serverToLocalTimeDelta));
+        logger.debug(String.format("Server to local time delta: {0}", serverToLocalTimeDelta));
     }
 
     @Override
     public Callable<Boolean> leaseStoreExists() throws DocumentClientException {
 
         Callable<Boolean> callable = new Callable<Boolean>() {
-            @Override
+            @SuppressWarnings("deprecation")
+			@Override
             public Boolean call() throws Exception {
                 
                 DocumentServiceLease containerDocument = tryGetLease(getDocumentId());
@@ -234,21 +234,16 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
 
         Callable<DocumentServiceLease> callable = new Callable<DocumentServiceLease>() {
             @Override
-            public DocumentServiceLease call() throws Exception {
+            public DocumentServiceLease call() throws Exception, LeaseLostException, DocumentClientException {
                 DocumentServiceLease currentLease = tryGetLease(getDocumentId(lease.getPartitionId()));
                 currentLease.setOwner(owner);
                 currentLease.setState(LeaseState.LEASED);
 
-                try {
-                    return updateInternal(currentLease, (DocumentServiceLease serverLease) -> {
-                        serverLease.setOwner(currentLease.getOwner());
-                        serverLease.setState(currentLease.getState());
-                        return serverLease;
-                    }, owner);
-                } catch (LeaseLostException | DocumentClientException ex) {
-                    Logger.getLogger(DocumentServiceLeaseManager.class.getName()).log(Level.SEVERE, null, ex);	// CR: why eat exceptions?
-                }
-                return null;
+                return updateInternal(currentLease, (DocumentServiceLease serverLease) -> {
+                    serverLease.setOwner(currentLease.getOwner());
+                    serverLease.setState(currentLease.getState());
+                    return serverLease;
+                }, owner);
             }
         };
 
@@ -266,13 +261,12 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
                 DocumentServiceLease refreshedLease = tryGetLease(getDocumentId(lease.getPartitionId()));
                 if (refreshedLease == null)
                 {
-                	// CR: for consistency, should use this.logger, everywhere.
-                    logger.info(String.format("Failed to renew lease for partition id %s! The lease is gone already.", lease.getPartitionId()));
+                    logger.debug(String.format("Failed to renew lease for partition id %s! The lease is gone already.", lease.getPartitionId()));
                     throw new LeaseLostException(lease);
                 }
                 else if (refreshedLease.getOwner()!= null && !refreshedLease.getOwner().equals(lease.getOwner()))
                 {
-                    logger.info(String.format("Failed to renew lease for partition id $s! The lease was already taken by another host.", lease.getPartitionId()));
+                    logger.debug(String.format("Failed to renew lease for partition id $s! The lease was already taken by another host.", lease.getPartitionId()));
                     throw new LeaseLostException(lease);
                 }
                 return updateInternal(refreshedLease, (DocumentServiceLease serverLease) -> serverLease, null);
@@ -290,10 +284,10 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
             public Boolean call() throws Exception {
                 DocumentServiceLease refreshedLease = tryGetLease(getDocumentId(lease.getPartitionId()));
                 if (refreshedLease == null) {
-                    logger.info(String.format("Failed to release lease for partition id %s! The lease is gone already.", lease.getPartitionId()));
+                    logger.debug(String.format("Failed to release lease for partition id %s! The lease is gone already.", lease.getPartitionId()));
                     return false;
                 } else if (!refreshedLease.getOwner().equals(lease.getOwner())) {
-                    logger.info(String.format("No need to release lease for partition id %s! The lease was already taken by another host.", lease.getPartitionId()));
+                    logger.debug(String.format("No need to release lease for partition id %s! The lease was already taken by another host.", lease.getPartitionId()));
                     return true;
                 } else {
                     String oldOwner = lease.getOwner();
@@ -307,7 +301,7 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
                     if (refreshedLease != null) {
                         return true;
                     } else {
-                        logger.info(String.format("Failed to release lease for partition id {0}! Probably the lease was stolen by another host.", lease.getPartitionId()));
+                        logger.error(String.format("Failed to release lease for partition id {0}! Probably the lease was stolen by another host.", lease.getPartitionId()));
                         return false;
                     }
                 }
@@ -385,22 +379,15 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
     }
 
     @Override
-    public Callable<Void> createLeases(ConcurrentHashMap<String, PartitionKeyRange> ranges) throws Exception, DocumentClientException {
-//        Callable<Void> callable = new Callable<Void>() {
-//            @Override
-//            public Void call() throws DocumentClientException, Exception {
+    public void createLeases(ConcurrentHashMap<String, PartitionKeyRange> ranges) throws Exception, DocumentClientException {
                 assert ranges != null ;
         
                 // Get leases after getting ranges, to make sure that no other hosts checked in continuation for split partition after we got leases.
-                ConcurrentHashMap existingLeases = new ConcurrentHashMap<String, DocumentServiceLease>();
-                try {
-                    listLeases().call().forEach((lease) -> {
-                        existingLeases.put(lease.getPartitionId(), lease);
-                    });
-                } catch (Exception e) {
-                    logger.severe(e.getMessage());	// Why eat exceptions?
-                }
-
+                ConcurrentHashMap<String, DocumentServiceLease> existingLeases = new ConcurrentHashMap<String, DocumentServiceLease>();
+                listLeases().call().forEach((lease) -> {
+                    existingLeases.put(lease.getPartitionId(), lease);
+                });
+                
                 HashSet<String> gonePartitionIds = new HashSet<>();
                 existingLeases.keySet().forEach((key) -> {
                     String partitionID = (String)key;
@@ -414,7 +401,7 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
                         addedPartitionIds.add(range);
                 });
 
-                ConcurrentHashMap<String, ConcurrentLinkedQueue<DocumentServiceLease>> parentIdToChildLeases = new ConcurrentHashMap<>();
+               // ConcurrentHashMap<String, ConcurrentLinkedQueue<DocumentServiceLease>> parentIdToChildLeases = new ConcurrentHashMap<>();
 
                 addedPartitionIds.forEach((addedRangeId) -> {
                     String continuationToken = null;
@@ -429,7 +416,7 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
                             parentIds += parentIds.length() == 0 ? parentRangeId : "," + parentRangeId;
                             DocumentServiceLease parentLease = (DocumentServiceLease)existingLeases.get(parentRangeId);
                             if (continuationToken != null) {
-                                logger.warning(String.format("Partition {0}: found more than one parent, new continuation '{1}', current '{2}', will use '{3}'", addedRangeId, parentLease.getContinuationToken(), continuationToken, parentLease.getContinuationToken()));
+                                logger.debug(String.format("Partition {0}: found more than one parent, new continuation '{1}', current '{2}', will use '{3}'", addedRangeId, parentLease.getContinuationToken(), continuationToken, parentLease.getContinuationToken()));
                             }
                             continuationToken = parentLease.getContinuationToken();
                         }
@@ -446,12 +433,12 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
 						boolean wasCreated = createLeaseIfNotExists(addedRangeId, continuationToken).call();
 						if(wasCreated) {
 							if(parentIds.length() == 0) {
-								logger.info(String.format("Created lease for partition '{0}', contrinuation '{1}'", addedRangeId, continuationToken));
+								logger.debug(String.format("Created lease for partition '{0}', contrinuation '{1}'", addedRangeId, continuationToken));
 							} else {
-								logger.info(String.format("Created lease for partition '{0}' as child of split partition(s) '{1}', continuation '{2}'", addedRangeId, parentIds, continuationToken));
+								logger.debug(String.format("Created lease for partition '{0}' as child of split partition(s) '{1}', continuation '{2}'", addedRangeId, parentIds, continuationToken));
 							}
 						} else {
-							logger.info(String.format("Created lease for partition '{0}' as child of split partition(s) '{1}', continuation '{2}'", addedRangeId, parentIds, continuationToken));
+							logger.debug(String.format("Created lease for partition '{0}' as child of split partition(s) '{1}', continuation '{2}'", addedRangeId, parentIds, continuationToken));
 						}
 					} catch (Exception e) {
 						// TODO Auto-generated catch block
@@ -461,33 +448,25 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
                     	//TODO: Implement RemoveLeases condition. See .NET implementation
                     
                 });   
-                return null;
-//            }
-//        };
-//
-//        return callable;
-        
+              //  return null;     
     }
 
     @Override
     public Callable<Lease> checkpoint(Lease lease, String continuationToken, long sequenceNumber) {
-        Callable<Lease> callable = new Callable<Lease>(){
-            public Lease call(){
+        Callable<Lease> callable = new Callable<Lease>() {
+            public Lease call()  throws LeaseLostException, DocumentClientException {
                 DocumentServiceLease documentLease = (DocumentServiceLease) lease;
                 assert documentLease != null : "documentLease";
-                try {
-                    documentLease.setContinuationToken(continuationToken);
-                    documentLease.setSequenceNumber(sequenceNumber);
-                    DocumentServiceLease result = updateInternal(documentLease, (DocumentServiceLease serverLease) -> {
-                        serverLease.setContinuationToken(continuationToken);
-                        serverLease.setSequenceNumber(sequenceNumber);
-                        return serverLease;
-                    }, DATE_HEADER_NAME);
-                    return result;
-                } catch (LeaseLostException | DocumentClientException ex) {
-                    Logger.getLogger(DocumentServiceLeaseManager.class.getName()).log(Level.SEVERE, null, ex);	// CR: eating exceptions.
-                }
-                return null;
+                
+                documentLease.setContinuationToken(continuationToken);
+                documentLease.setSequenceNumber(sequenceNumber);
+                DocumentServiceLease result = updateInternal(documentLease, (DocumentServiceLease serverLease) -> {
+                    serverLease.setContinuationToken(continuationToken);
+                    serverLease.setSequenceNumber(sequenceNumber);
+                    return serverLease;
+                }, DATE_HEADER_NAME);
+                return result;
+
             }
         };
         return callable;     
@@ -597,7 +576,7 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
                 }
 
                 if (retryCount-- > 0) {
-                    logger.info(String.format("Partition '{0}' update failed because the lease with token '{1}' was updated by same/this host with token '{2}'. Will retry, {3} retry(s) left.", lease.getPartitionId(), lease.getConcurrencyToken(), serverLease.getConcurrencyToken(), retryCount));
+                    logger.debug(String.format("Partition '{0}' update failed because the lease with token '{1}' was updated by same/this host with token '{2}'. Will retry, {3} retry(s) left.", lease.getPartitionId(), lease.getConcurrencyToken(), serverLease.getConcurrencyToken(), retryCount));
 
                     lease = conflictResolver.run(serverLease);
                 } else {
@@ -624,7 +603,7 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
         assert lease != null : "lease";
         assert dcex != null : "dispatchInfo";
 
-        logger.warning(String.format("Lease operation exception, status code: ", dcex.getStatusCode()));
+        logger.error(String.format("Lease operation exception, status code: ", dcex.getStatusCode()));
 
         if (HttpStatus.SC_PRECONDITION_FAILED == dcex.getStatusCode()
                 || HttpStatus.SC_CONFLICT == dcex.getStatusCode()
@@ -635,59 +614,3 @@ class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>
         }
     }
 }
-
-
-//class PartitionInfo implements Partition {	// [Done] CR: move to separate file. Is this actually used anywhere? If not, let's remove.
-//
-//    public String Etag;
-//    public String DatabaseName;
-//    public String CollName;
-//    public String ID;
-//    public PartitionStatus Status;
-//    public Date LastExecution;
-//
-//    public PartitionInfo() {
-//        Etag = null;
-//        DatabaseName = null;
-//        CollName = null;
-//        ID = null;
-//        Status = PartitionStatus.SYNCING;
-//    }
-//
-//    public PartitionInfo(String databaseName, String collName, String id, String partitionEtag, PartitionStatus status) {
-//        this.Etag = partitionEtag;
-//        this.DatabaseName = databaseName;
-//        this.CollName = collName;
-//        this.ID = id;
-//        this.Status = status;
-//        this.LastExecution = null;
-//    }
-//
-//    @Override
-//    public Date lastExcetution() {
-//        return this.LastExecution;
-//    }
-//
-//    @Override
-//    public void updateExecution() {
-//        this.LastExecution = new Date(System.currentTimeMillis());
-//    }
-//
-//    @Override
-//    public String key() {
-//        return String.format("%s,%s,%s", this.DatabaseName, this.CollName, this.ID);
-//    }
-//
-//    public enum PartitionStatus {
-//        COMPLETED, SYNCING;
-//    }
-//}
-//
-//interface Partition {	// [Done] CR: move to separate file
-//
-//    public Date lastExcetution();
-//
-//    public void updateExecution();
-//
-//    public String key();
-//}

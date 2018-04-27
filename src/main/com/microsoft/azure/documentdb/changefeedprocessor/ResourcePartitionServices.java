@@ -4,19 +4,20 @@ import com.microsoft.azure.documentdb.DocumentClientException;
 
 import java.util.Enumeration;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.*;
 
-public class ResourcePartitionServices {
+class ResourcePartitionServices {
     private CheckpointServices checkpointSvcs;
     private ConcurrentHashMap<String, ResourcePartition> resourcePartitions;
     private DocumentServices client;
-    private ILeaseManager<DocumentServiceLease> leaseMgr;
-    private IChangeFeedObserverFactory factory;
+    private LeaseManagerInterface<DocumentServiceLease> leaseMgr;
+    private ChangeFeedObserverFactoryInterface factory;
     private int pageSize;
-    private Logger logger = Logger.getLogger(ResourcePartitionServices.class.getName());
+    private Logger logger = LoggerFactory.getLogger(ResourcePartitionServices.class.getName());
 
-    public ResourcePartitionServices(DocumentServices client, CheckpointServices checkpointSvcs, ILeaseManager<DocumentServiceLease> dslm,  IChangeFeedObserverFactory factory, int pageSize) {
+    public ResourcePartitionServices(DocumentServices client, CheckpointServices checkpointSvcs, LeaseManagerInterface<DocumentServiceLease> dslm,  ChangeFeedObserverFactoryInterface factory, int pageSize) {
 
         resourcePartitions = new ConcurrentHashMap<>();
         this.client = client;
@@ -32,10 +33,10 @@ public class ResourcePartitionServices {
         try {
             job = new ChangeFeedJob(partitionId, client, checkpointSvcs, (DocumentServiceLeaseManager) leaseMgr, factory.createObserver(), pageSize);
         } catch (IllegalAccessException e) {
-            logger.severe(e.getMessage());
+            logger.error(e.getMessage());
             e.printStackTrace();
         } catch (InstantiationException e) {
-            logger.severe(e.getMessage());
+            logger.error(e.getMessage());
             e.printStackTrace();
         }
         

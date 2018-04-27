@@ -5,15 +5,11 @@
  */
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
-/**
- *
- * @author yoterada
- */
-public interface IChangeFeedObserverFactory {
+public interface ChangeFeedObserverFactoryInterface {
 	
 	/// <summary>
     /// Creates a new instance of <see cref="DocumentDB.ChangeFeedProcessor.IChangeFeedObserver"/>.
     /// </summary>
     /// <returns>Created instance of <see cref="DocumentDB.ChangeFeedProcessor.IChangeFeedObserver"/>.</returns>
-    IChangeFeedObserver createObserver() throws IllegalAccessException, InstantiationException;
+    ChangeFeedObserverInterface createObserver() throws IllegalAccessException, InstantiationException;
 }

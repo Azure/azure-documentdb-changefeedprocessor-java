@@ -29,11 +29,7 @@ import java.util.concurrent.Callable;
 
 import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverCloseReason;
 
-/**
-*
-* @author rogirdh
-*/
-public interface IPartitionObserver<T extends Lease> {
+public interface PartitionObserverInterface<T extends Lease> {
     Callable<Void> onPartitionAcquired(T lease);
     Callable<Void> onPartitionReleased(T lease, ChangeFeedObserverCloseReason reason);
 }

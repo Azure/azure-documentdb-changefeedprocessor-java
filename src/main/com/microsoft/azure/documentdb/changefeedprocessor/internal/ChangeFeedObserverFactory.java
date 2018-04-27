@@ -5,14 +5,11 @@
  */
 package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
-import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserver;
-import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserverFactory;
-/**
- *
- * @author yoterada
- */
+import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverInterface;
+import com.microsoft.azure.documentdb.changefeedprocessor.ChangeFeedObserverFactoryInterface;
 
-public class ChangeFeedObserverFactory<T extends IChangeFeedObserver> implements IChangeFeedObserverFactory {
+
+public class ChangeFeedObserverFactory<T extends ChangeFeedObserverInterface> implements ChangeFeedObserverFactoryInterface {
     private final Class<T> type;
 
     // CR: why is T template parameter never used? Can we use it instead of passing Class othwerwise it's not a template really?
@@ -22,7 +19,7 @@ public class ChangeFeedObserverFactory<T extends IChangeFeedObserver> implements
 
     @SuppressWarnings("deprecation")
 	@Override
-    public IChangeFeedObserver createObserver() throws IllegalAccessException, InstantiationException {
-        return (IChangeFeedObserver) type.newInstance();
+    public ChangeFeedObserverInterface createObserver() throws IllegalAccessException, InstantiationException {
+        return (ChangeFeedObserverInterface) type.newInstance();
     }
 }

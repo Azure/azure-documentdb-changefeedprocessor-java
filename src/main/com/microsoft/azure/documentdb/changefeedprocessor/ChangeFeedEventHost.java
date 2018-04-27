@@ -5,9 +5,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.regex.Pattern;
 
 import com.microsoft.azure.documentdb.ChangeFeedOptions;
@@ -20,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
 
 
-public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLease> { 
+public class ChangeFeedEventHost implements PartitionObserverInterface<DocumentServiceLease> { 
 
     private final String DefaultUserAgentSuffix = "changefeed-java-0.2";
     private final int DEFAULT_PAGE_SIZE = 100;
@@ -31,14 +30,15 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     private ChangeFeedOptions changeFeedOptions;
     private ChangeFeedHostOptions options;
     private PartitionManager<DocumentServiceLease> partitionManager;
-    private ILeaseManager<DocumentServiceLease> leaseManager;
+    private LeaseManagerInterface<DocumentServiceLease> leaseManager;
     private DocumentServices documentServices;
     private ResourcePartitionServices resourcePartitionSvcs;
     private CheckpointServices checkpointSvcs;
 //    private IChangeFeedObserverFactory observerFactory;
 //    private ExecutorService executorServicevice; not need as a property
-    private Logger logger = Logger.getLogger(ChangeFeedEventHost.class.getName());
-    private AtomicInteger isShutdown ;
+    private Logger logger = LoggerFactory.getLogger(ChangeFeedEventHost.class.getName());
+    @SuppressWarnings("unused")
+	private AtomicInteger isShutdown ;
 
     public ChangeFeedEventHost( String hostName, DocumentCollectionInfo documentCollectionLocation, DocumentCollectionInfo auxCollectionLocation) throws DocumentClientException{
         this(hostName, documentCollectionLocation, auxCollectionLocation, new ChangeFeedOptions(), new ChangeFeedHostOptions());
@@ -102,7 +102,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         return result;
     }
     
-    public <T extends IChangeFeedObserver> void registerObserver(Class<T>  type) throws Exception, InterruptedException {	// CR: can we use generics? 
+    public <T extends ChangeFeedObserverInterface> void registerObserver(Class<T>  type) throws Exception, InterruptedException {	// CR: can we use generics? 
     	ChangeFeedObserverFactory<T> factory = new ChangeFeedObserverFactory<T>(type);
     	initializeIntegrations(factory);
     }
@@ -122,7 +122,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     }
     
     
-    private void initializeIntegrations(IChangeFeedObserverFactory observerFactory) throws Exception, DocumentClientException, LeaseLostException, InterruptedException, ExecutionException {
+    private void initializeIntegrations(ChangeFeedObserverFactoryInterface observerFactory) throws Exception, DocumentClientException, LeaseLostException, InterruptedException, ExecutionException {
         // Grab the options-supplied prefix if present otherwise leave it empty.
         
     	List<Callable<?>> initialTasks = new ArrayList<Callable<?>>();
@@ -147,7 +147,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         this.checkpointSvcs = new CheckpointServices(this.leaseManager, this.options.getCheckpointFrequency());
 
         if (this.options.getDiscardExistingLeases()) {
-            logger.warning(String.format("Host '%s': removing all leases, as requested by ChangeFeedHostOptions", this.hostName));
+            logger.warn(String.format("Host '%s': removing all leases, as requested by ChangeFeedHostOptions", this.hostName));
 //            try {
 //                this.leaseManager.deleteAll().call();
 //            } catch (Exception e) {
