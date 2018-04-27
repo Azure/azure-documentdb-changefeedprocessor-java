@@ -28,7 +28,7 @@ final class PartitionManager<T extends Lease> {
     final ConcurrentHashMap<String, T> keepRenewingDuringClose;
     final PartitionObserverManager partitionObserverManager;
     private AtomicInteger isStarted  =new AtomicInteger(0);
-    boolean shutdownComplete;	// CR: isShutdownComplete, for consistency with isStarted.
+    boolean isShutdownComplete;	// [Done] CR: isShutdownComplete, for consistency with isStarted.
 	private Future<Void> renewTask;
 	private Future<Void> takerTask;
 	private Logger logger = Logger.getLogger(PartitionManager.class.getName());
@@ -63,7 +63,7 @@ final class PartitionManager<T extends Lease> {
 
         for (T lease : this.leaseManager.listLeases().call()) {
             allLeases.add(lease);
-            if (lease.getOwner() == null || lease.getOwner().isEmpty() || lease.getOwner().equalsIgnoreCase(this.workerName)) {
+            if (lease.getOwner().equalsIgnoreCase(this.workerName)) {
             	Future<T> newLeaseFuture = execService.submit(this.renewLease(lease));
             	T newLease = newLeaseFuture.get();		//TODO: Ensure that this is not blocking other threads in the for loop	// CR: is this done?
                 if (newLease != null) {
@@ -105,7 +105,7 @@ final class PartitionManager<T extends Lease> {
             throw new IllegalStateException("PartitionManager has already started");
         }
         
-        this.shutdownComplete = false;
+        this.isShutdownComplete = false;
         //this.leaseTakerCancellationTokenSource = new CancellationTokenSource();   // TODO: find out if we need to add this back
         //this.leaseRenewerCancellationTokenSource = new CancellationTokenSource();
 
@@ -129,7 +129,7 @@ final class PartitionManager<T extends Lease> {
         }
 
         this.shutdown(reason);	//TODO: Equivalent to await?
-        this.shutdownComplete = true;
+        this.isShutdownComplete = true;
 
         if (this.renewTask != null) {
             this.renewTask.cancel(true); //TODO: Ensure this is equivalent to cancellationtokensource i.e. the thread gets interrupted when this is called.
@@ -164,7 +164,7 @@ final class PartitionManager<T extends Lease> {
     private class LeaseRenewer implements Callable<Void> {
 		@Override
     	public Void call() throws Exception {
-			while (PartitionManager.this.isStarted.intValue() == 1 || !PartitionManager.this.shutdownComplete) {
+			while (PartitionManager.this.isStarted.intValue() == 1 || !PartitionManager.this.isShutdownComplete) {
 				try {
 					logger.info(String.format("Host '%s' starting renewal of Leases.", PartitionManager.this.workerName));
 	        		
