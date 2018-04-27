@@ -125,7 +125,7 @@ final class PartitionManager<T extends Lease> {
         // CR: must test shutdown scenario.
         if (this.takerTask != null) {
             this.takerTask.cancel(true); //TODO: Ensure this is equivalent to cancellationtokensource i.e. the thread gets interrupted when this is called.
-            this.takerTask.get();	// CR: this may throw Interrupted exception that should be expected? Same below.
+            //this.takerTask.get();	// CR: this may throw Interrupted exception that should be expected? Same below.
         }
 
         this.shutdown(reason);	//TODO: Equivalent to await?
@@ -133,7 +133,7 @@ final class PartitionManager<T extends Lease> {
 
         if (this.renewTask != null) {
             this.renewTask.cancel(true); //TODO: Ensure this is equivalent to cancellationtokensource i.e. the thread gets interrupted when this is called.
-            this.renewTask.get();	//TODO: Equivalent to await?
+            //this.renewTask.get();	//TODO: Equivalent to await?
         }
 
      //   this.leaseTakerCancellationTokenSource = null;
