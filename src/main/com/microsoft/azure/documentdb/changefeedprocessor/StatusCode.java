@@ -42,11 +42,11 @@ enum StatusCode {
      */
     SERVICE_UNAVAILABLE(503);
 
-    private final int value;
+    private final int VALUE;
 
     private StatusCode(int value) {
-        this.value = value;
+        this.VALUE = value;
     }
 
-    public int Value() {return this.value;}
+    public int Value() {return this.VALUE;}
 }
