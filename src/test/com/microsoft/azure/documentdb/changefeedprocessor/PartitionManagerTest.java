@@ -8,6 +8,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+
 import com.microsoft.azure.documentdb.DocumentClientException;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationException;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ConfigurationFile;
@@ -17,6 +18,7 @@ import com.microsoft.azure.documentdb.changefeedprocessor.LeaseLostException;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
 
 public class PartitionManagerTest {
+
     private PartitionManager<DocumentServiceLease> instance = null;
     private ChangeFeedHostOptions options = null;
     private ILeaseManager<DocumentServiceLease> leaseManager = null;
@@ -49,6 +51,7 @@ public class PartitionManagerTest {
             Assert.fail("Configuration Error " + e.getMessage());
 
         }
+      
         DocumentServices documentServices = new DocumentServices(docInfo);
 
         leaseManager = new DocumentServiceLeaseManager(docInfo, "leases", DEFAULT_EXPIRATION_INTERVAL, DEFAULT_RENEW_INTERVAL, documentServices);
@@ -93,5 +96,4 @@ public class PartitionManagerTest {
     	// Verify both leases now belong to this partition manager
     	assert(instance.currentlyOwnedPartitions.size() == 2);
     }
-    
 }

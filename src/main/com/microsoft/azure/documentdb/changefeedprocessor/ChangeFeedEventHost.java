@@ -7,8 +7,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -17,14 +15,9 @@ import com.microsoft.azure.documentdb.DocumentClientException;
 import com.microsoft.azure.documentdb.PartitionKeyRange;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ChangeFeedObserverFactory;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentCollectionInfo;
-<<<<<<< HEAD
+
+import java.util.concurrent.atomic.AtomicInteger;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.DocumentServices;
-import com.microsoft.azure.documentdb.changefeedprocessor.services.ResourcePartitionServices;
-
-=======
-
->>>>>>> pr/49
-
 
 
 public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLease> { 
@@ -74,15 +67,16 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         this.changeFeedOptions = changeFeedOptions;
         this.options = hostOptions;
         this.hostName = hostName;
-<<<<<<< HEAD
-        this.documentServices = new DocumentServices(documentCollectionLocation);
+      
+        this.isShutdown = new AtomicInteger(0);
+        
         try{
             this.documentServices = new DocumentServices(documentCollectionLocation);
         }
         catch(DocumentClientException ex){
             ex.printStackTrace();
         }
->>>>>>> pr/49
+
         this.checkpointSvcs = null;
         this.resourcePartitionSvcs = null;
 
@@ -91,8 +85,6 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         {
             this.changeFeedOptions.setPageSize(this.DEFAULT_PAGE_SIZE);
         }
-
-
     }
 
     private DocumentCollectionInfo canonicalizeCollectionInfo(DocumentCollectionInfo collectionInfo) {
@@ -108,58 +100,28 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         return result;
     }
-
-<<<<<<< HEAD
-=======
     
-    public <T extends IChangeFeedObserver> Callable<Void> registerObserver(Class<T>  type) throws Exception, InterruptedException {	// CR: can we use generics? 
-        Callable<Void> callable = new Callable<Void>() {
-            public Void call() throws InterruptedException {
-                ChangeFeedEventHost.this.logger.info(String.format("Registering Observer of type %s", type));	// CR: change this this.logger for consistency.       
-                ChangeFeedObserverFactory<T> factory = new ChangeFeedObserverFactory<T>(type);
-                ChangeFeedEventHost.this.observerFactory = factory;
-            // registerObserverFactory(factory);      //TODO CR: Do we need this here?
-
-                ChangeFeedEventHost.this.executorService.execute(() -> {
-                    try {
-                        start();
-                    } catch (Exception e) {
-                        e.printStackTrace();	// CR: does Java support pluggable tracing like .Net (different trace sources, levels, etc)? What is Logger?
-                    }
-                });
-
-                while (!ChangeFeedEventHost.this.executorService.awaitTermination(24L, TimeUnit.HOURS)) {   //Waiting for Executor to finish
-                }
->>>>>>> pr/49
-
-
-<<<<<<< HEAD
-    private void initializeIntegrations(IChangeFeedObserverFactory observerFactory) throws Exception, DocumentClientException, LeaseLostException, InterruptedException, ExecutionException {
-=======
-
-    // [Done] CR: this method is not needed. Remove, just set the factory instead.
-  /*  public void registerObserverFactory(ChangeFeedObserverFactory factory) {
-        this.observerFactory = factory;
-        //TODO CR: Check out the .NET implementation. Need to call Start() method
-    } */
-
-    private void start() throws Exception{
-        logger.info(String.format("Starting..."));
-        this.executorService.execute(() -> {
-            try {
-                initializeIntegrations();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-
-        while (!this.executorService.awaitTermination(24L, TimeUnit.HOURS)) {   //Waiting for Executor to finish
-        }
-        
+    public <T extends IChangeFeedObserver> void registerObserver(Class<T>  type) throws Exception, InterruptedException {	// CR: can we use generics? 
+    	ChangeFeedObserverFactory<T> factory = new ChangeFeedObserverFactory<T>(type);
+    	initializeIntegrations(factory);
     }
     
+    public boolean unregisterObservers() {
+    	logger.info("shutdown...");
+    	boolean succ = true;
+        try {
+			this.partitionManager.stop(ChangeFeedObserverCloseReason.SHUTDOWN);
+		} catch (InterruptedException | ExecutionException e) {
+			succ = false;
+		}
+        this.documentServices.shudown();
+        this.resourcePartitionSvcs.shutdown();
+        logger.info("shutdown OK!");
+        return succ;
+    }
+    
+    
     private void initializeIntegrations() throws Exception, DocumentClientException, LeaseLostException, InterruptedException, ExecutionException {
->>>>>>> pr/49
         // Grab the options-supplied prefix if present otherwise leave it empty.
         
     	List<Callable<?>> initialTasks = new ArrayList<Callable<?>>();
@@ -221,7 +183,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         logger.info("Initializing partition manager");
         partitionManager = new PartitionManager<DocumentServiceLease>(this.hostName, this.leaseManager, this.options);
-<<<<<<< HEAD
+      
         	// [Done] CR: why is new ResourcePartitionServices inside try-catch?
         this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, observerFactory, changeFeedOptions.getPageSize());
 
@@ -237,9 +199,6 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         executorServicevice.shutdown();
         logger.info("Initializaition done!");
         partitionManager.start();
-=======
-        	
->>>>>>> pr/49
     }
 
     @Override
@@ -284,13 +243,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         return callable;
     }
-<<<<<<< HEAD
-    
-=======
 
-
-
->>>>>>> pr/49
     public static boolean isNullOrEmpty(String s) {
         return s == null || s.length() == 0;
     }

@@ -2,6 +2,7 @@ package com.microsoft.azure.documentdb.changefeedprocessor;
 
 import com.microsoft.azure.documentdb.DocumentClientException;
 
+import java.util.Enumeration;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 import com.microsoft.azure.documentdb.changefeedprocessor.services.*;
@@ -62,5 +63,13 @@ public class ResourcePartitionServices {
         // TODO: improve it
         ResourcePartition resourcePartition = this.get(partitionId);
         resourcePartition.stop();
+    }
+    
+    public void shutdown() {
+        Enumeration<ResourcePartition> resourcePartitionEnum = resourcePartitions.elements();
+        while(resourcePartitionEnum.hasMoreElements()) {
+            ResourcePartition resourcePartition = resourcePartitionEnum.nextElement();
+            resourcePartition.stop();
+        }
     }
 }
