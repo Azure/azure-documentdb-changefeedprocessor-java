@@ -38,8 +38,6 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 //    private IChangeFeedObserverFactory observerFactory;
 //    private ExecutorService executorServicevice; not need as a property
     private Logger logger = Logger.getLogger(ChangeFeedEventHost.class.getName());
-    @SuppressWarnings("unused")
-	private AtomicInteger isShutdown ;
 
     public ChangeFeedEventHost( String hostName, DocumentCollectionInfo documentCollectionLocation, DocumentCollectionInfo auxCollectionLocation) throws DocumentClientException{
         this(hostName, documentCollectionLocation, auxCollectionLocation, new ChangeFeedOptions(), new ChangeFeedHostOptions());
@@ -69,7 +67,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         this.changeFeedOptions = changeFeedOptions;
         this.options = hostOptions;
         this.hostName = hostName;
-        
+      
         this.isShutdown = new AtomicInteger(0);
         
         try{
@@ -78,7 +76,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         catch(DocumentClientException ex){
             ex.printStackTrace();
         }
-        
+
         this.checkpointSvcs = null;
         this.resourcePartitionSvcs = null;
 
@@ -87,7 +85,6 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         {
             this.changeFeedOptions.setPageSize(this.DEFAULT_PAGE_SIZE);
         }
-
     }
 
     private DocumentCollectionInfo canonicalizeCollectionInfo(DocumentCollectionInfo collectionInfo) {
@@ -123,7 +120,8 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         return succ;
     }
     
-    private void initializeIntegrations(IChangeFeedObserverFactory observerFactory) throws Exception, DocumentClientException, LeaseLostException, InterruptedException, ExecutionException {
+    
+    private void initializeIntegrations() throws Exception, DocumentClientException, LeaseLostException, InterruptedException, ExecutionException {
         // Grab the options-supplied prefix if present otherwise leave it empty.
         
     	List<Callable<?>> initialTasks = new ArrayList<Callable<?>>();
@@ -185,8 +183,9 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
         logger.info("Initializing partition manager");
         partitionManager = new PartitionManager<DocumentServiceLease>(this.hostName, this.leaseManager, this.options);
-        	
-        this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, this.leaseManager, observerFactory, changeFeedOptions.getPageSize());
+      
+        	// [Done] CR: why is new ResourcePartitionServices inside try-catch?
+        this.resourcePartitionSvcs = new ResourcePartitionServices(documentServices, checkpointSvcs, observerFactory, changeFeedOptions.getPageSize());
 
 //        this.executorService.submit(partitionManager.subscribe(this)).get();    //Awaiting the task to be finished.  
 //        this.executorService.submit(partitionManager.initialize()).get();       //Awaiting the task to be finished.
@@ -213,7 +212,6 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
                 String partitionId = parts[parts.length-1];
                 try {
                     resourcePartitionSvcs.create(partitionId);
-                    resourcePartitionSvcs.start(partitionId, documentServiceLease);
                     // CR: we need to track new task for shutdown scenario.
                 } catch (DocumentClientException e) {
                     e.printStackTrace();
@@ -246,8 +244,26 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         return callable;
     }
 
-    
     public static boolean isNullOrEmpty(String s) {
         return s == null || s.length() == 0;
+    }
+    
+    public <T extends IChangeFeedObserver> void registerObserver(Class<T>  type) throws Exception, InterruptedException {	// CR: can we use generics? 
+    	ChangeFeedObserverFactory<T> factory = new ChangeFeedObserverFactory<T>(type);
+    	initializeIntegrations(factory);
+    }
+    
+    public boolean unregisterObservers() {
+    	logger.info("shutdown...");
+    	boolean succ = true;
+        try {
+			this.partitionManager.stop(ChangeFeedObserverCloseReason.SHUTDOWN);
+		} catch (InterruptedException | ExecutionException e) {
+			succ = false;
+		}
+        this.documentServices.shudown();
+        this.resourcePartitionSvcs.shutdown();
+        logger.info("shutdown OK!");
+        return succ;
     }
 }
