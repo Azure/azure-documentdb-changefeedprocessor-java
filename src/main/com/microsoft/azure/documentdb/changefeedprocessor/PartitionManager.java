@@ -50,15 +50,9 @@ final class PartitionManager<T extends Lease> {
         this.partitionObserverManager = new PartitionObserverManager(this);
     }
 
-    public Callable<Void> initialize() throws Exception {
-    	Callable<Void> callable = new Callable<Void>(){
-			public Void call() throws Exception {
-				exec = Executors.newCachedThreadPool();
-				initialize(exec);
-				return null;
-			}
-		};
-		return callable;
+    public void initialize() throws Exception {
+    	exec = Executors.newCachedThreadPool();
+		initialize(exec);
     }
     
     private void initialize(ExecutorService execService) throws Exception {
@@ -170,7 +164,7 @@ final class PartitionManager<T extends Lease> {
     private class LeaseRenewer implements Callable<Void> {
 		@Override
     	public Void call() throws Exception {
-			while (PartitionManager.this.isStarted.equals(1) || !PartitionManager.this.shutdownComplete) {
+			while (PartitionManager.this.isStarted.intValue() == 1 || !PartitionManager.this.shutdownComplete) {
 				try {
 					logger.info(String.format("Host '%s' starting renewal of Leases.", PartitionManager.this.workerName));
 	        		
@@ -253,8 +247,8 @@ final class PartitionManager<T extends Lease> {
 			
     private class LeaseTaker implements Callable<Void> {
 		public Void call() throws Exception {
-			while (PartitionManager.this.isStarted.equals(1)){
-	            try
+			while (PartitionManager.this.isStarted.intValue()==1){
+				 try
 	            {
 					logger.info(String.format("Host '%s' starting to check for available leases.", PartitionManager.this.workerName));
 	                HashMap<String, T> availableLeases = PartitionManager.this.takeLeases();	//TODO Change to Callable if synchronous doesn't work
@@ -281,7 +275,6 @@ final class PartitionManager<T extends Lease> {
 				}
 					// [Done] CR: should we break out of the loop?
 	        }
-
 			logger.info(String.format("Host '%s' AcquireLease task completed.", PartitionManager.this.workerName));
 			return null;
 		}

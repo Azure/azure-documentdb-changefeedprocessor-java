@@ -27,8 +27,8 @@ final class PartitionObserverManager<T extends Lease> {
 
     @SuppressWarnings({ "unchecked" })
     public Callable<AutoCloseable> subscribe(IPartitionObserver<T> observer) {
-    	Callable<AutoCloseable> subscribeCallable = new Callable<AutoCloseable>() {
-    		public AutoCloseable call() {
+//    	Callable<AutoCloseable> subscribeCallable = new Callable<AutoCloseable>() {
+//    		public AutoCloseable call() {
     			if (!PartitionObserverManager.this.observers.contains(observer)) {
     				PartitionObserverManager.this.observers.add(observer);
     		
@@ -43,10 +43,10 @@ final class PartitionObserverManager<T extends Lease> {
     		        }
     		    }
 				AutoCloseable unsubscriber = new Unsubscriber(PartitionObserverManager.this.observers, observer);
-    		    return unsubscriber;
-    		}
-    	};	    
-    	return subscribeCallable;
+    		    return null;
+//    		}
+//    	};	    
+//    	return subscribeCallable;
     }
 
     public Callable<Void> notifyPartitionAcquired(T lease) {
