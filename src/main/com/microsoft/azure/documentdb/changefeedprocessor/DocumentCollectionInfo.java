@@ -1,6 +1,6 @@
-/**
+/*
  * The MIT License (MIT)
- * Copyright (c) 2016 Microsoft Corporation
+ * Copyright (c) 2018 Microsoft Corporation
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,7 +20,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
 import com.microsoft.azure.documentdb.ConnectionMode;
@@ -59,7 +58,7 @@ public class DocumentCollectionInfo {
 
     /**
      * Get the URI of Document Service
-     * @return
+     * @return the URI
      */
     public URI getUri() {
         return uri;
@@ -67,7 +66,7 @@ public class DocumentCollectionInfo {
 
     /**
      * Sets the URI of Document Service
-     * @param _uri
+     * @param _uri the URI
      */
     public void setUri(URI _uri) {
         this.uri = _uri;
@@ -75,7 +74,7 @@ public class DocumentCollectionInfo {
 
     /**
      * Get the Masterkey of Document Service
-     * @return
+     * @return the master key
      */
     public String getMasterKey() {
         return masterKey;
@@ -83,7 +82,7 @@ public class DocumentCollectionInfo {
 
     /**
      * Set the MasterKey of Document Service
-     * @param _masterKey
+     * @param _masterKey the master key
      */
     public void setMasterKey(String _masterKey) {
         this.masterKey = _masterKey;
@@ -91,7 +90,7 @@ public class DocumentCollectionInfo {
 
     /**
      * Get the Database name
-     * @return
+     * @return the database name
      */
     public String getDatabaseName() {
         return databaseName;
@@ -99,7 +98,7 @@ public class DocumentCollectionInfo {
 
     /**
      * Set the Database Name
-     * @param _databaseName
+     * @param _databaseName the database name
      */
     public void setDatabaseName(String _databaseName) {
         this.databaseName = _databaseName;
@@ -107,7 +106,7 @@ public class DocumentCollectionInfo {
 
     /**
      * Get the Collection Name
-     * @return
+     * @return the collection name
      */
     public String getCollectionName() {
         return collectionName;
@@ -115,7 +114,7 @@ public class DocumentCollectionInfo {
 
     /**
      * Set the Collection Name
-     * @param _collectionName
+     * @param _collectionName the collection name
      */
     public void setCollectionName(String _collectionName) {
         this.collectionName = _collectionName;
@@ -123,7 +122,7 @@ public class DocumentCollectionInfo {
 
     /**
      * Get the Connection Policy
-     * @return
+     * @return the connection policy
      */
     public ConnectionPolicy getConnectionPolicy() {
         return connectionPolicy;
@@ -131,10 +130,9 @@ public class DocumentCollectionInfo {
 
     /**
      * Set Connection policy
-     * @param _connectionPolicy
+     * @param _connectionPolicy the collection policy
      */
     public void setConnectionPolicy(ConnectionPolicy _connectionPolicy) {
         this.connectionPolicy = _connectionPolicy;
     }
-
 }

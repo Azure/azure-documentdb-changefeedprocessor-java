@@ -1,6 +1,6 @@
-/**
+/*
  * The MIT License (MIT)
- * Copyright (c) 2016 Microsoft Corporation
+ * Copyright (c) 2018 Microsoft Corporation
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,10 +22,7 @@
  */
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
-import static org.junit.Assert.fail;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.microsoft.azure.documentdb.ChangeFeedOptions;
 import com.microsoft.azure.documentdb.DocumentClientException;
 import com.microsoft.azure.documentdb.ResourceResponse;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ChangeFeedThreadFactory;
@@ -43,21 +40,18 @@ import java.util.Date;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
-/**
- * @author Visouza
- *
- */
 public class SplitPartitionTest
 {
     private Logger logger = Logger.getLogger(SplitPartitionTest.class.getName());
     private final int CPUs = Runtime.getRuntime().availableProcessors();
 
+    /**
+     * This test continuously adds records to the collection eventually forcing a split.
+     */
     @Test
     public void writeColletionRecords() {
 
@@ -86,7 +80,6 @@ public class SplitPartitionTest
         DocumentServices documentServices = new DocumentServices(docInfo);
 
         //Write on Collection
-
         ExecutorService exec  = CreateExecutorService(1,"CosmosWriter");
         exec.execute(new Runnable() {
             @Override
@@ -141,7 +134,6 @@ public class SplitPartitionTest
         ChangeFeedThreadFactory threadFactory = new ChangeFeedThreadFactory(threadSuffixName);
         ExecutorService exec = Executors.newFixedThreadPool(numThreadPerCPU * CPUs, threadFactory);
 
-        //ExecutorService exec = Executors.newFixedThreadPool(numThreadPerCPU * CPUs, Executors.defaultThreadFactory());
         return exec;
     }
 
@@ -156,6 +148,7 @@ public class SplitPartitionTest
         public int Light;
         public int Room;
         public int PlantPosition;
+        public String SomeVeryLongString;
 
         public ModelDocument(){
             Random rand = new Random();
@@ -171,6 +164,22 @@ public class SplitPartitionTest
             Light = 300;
             Room = 0;
             PlantPosition = -1;
+            SomeVeryLongString =
+                    "very long string 0123456789001234567890012345678900123456789001234567890"
+                    + "very long string 0123456789001234567890012345678900123456789001234567890"
+                    + "very long string 0123456789001234567890012345678900123456789001234567890"
+                    + "very long string 0123456789001234567890012345678900123456789001234567890"
+                    + "very long string 0123456789001234567890012345678900123456789001234567890"
+                    + "very long string 0123456789001234567890012345678900123456789001234567890"
+                    + "very long string 0123456789001234567890012345678900123456789001234567890"
+                    + "very long string 0123456789001234567890012345678900123456789001234567890"
+                    + "very long string 0123456789001234567890012345678900123456789001234567890"
+                    + "very long string 0123456789001234567890012345678900123456789001234567890"
+                    + "very long string 0123456789001234567890012345678900123456789001234567890"
+                    + "very long string 0123456789001234567890012345678900123456789001234567890"
+                    + "very long string 0123456789001234567890012345678900123456789001234567890"
+                    + "very long string 0123456789001234567890012345678900123456789001234567890"
+                    + "very long string 0123456789001234567890012345678900123456789001234567890";
         }
     }
 
