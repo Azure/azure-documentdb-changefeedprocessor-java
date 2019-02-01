@@ -71,13 +71,13 @@ public class ChangeFeedJob implements Job {
         return this.checkpointServices;
     }
 
-    /***
+    /**
      *
-     * @param partitionId
-     * @param client
-     * @param checkpointServices
-     * @param observer
-     * @param pageSize
+     * @param partitionId the partition ID
+     * @param client the client
+     * @param checkpointServices the checkpoint services
+     * @param observer the observer
+     * @param pageSize the page size
      */
     public ChangeFeedJob(String partitionId,
                           DocumentServices client,
@@ -95,10 +95,10 @@ public class ChangeFeedJob implements Job {
 
     /**
      *
-     * @param partitionId
-     * @param client
-     * @param checkpointServices
-     * @param observer
+     * @param partitionId the partition ID
+     * @param client the client
+     * @param checkpointServices the checkpoint services
+     * @param observer the observer
      */
     public ChangeFeedJob(String partitionId,
                           DocumentServices client,

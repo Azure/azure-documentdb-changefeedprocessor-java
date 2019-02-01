@@ -113,6 +113,8 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
 
     /**
      * This code used to be async
+     *
+     * @param type the type
      */
     public void registerObserver(Class type) throws Exception
     {

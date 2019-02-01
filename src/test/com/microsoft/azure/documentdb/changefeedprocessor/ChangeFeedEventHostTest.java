@@ -42,31 +42,34 @@ public class ChangeFeedEventHostTest {
                 null,
                 new DocumentCollectionInfo(), new DocumentCollectionInfo(), new ChangeFeedOptions(), new ChangeFeedHostOptions());
     }
+
     @Test (expected = IllegalArgumentException.class)
     public void testInvalidConstructorDocumentCollectionInfo() throws IllegalArgumentException {
         ChangeFeedEventHost host = new ChangeFeedEventHost(
                 "test",
                 null, new DocumentCollectionInfo(), new ChangeFeedOptions(), new ChangeFeedHostOptions());
     }
+
     @Test (expected = IllegalArgumentException.class)
     public void testInvalidConstructorAuxCollectionInfo() throws IllegalArgumentException {
         ChangeFeedEventHost host = new ChangeFeedEventHost(
                 "test",
                 new DocumentCollectionInfo(), null, new ChangeFeedOptions(), new ChangeFeedHostOptions());
     }
+
     @Test (expected = IllegalArgumentException.class)
     public void testInvalidConstructorChangefeedOptions() throws IllegalArgumentException {
         ChangeFeedEventHost host = new ChangeFeedEventHost(
                 "test",
                 new DocumentCollectionInfo(), new DocumentCollectionInfo(), null, new ChangeFeedHostOptions());
     }
+
     @Test (expected = IllegalArgumentException.class)
     public void testInvalidConstructorChangefeedHostOptions() throws IllegalArgumentException {
         ChangeFeedEventHost host = new ChangeFeedEventHost(
                 "test",
                 new DocumentCollectionInfo(), new DocumentCollectionInfo(), new ChangeFeedOptions(), null);
     }
-
 
     @Test
     public void createChangeFeedHostUsingSecrets()  {

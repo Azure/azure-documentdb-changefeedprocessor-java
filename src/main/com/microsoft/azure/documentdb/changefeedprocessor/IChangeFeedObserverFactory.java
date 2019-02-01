@@ -23,8 +23,5 @@
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
 public interface IChangeFeedObserverFactory {
-	/**
-     * Creates a new instance of <see cref="DocumentDB.ChangeFeedProcessor.IChangeFeedObserver"/>.
-     */
     IChangeFeedObserver createObserver() throws IllegalAccessException, InstantiationException;
 }
