@@ -22,7 +22,6 @@
  * SOFTWARE.
  *  
  */
-
 package com.microsoft.azure.documentdb.changefeedprocessor;
 
 import java.util.Optional;

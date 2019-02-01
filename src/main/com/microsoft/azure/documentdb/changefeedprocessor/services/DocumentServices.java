@@ -1,9 +1,29 @@
+/**
+ * The MIT License (MIT)
+ * Copyright (c) 2016 Microsoft Corporation
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
 import com.microsoft.azure.documentdb.*;
 import com.microsoft.azure.documentdb.changefeedprocessor.*;
-import com.microsoft.azure.documentdb.changefeedprocessor.internal.documentleasestore.DocumentServiceLease;
-import lombok.Getter;
 
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -22,16 +42,48 @@ public class DocumentServices {
     private DocumentCollection documentCollection;
     private ResourceResponse<DocumentCollection> collectionResponse;
 
-    @Getter
     private String collectionSelfLink;
-    @Getter
     private String collectionID;
-    @Getter
     private String databaseSelfLink;
-    @Getter
     private String databaseID;
 
     private Logger logger = Logger.getLogger(DocumentServices.class.getName());
+
+    /**
+     * Gets the collection self link associated with the resource.
+     *
+     * @return the collection self link associated with the resource.
+     */
+    public String getCollectionSelfLink() {
+        return this.collectionSelfLink;
+    }
+
+    /**
+     * Gets the collection ID associated with the resource.
+     *
+     * @return the collection ID associated with the resource.
+     */
+    public String getCollectionID() {
+        return this.collectionID;
+    }
+
+    /**
+     * Gets the database self link associated with the resource.
+     *
+     * @return the database self link associated with the resource.
+     */
+    public String getDatabaseSelfLink() {
+        return this.databaseSelfLink;
+    }
+
+    /**
+     * Gets the database ID associated with the resource.
+     *
+     * @return the database ID associated with the resource.
+     */
+    public String getDatabaseID() {
+        return this.databaseID;
+    }
 
     public DocumentServices(DocumentCollectionInfo collectionLocation) {
         this.url = collectionLocation.getUri().toString();

@@ -1,7 +1,26 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ *
+ * The MIT License (MIT)
+ * Copyright (c) 2016 Microsoft Corporation
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
  */
 package com.microsoft.azure.documentdb.changefeedprocessor.internal;
 
@@ -14,10 +33,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
-/**
- *
- * @author rogirdh
- */
 public class PartitionManager<T extends Lease> {
 
     final String workerName;
@@ -61,7 +76,7 @@ public class PartitionManager<T extends Lease> {
             allLeases.add(lease);
             if (lease.getOwner() == null || lease.getOwner().isEmpty() || lease.getOwner().equalsIgnoreCase(this.workerName)) {
             	Future<T> newLeaseFuture = execService.submit(this.renewLease(lease));
-            	T newLease = newLeaseFuture.get();		//TODO: Ensure that this is not blocking other threads in the for loop
+            	T newLease = newLeaseFuture.get();
                 if (newLease != null) {
                     leases.add(newLease);
                 } else {
@@ -73,7 +88,7 @@ public class PartitionManager<T extends Lease> {
         List<Callable<Object>> addLeaseTasks = new ArrayList<Callable<Object>>();
         for (T lease : leases) {
             logger.info(String.format("Host '%s' acquired lease for PartitionId '%s' on startup.", this.workerName, lease.getPartitionId()));
-            addLeaseTasks.add(Executors.callable(this.addLease(lease)));	//TODO: Ensure this converts Runnable to Callable safely
+            addLeaseTasks.add(Executors.callable(this.addLease(lease)));
         }
 
         try {
@@ -102,9 +117,6 @@ public class PartitionManager<T extends Lease> {
         
 
         this.shutdownComplete = false;
-  //      this.leaseTakerCancellationTokenSource = new CancellationTokenSource();
-  //      this.leaseRenewerCancellationTokenSource = new CancellationTokenSource();
-
         this.renewTask = exec.submit(new LeaseRenewerAsync());
         this.takerTask = exec.submit(new LeaseTakerAsync());
     }
@@ -112,30 +124,26 @@ public class PartitionManager<T extends Lease> {
     //Java
     public void stopAsync(ChangeFeedObserverCloseReason reason) throws InterruptedException, ExecutionException {
         if (!this.isStarted.compareAndSet(1, 0)) {
-            // idempotent
             return;
         }
 
         if (this.takerTask != null) {
-            this.takerTask.cancel(true); //TODO: Ensure this is equivalent to cancellationtokensource i.e. the thread gets interrupted when this is called.
+            this.takerTask.cancel(true);
             this.takerTask.get();	
         }
 
-        this.shutdown(reason);	//TODO: Equivalent to await?
+        this.shutdown(reason);
         this.shutdownComplete = true;
 
         if (this.renewTask != null) {
-            this.renewTask.cancel(true); //TODO: Ensure this is equivalent to cancellationtokensource i.e. the thread gets interrupted when this is called.
-            this.renewTask.get();	//TODO: Equivalent to await?
+            this.renewTask.cancel(true);
+            this.renewTask.get();
         }
-
-     //   this.leaseTakerCancellationTokenSource = null;
-     //   this.leaseRenewerCancellationTokenSource = null;
     }
 
     //Java
     @SuppressWarnings("unchecked")
-	public Callable<IDisposable> subscribe(IPartitionObserver<T> observer) {
+	public Callable<AutoCloseable> subscribe(IPartitionObserver<T> observer) {
         return this.partitionObserverManager.subscribe(observer);
     }
 
@@ -147,7 +155,7 @@ public class PartitionManager<T extends Lease> {
         		T lease = PartitionManager.this.currentlyOwnedPartitions.get(partitionId);
                 
                 if (lease != null) {
-                	PartitionManager.this.removeLease(lease, hasOwnership, closeReason).run();	//TODO: Ensure this is awaiting
+                	PartitionManager.this.removeLease(lease, hasOwnership, closeReason).run();
                 }             
                 return null;
         	}
@@ -201,7 +209,6 @@ public class PartitionManager<T extends Lease> {
 	        			CompletableFuture<Void> tasks = CompletableFuture.allOf(renewTasks.toArray(new CompletableFuture<?>[] {}));		//Adding all the CompletableFutures to a list
 	        			tasks.get();	//Waiting for all tasks to complete
 	        		} catch (Exception e) {
-	        			// TODO Auto-generated catch block
 	        			e.printStackTrace();
 	        		}
 	                
@@ -214,8 +221,7 @@ public class PartitionManager<T extends Lease> {
                     	}
                     }
                     
-                    //TODO: Start here
-                 // Trigger shutdown of all partitions we failed to renew leases
+	                 // Trigger shutdown of all partitions we failed to renew leases
                     failedToRenewLeases.forEach(lease -> exec.submit(PartitionManager.this.removeLease(lease, false, ChangeFeedObserverCloseReason.LEASE_LOST)));
                     
 
@@ -226,7 +232,7 @@ public class PartitionManager<T extends Lease> {
                         PartitionManager.this.keepRenewingDuringClose.remove(failedToRenewShutdownLease.getPartitionId());
                     }
 
-                    TimeUnit.SECONDS.sleep(PartitionManager.this.options.getLeaseRenewInterval().getSeconds()); //TODO: Not calling the CancellationTokenSource here. Will have to test to ensure this gets cancelled                	
+                    TimeUnit.SECONDS.sleep(PartitionManager.this.options.getLeaseRenewInterval().getSeconds());
                     
 				} catch (CancellationException ex){
 					logger.info(String.format("Host '%s' Renewer task canceled.", PartitionManager.this.workerName));
@@ -248,20 +254,19 @@ public class PartitionManager<T extends Lease> {
 	            try
 	            {
 					logger.info(String.format("Host '%s' starting to check for available leases.", PartitionManager.this.workerName));
-	                HashMap<String, T> availableLeases = PartitionManager.this.takeLeases();	//TODO Change to Callable if synchronous doesn't work
+	                HashMap<String, T> availableLeases = PartitionManager.this.takeLeases();
 	                int i = availableLeases.size();
 	                if (i > 0)
 						logger.info(String.format("Host '%s' adding %d leases...", PartitionManager.this.workerName, i));
 
 	                List<Callable<Object>> addLeaseTasks = new ArrayList<Callable<Object>>();
 	                for (T kvp : availableLeases.values()) {
-	                    addLeaseTasks.add(Executors.callable(PartitionManager.this.addLease(kvp)));	//TODO: Ensure this wrapper of Runnable works
+	                    addLeaseTasks.add(Executors.callable(PartitionManager.this.addLease(kvp)));
 	                }
 
 	                try {
 	        			exec.invokeAll(addLeaseTasks);	//Waits till all tasks are finished
 	        		} catch (InterruptedException e) {
-	        			// TODO Auto-generated catch block
 	        			e.printStackTrace();
 						logger.warning(e.getMessage());
 	        		}
@@ -271,7 +276,7 @@ public class PartitionManager<T extends Lease> {
 	            }
 
 	            try {
-	                TimeUnit.SECONDS.sleep(PartitionManager.this.options.getLeaseAcquireInterval().getSeconds()); //TODO: Not calling the CancellationTokenSource here. Will have to test to ensure this gets cancelled                	
+	                TimeUnit.SECONDS.sleep(PartitionManager.this.options.getLeaseAcquireInterval().getSeconds());
 	            }
 	            catch (InterruptedException ex) {
 					logger.info(String.format("Host '%s' AcquireLease task canceled.", PartitionManager.this.workerName));
@@ -285,7 +290,8 @@ public class PartitionManager<T extends Lease> {
 
 
     //Java
-    private HashMap<String, T> takeLeases() throws Exception { //Setting this method up to be sync, since it is being called from a thread that needs to await the result of this method. TODO: Test for performance
+    private HashMap<String, T> takeLeases() throws Exception {
+    	//Setting this method up to be sync, since it is being called from a thread that needs to await the result of this method.
     	HashMap<String, T> allPartitions = new HashMap<String, T>();
         HashMap<String, T> takenLeases = new HashMap<String, T>();
         HashMap<String, Integer> workerToPartitionCount = new HashMap<String, Integer>();
@@ -339,7 +345,6 @@ public class PartitionManager<T extends Lease> {
             int myCount = workerToPartitionCount.get(this.workerName);
             int partitionsNeededForMe = target - myCount;
             
-            //TODO: Start Here
 			logger.info(
                     String.format(
                             "Host '%s' %d partitions, %d hosts, %d available leases, target = %d, min = %d, max = %d, min = %d, will try to take %d lease(s) for myself'.",
@@ -419,13 +424,12 @@ public class PartitionManager<T extends Lease> {
     {
         List<Callable<Object>> shutdownTasks = new ArrayList<Callable<Object>>();
         for(T value : this.currentlyOwnedPartitions.values()) {
-        	shutdownTasks.add(Executors.callable(this.removeLease(value, true, reason)));	//TODO: Test this wrapper works. If it doesn't, change the list of Callable<Object> to Callable<Void>
+        	shutdownTasks.add(Executors.callable(this.removeLease(value, true, reason)));
         }
 
         try {
 			exec.invokeAll(shutdownTasks);	//Wait till all tasks are finished
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
     }
@@ -510,7 +514,7 @@ public class PartitionManager<T extends Lease> {
     	            try{
 						logger.info(String.format("Host '%s' opening event processor for PartitionId '%s' and lease token '%s'", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
 
-    	                PartitionManager.this.partitionObserverManager.notifyPartitionAcquired(lease).run();	//TODO: Make notifyPartitionAcquired async and add await equivalent?
+    	                PartitionManager.this.partitionObserverManager.notifyPartitionAcquired(lease).run();
 
 						logger.info(String.format("Host '%s' opened event processor for PartitionId '%s' and lease token '%s'", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
     	            }
@@ -524,7 +528,7 @@ public class PartitionManager<T extends Lease> {
 
     	            // We need to release the lease if we fail to initialize the processor, so some other node can pick up the parition
     	            if (failedToInitialize){
-    	            	PartitionManager.this.removeLease(lease, true, ChangeFeedObserverCloseReason.OBSERVER_ERROR);	//TODO: await equivalent
+    	            	PartitionManager.this.removeLease(lease, true, ChangeFeedObserverCloseReason.OBSERVER_ERROR);
     	            }
     	        }
     	        else{
@@ -534,7 +538,7 @@ public class PartitionManager<T extends Lease> {
     	            try{
 						logger.warning(String.format("Host '%s' unable to add PartitionId '%s' with lease token '%s' to currently owned partitions.", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
 
-    	                PartitionManager.this.leaseManager.release(lease);	//TODO: await equivalent
+    	                PartitionManager.this.leaseManager.release(lease);
 
 						logger.info(String.format("Host '%s' successfully released lease on PartitionId '%s' with lease token '%s'", PartitionManager.this.workerName, lease.getPartitionId(), lease.getConcurrencyToken()));
     	            }
@@ -598,7 +602,7 @@ public class PartitionManager<T extends Lease> {
     	                if (hasOwnership){
     	                    try
     	                    {
-    	                    	PartitionManager.this.leaseManager.release(thisLease);	//TODO: Equivalent to await?
+    	                    	PartitionManager.this.leaseManager.release(thisLease);
 								logger.info(String.format("Host '%s' successfully released lease on PartitionId '%s' with lease token '%s'", PartitionManager.this.workerName, thisLease.getPartitionId(), thisLease.getConcurrencyToken()));
     	                    }
     	                    catch (LeaseLostException ex)

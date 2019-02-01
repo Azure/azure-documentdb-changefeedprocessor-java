@@ -1,3 +1,25 @@
+/**
+ * The MIT License (MIT)
+ * Copyright (c) 2016 Microsoft Corporation
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 package com.microsoft.azure.documentdb.changefeedprocessor.services;
 
 import com.microsoft.azure.documentdb.ChangeFeedOptions;
@@ -10,7 +32,6 @@ import com.microsoft.azure.documentdb.changefeedprocessor.IChangeFeedObserver;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.ChangeFeedThreadFactory;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.StatusCode;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.SubStatusCode;
-import lombok.Getter;
 
 import java.util.List;
 import java.util.concurrent.*;
@@ -18,10 +39,8 @@ import java.util.logging.Logger;
 
 public class ChangeFeedJob implements Job {
 
-    @Getter
     private final DocumentServices client;
-    @Getter
-    private final CheckpointServices checkpointSvcs;
+    private final CheckpointServices checkpointServices;
 
     private final String partitionId;
     private final IChangeFeedObserver observer;
@@ -34,21 +53,39 @@ public class ChangeFeedJob implements Job {
     private final int NumThreadsPerCpu = 5;
     private static Logger logger = Logger.getLogger(ChangeFeedJob.class.getName());
 
+    /**
+     * Gets the client associated with the resource.
+     *
+     * @return the client associated with the resource.
+     */
+    public DocumentServices getClient() {
+        return this.client;
+    }
+
+    /**
+     * Gets the checkpoint services associated with the resource.
+     *
+     * @return the checkpoint services associated with the resource.
+     */
+    public CheckpointServices getCheckpointServices() {
+        return this.checkpointServices;
+    }
+
     /***
      *
      * @param partitionId
      * @param client
-     * @param checkpointSvcs
+     * @param checkpointServices
      * @param observer
      * @param pageSize
      */
     public ChangeFeedJob(String partitionId,
                           DocumentServices client,
-                          CheckpointServices checkpointSvcs,
+                          CheckpointServices checkpointServices,
                           IChangeFeedObserver observer,
                           int pageSize) {
         this.client = client;
-        this.checkpointSvcs = checkpointSvcs;
+        this.checkpointServices = checkpointServices;
         this.partitionId = partitionId;
         this.observer = observer;
         this.pageSize = pageSize;
@@ -60,15 +97,15 @@ public class ChangeFeedJob implements Job {
      *
      * @param partitionId
      * @param client
-     * @param checkpointSvcs
+     * @param checkpointServices
      * @param observer
      */
     public ChangeFeedJob(String partitionId,
                           DocumentServices client,
-                          CheckpointServices checkpointSvcs,
+                          CheckpointServices checkpointServices,
                           IChangeFeedObserver observer) {
         this.client = client;
-        this.checkpointSvcs = checkpointSvcs;
+        this.checkpointServices = checkpointServices;
         this.partitionId = partitionId;
         this.observer = observer;
         this.pageSize = DEFAULT_PAGE_SIZE;
@@ -119,8 +156,8 @@ public class ChangeFeedJob implements Job {
         while(!(exec.isTerminated() || exec.isShutdown())) {
             do {
                 try {
-                    logger.info(String.format("client.createDocumentChangeFeedQuery(%s, %s, %d)",partitionId, checkpointSvcs.getCheckpointData(partitionId), this.pageSize));
-                    query = client.createDocumentChangeFeedQuery(partitionId, checkpointSvcs.getCheckpointData(partitionId), this.pageSize);
+                    logger.info(String.format("client.createDocumentChangeFeedQuery(%s, %s, %d)",partitionId, checkpointServices.getCheckpointData(partitionId), this.pageSize));
+                    query = client.createDocumentChangeFeedQuery(partitionId, checkpointServices.getCheckpointData(partitionId), this.pageSize);
                     if (query != null) {
                         logger.info(String.format("Query is not null query.getActivityId: %s ", query.getActivityId()));
                         context.setFeedResponse(query);
@@ -177,7 +214,7 @@ public class ChangeFeedJob implements Job {
                 }
             }
 
-        }// while(!(exec.isTerminated() || exec.isShutdown()))
+        }
     }
 
     void checkpoint(String data) throws DocumentClientException {
@@ -187,7 +224,7 @@ public class ChangeFeedJob implements Job {
         if (data != null)
             initialData = data;
 
-        checkpointSvcs.setCheckpointData(partitionId, initialData);
+        checkpointServices.setCheckpointData(partitionId, initialData);
     }
 
     @Override
@@ -218,7 +255,6 @@ public class ChangeFeedJob implements Job {
                 return Integer.parseInt(valueSubStatus);
             }catch (Exception e){
                 logger.severe(String.format("Not able to parse the error code %s to int", valueSubStatus));
-                //TODO:Log the error
             }
         }
 

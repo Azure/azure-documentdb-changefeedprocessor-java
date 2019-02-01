@@ -37,10 +37,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- *
- * @author yoterada
- */
 public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServiceLease>, ICheckpointManager {
     private final static String DATE_HEADER_NAME = "Date";
     private final static String CONTAINER_SEPARATOR = ".";
@@ -71,9 +67,6 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         this.renewInterval = renewInterval;
         this.documentServices = documentServices;
 
-    }
-
-    public void dispose() {
     }
 
     public void initialize(boolean createLeaseCollection) throws DocumentClientException { //    public Task InitializeAsync()
@@ -110,7 +103,6 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         document.setId(getDocumentId() + UUID.randomUUID().toString());
 
         Document dummyDocument = (Document)documentServices.createDocument(leaseStoreCollectionLink, document, new RequestOptions(), true).getResource();
-        //Document dummyDocument = client.createDocument(leaseStoreCollectionLink, document, new RequestOptions(), true).getResource();
 
         // Get the new current time
         Instant snapshot2 = Instant.now();
@@ -120,7 +112,6 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         serverToLocalTimeDelta = Duration.between(currentTimeDiff, dummyTimestamp);
 
         documentServices.deleteDocument(dummyDocument.getSelfLink(), new RequestOptions());
-       // client.deleteDocument(dummyDocument.getSelfLink(), new RequestOptions());
 
         logger.info(String.format("Server to local time delta: {0}", serverToLocalTimeDelta));
 
@@ -644,7 +635,7 @@ class PartitionInfo implements Partition {
     }
 
     @Override
-    public Date lastExcetution() {
+    public Date lastExecution() {
         return this.LastExecution;
     }
 
@@ -666,7 +657,7 @@ class PartitionInfo implements Partition {
 
 interface Partition {
 
-    public Date lastExcetution();
+    public Date lastExecution();
 
     public void updateExecution();
 

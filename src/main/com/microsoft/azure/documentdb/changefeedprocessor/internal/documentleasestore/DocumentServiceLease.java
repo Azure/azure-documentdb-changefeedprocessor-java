@@ -29,8 +29,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.microsoft.azure.documentdb.Document;
 import com.microsoft.azure.documentdb.changefeedprocessor.internal.Lease;
-import lombok.Getter;
-import lombok.Setter;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -38,10 +36,6 @@ import java.time.Instant;
 import java.time.LocalTime;
 import java.util.Locale;
 
-/**
- *
- * @author yoterada
- */
 public class DocumentServiceLease extends Lease {
 	
 	private static final Instant unixStartTime = Instant.EPOCH;
@@ -66,13 +60,13 @@ public class DocumentServiceLease extends Lease {
     }
 
     @JsonProperty("id")
-    @Getter @Setter public String id;
+    public String id;
 
     @JsonProperty("_etag")
-    @Getter @Setter public String eTag;
+    public String eTag;
     
     @JsonProperty("state")
-    @Getter @Setter public LeaseState state;
+    public LeaseState state;
 
     @JsonIgnore
     public Instant timestamp;
@@ -81,8 +75,71 @@ public class DocumentServiceLease extends Lease {
     public String concurrencyToken;
     
     @JsonProperty("_ts")
-    @Getter @Setter private long ts;
-        
+    private long ts;
+
+    /**
+     * Gets the ID associated with the resource.
+     *
+     * @return the ID associated with the resource.
+     */
+    public String getId() {
+        return this.id;
+    }
+
+    /**
+     * Sets the ID of the resource.
+     *
+     * @param id the ID of the resource.
+     */
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    /**
+     * Gets the eTag associated with the resource.
+     *
+     * @return the eTag associated with the resource.
+     */
+    public String getETag() {
+        return this.eTag;
+    }
+
+    /**
+     * Sets the eTag of the resource.
+     *
+     * @param eTag the eTag of the resource.
+     */
+    public void setETag(String eTag) {
+        this.eTag = eTag;
+    }
+
+    /**
+     * Gets the lease state associated with the resource.
+     *
+     * @return the lease state associated with the resource.
+     */
+    public LeaseState getState() {
+        return this.state;
+    }
+
+    /**
+     * Sets the lease state of the resource.
+     *
+     * @param state the lease state of the resource.
+     */
+    public void setState(LeaseState state) {
+        this.state = state;
+    }
+
+    /**
+     * Gets the ts associated with the resource.
+     *
+     * @return the ts associated with the resource.
+     */
+    public long getTs() {
+        return this.ts;
+    }
+
     public Instant getTimestamp() {
     	return unixStartTime.plusSeconds(ts);
     }
