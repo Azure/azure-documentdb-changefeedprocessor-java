@@ -109,7 +109,7 @@ public class ChangeFeedEventHostTest {
         Assert.assertNotNull(host);
 
         try {
-            host.registerObserver(com.microsoft.azure.documentdb.changefeedprocessor.internal.TestChangeFeedObserver.class);
+            host.registerObserver(TestChangeFeedObserver.class);
 
             while(!host.getExecutorService().isTerminated() &&
                     !host.getExecutorService().isShutdown()){

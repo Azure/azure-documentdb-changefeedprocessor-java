@@ -71,7 +71,7 @@ public class SimpleTest {
         Assert.assertNotNull(host);
 
         try {
-            host.registerObserver(com.microsoft.azure.documentdb.changefeedprocessor.internal.TestChangeFeedObserver.class);
+            host.registerObserver(TestChangeFeedObserver.class);
 
             System.out.println("Press ENTER to finish");
             Scanner scanner = new Scanner(System.in);

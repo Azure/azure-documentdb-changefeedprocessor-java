@@ -72,7 +72,7 @@ public class Sample {
         ChangeFeedEventHost host = new ChangeFeedEventHost("hostname", docInfo, docAux, options, hostOptions );
 
         try {
-            host.registerObserver(com.microsoft.azure.documentdb.changefeedprocessor.internal.TestChangeFeedObserver.class);
+            host.registerObserver(TestChangeFeedObserver.class);
 
             while(!host.getExecutorService().isTerminated() &&
                     !host.getExecutorService().isShutdown()){
