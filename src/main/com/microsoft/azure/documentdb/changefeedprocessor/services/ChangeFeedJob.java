@@ -159,17 +159,21 @@ public class ChangeFeedJob implements Job {
                     logger.info(String.format("client.createDocumentChangeFeedQuery(%s, %s, %d)",partitionId, checkpointServices.getCheckpointData(partitionId), this.pageSize));
                     query = client.createDocumentChangeFeedQuery(partitionId, checkpointServices.getCheckpointData(partitionId), this.pageSize);
                     if (query != null) {
+
                         logger.info(String.format("Query is not null query.getActivityId: %s ", query.getActivityId()));
                         context.setFeedResponse(query);
-                        List<Document> docs = query.getQueryIterable().fetchNextBlock();
-                        HasMoreResults = query.getQueryIterator().hasNext();
-                        if (docs != null) {
-                            logger.info(String.format("Docs Loaded #%d - HasMoreResults: %s",docs.size(), HasMoreResults));
-                            observer.processChanges(context, docs);
-                            this.checkpoint(query.getResponseContinuation());
-                        }else{
-                            logger.info(String.format("Docs is null & HasMoreResults = %s", HasMoreResults));
-                        }
+                        do {
+                            String responseContinuation = query.getResponseContinuation();
+                            List<Document> docs = query.getQueryIterable().fetchNextBlock();
+                            HasMoreResults = query.getQueryIterator().hasNext();
+                            if (docs != null) {
+                                logger.info(String.format("Docs Loaded #%d - HasMoreResults: %s", docs.size(), HasMoreResults));
+                                observer.processChanges(context, docs);
+                            } else {
+                                logger.info(String.format("Docs is null & HasMoreResults = %s", HasMoreResults));
+                            }
+                            this.checkpoint(responseContinuation);
+                        } while (HasMoreResults);
                     }
                 } catch (DocumentClientException dce) {
                     int subStatusCode = getSubStatusCode(dce);
