@@ -70,8 +70,10 @@ public class SimpleTest {
         ChangeFeedEventHost host = new ChangeFeedEventHost("hotsname", docInfo, docAux, options, new ChangeFeedHostOptions() );
         Assert.assertNotNull(host);
 
+        IChangeFeedObserverFactory factory = new ChangeFeedObserverFactory(TestChangeFeedObserver.class);
+        
         try {
-            host.registerObserver(TestChangeFeedObserver.class);
+            host.registerObserverFactory(factory);
 
             System.out.println("Press ENTER to finish");
             Scanner scanner = new Scanner(System.in);

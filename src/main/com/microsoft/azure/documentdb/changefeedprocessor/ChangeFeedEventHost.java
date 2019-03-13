@@ -111,18 +111,10 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         return result;
     }
 
-    /**
-     * This code used to be async
-     *
-     * @param type the type
-     */
-    public void registerObserver(Class type) throws Exception
-    {
-        logger.info(String.format("Registering Observer of type %s", type));
-        ChangeFeedObserverFactory factory = new ChangeFeedObserverFactory(type);
-
-        registerObserverFactory(factory);
-
+    public void registerObserverFactory(IChangeFeedObserverFactory factory) {
+        logger.info(String.format("Registering Observer of type %s", factory.getClass()));
+        this.observerFactory = factory;
+        
         this.executorService.execute(()->{
             try {
                 start();
@@ -130,10 +122,6 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
                 e.printStackTrace();
             }
         });
-    }
-
-    private void registerObserverFactory(ChangeFeedObserverFactory factory) {
-        this.observerFactory = factory;
     }
 
     private void start() throws Exception{

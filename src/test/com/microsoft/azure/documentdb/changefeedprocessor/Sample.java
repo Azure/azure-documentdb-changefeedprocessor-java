@@ -71,8 +71,9 @@ public class Sample {
 
         ChangeFeedEventHost host = new ChangeFeedEventHost("hostname", docInfo, docAux, options, hostOptions );
 
+        IChangeFeedObserverFactory factory = new ChangeFeedObserverFactory(TestChangeFeedObserver.class);
         try {
-            host.registerObserver(TestChangeFeedObserver.class);
+            host.registerObserverFactory(factory);
 
             while(!host.getExecutorService().isTerminated() &&
                     !host.getExecutorService().isShutdown()){
