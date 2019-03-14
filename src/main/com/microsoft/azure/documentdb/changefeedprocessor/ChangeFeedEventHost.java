@@ -111,6 +111,24 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         return result;
     }
 
+    /**
+     * This code used to be async
+     *
+     * @param type the type
+     */
+    public void registerObserver(Class type) throws Exception
+    {
+        logger.info(String.format("Registering Observer of type %s", type));
+        
+        this.executorService.execute(()->{
+            try {
+                start();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
     public void registerObserverFactory(IChangeFeedObserverFactory factory) {
         logger.info(String.format("Registering Observer of type %s", factory.getClass()));
         this.observerFactory = factory;
