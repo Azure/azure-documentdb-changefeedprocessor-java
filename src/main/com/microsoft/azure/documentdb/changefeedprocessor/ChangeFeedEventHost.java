@@ -125,7 +125,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     }
 
     public void registerObserverFactory(IChangeFeedObserverFactory factory) {
-        logger.info(String.format("Registering Observer of type %s", factory.getClass()));
+        logger.info(String.format("Registering Observer Factory of type %s", factory.getClass()));
         this.observerFactory = factory;
         
         this.executorService.execute(()->{
