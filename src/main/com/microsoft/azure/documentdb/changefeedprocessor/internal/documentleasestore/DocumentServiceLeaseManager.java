@@ -44,6 +44,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
     private final static String CONTAINER_NAME_SUFFIX = "info";
     private final static int RETRY_COUNT_ON_CONFLICT = 5;
     private String containerNamePrefix;
+    private String hostName;
     private DocumentCollectionInfo leaseStoreCollectionInfo;
     private Duration leaseIntervalAllowance = Duration.ofMillis(25);
     private Duration leaseInterval;
@@ -60,7 +61,8 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
         DocumentServiceLease run(DocumentServiceLease serverLease);
     }
 
-    public DocumentServiceLeaseManager(DocumentCollectionInfo leaseStoreCollectionInfo, String storeNamePrefix, Duration leaseInterval, Duration renewInterval, DocumentServices documentServices) {
+    public DocumentServiceLeaseManager(String hostName, DocumentCollectionInfo leaseStoreCollectionInfo, String storeNamePrefix, Duration leaseInterval, Duration renewInterval, DocumentServices documentServices) {
+        this.hostName = hostName;
         this.leaseStoreCollectionInfo = leaseStoreCollectionInfo;
         this.containerNamePrefix = storeNamePrefix;
         this.leaseInterval = leaseInterval;
@@ -185,6 +187,7 @@ public class DocumentServiceLeaseManager implements ILeaseManager<DocumentServic
 
                 if (tryGetLease(leaseDocId) == null) {
                     DocumentServiceLease documentServiceLease = new DocumentServiceLease();
+                    documentServiceLease.setOwner(hostName);
                     documentServiceLease.setId(leaseDocId);
                     documentServiceLease.setPartitionId(partitionId);
                     documentServiceLease.setContinuationToken(continuationToken);

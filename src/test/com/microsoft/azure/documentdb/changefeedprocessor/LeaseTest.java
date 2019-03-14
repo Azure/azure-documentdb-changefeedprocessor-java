@@ -63,6 +63,7 @@ public class LeaseTest {
         DocumentServices documentServices = new DocumentServices(docAux);
 
         DocumentServiceLeaseManager leaseManager = new DocumentServiceLeaseManager(
+                "currentChangeFeedProcessorHost",
                 docAux,
                 "lease",
                 options.getLeaseExpirationInterval(),

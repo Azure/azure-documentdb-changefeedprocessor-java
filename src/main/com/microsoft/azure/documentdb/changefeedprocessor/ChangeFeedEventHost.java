@@ -155,6 +155,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         this.leasePrefix = String.format("%s%s_%s_%s", optionsPrefix, this.collectionLocation.getUri().getHost(), documentServices.getDatabaseID(), documentServices.getCollectionID());
 
         this.leaseManager = new DocumentServiceLeaseManager(
+                this.hostName,
                 this.auxCollectionLocation,
                 this.leasePrefix,
                 this.options.getLeaseExpirationInterval(),
