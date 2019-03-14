@@ -119,6 +119,9 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     public void registerObserver(Class type) throws Exception
     {
         logger.info(String.format("Registering Observer of type %s", type));
+        ChangeFeedObserverFactory factory = new ChangeFeedObserverFactory(type);    
+
+        registerObserverFactory(factory);
         
         this.executorService.execute(()->{
             try {
