@@ -119,10 +119,15 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
     public void registerObserver(Class type) throws Exception
     {
         logger.info(String.format("Registering Observer of type %s", type));
-        ChangeFeedObserverFactory factory = new ChangeFeedObserverFactory(type);
+        ChangeFeedObserverFactory factory = new ChangeFeedObserverFactory(type);    
 
         registerObserverFactory(factory);
+    }
 
+    public void registerObserverFactory(IChangeFeedObserverFactory factory) {
+        logger.info(String.format("Registering Observer Factory of type %s", factory.getClass()));
+        this.observerFactory = factory;
+        
         this.executorService.execute(()->{
             try {
                 start();
@@ -130,10 +135,6 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
                 e.printStackTrace();
             }
         });
-    }
-
-    private void registerObserverFactory(ChangeFeedObserverFactory factory) {
-        this.observerFactory = factory;
     }
 
     private void start() throws Exception{
@@ -154,6 +155,7 @@ public class ChangeFeedEventHost implements IPartitionObserver<DocumentServiceLe
         this.leasePrefix = String.format("%s%s_%s_%s", optionsPrefix, this.collectionLocation.getUri().getHost(), documentServices.getDatabaseID(), documentServices.getCollectionID());
 
         this.leaseManager = new DocumentServiceLeaseManager(
+                this.hostName,
                 this.auxCollectionLocation,
                 this.leasePrefix,
                 this.options.getLeaseExpirationInterval(),

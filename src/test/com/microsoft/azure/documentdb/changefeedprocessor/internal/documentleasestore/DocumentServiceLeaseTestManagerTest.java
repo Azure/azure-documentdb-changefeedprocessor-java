@@ -76,7 +76,7 @@ public class DocumentServiceLeaseTestManagerTest {
 
         DocumentServices documentServices = new DocumentServices(docInfo);
 
-        instance = new DocumentServiceLeaseManager(docInfo, "leases", DEFAULT_EXPIRATION_INTERVAL, DEFAULT_RENEW_INTERVAL,documentServices);
+        instance = new DocumentServiceLeaseManager("currentChangeFeedProcessorHost", docInfo, "leases", DEFAULT_EXPIRATION_INTERVAL, DEFAULT_RENEW_INTERVAL,documentServices);
         instance.initialize(true);
         
         // Clean up lease store before each test

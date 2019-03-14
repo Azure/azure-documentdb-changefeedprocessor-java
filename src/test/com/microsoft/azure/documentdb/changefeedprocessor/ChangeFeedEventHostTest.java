@@ -111,8 +111,9 @@ public class ChangeFeedEventHostTest {
         ChangeFeedEventHost host = new ChangeFeedEventHost("hostname", docInfo, docAux, options, hostOptions );
         Assert.assertNotNull(host);
 
+        IChangeFeedObserverFactory factory = new ChangeFeedObserverFactory(TestChangeFeedObserver.class);
         try {
-            host.registerObserver(TestChangeFeedObserver.class);
+            host.registerObserverFactory(factory);
 
             while(!host.getExecutorService().isTerminated() &&
                     !host.getExecutorService().isShutdown()){
@@ -121,7 +122,7 @@ public class ChangeFeedEventHostTest {
             }
         }
         catch(Exception e) {
-            Assert.fail("registerObserver exception " + e.getMessage());
+            Assert.fail("registerObserverfactory exception " + e.getMessage());
         }
     }
 }
