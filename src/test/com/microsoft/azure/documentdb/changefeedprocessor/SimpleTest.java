@@ -73,7 +73,7 @@ public class SimpleTest {
         IChangeFeedObserverFactory factory = new ChangeFeedObserverFactory(TestChangeFeedObserver.class);
         
         try {
-            host.registerObserverFactory(factory);
+            host.registerObserver(TestChangeFeedObserver.class);
 
             System.out.println("Press ENTER to finish");
             Scanner scanner = new Scanner(System.in);

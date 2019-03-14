@@ -73,7 +73,7 @@ public class Sample {
 
         IChangeFeedObserverFactory factory = new ChangeFeedObserverFactory(TestChangeFeedObserver.class);
         try {
-            host.registerObserverFactory(factory);
+            host.registerObserver(TestChangeFeedObserver.class);
 
             while(!host.getExecutorService().isTerminated() &&
                     !host.getExecutorService().isShutdown()){
