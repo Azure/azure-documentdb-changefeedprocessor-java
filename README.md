@@ -2,7 +2,7 @@
 
 Azure Cosmos DB is a fast and flexible globally replicated database, well-suited for IoT, gaming, retail, and operational logging applications. A common design pattern in these applications is to use changes to the data to kick off additional actions. Chek the documentation for possibilities of usage [Cosmos DB Change Feed documentation](https://docs.microsoft.com/en-us/azure/cosmos-db/change-feed).
 
-This Java library will allow you to read the changes that are made in your collection, before use this library or any othre you should take this points in consideration.
+This Java library will allow you to read the changes that are made in your collection, before use this library or any other you should take these points in consideration.
 
 The change feed has the following properties:
 
@@ -20,17 +20,17 @@ The change feed has the following properties:
 
     Applications can request for multiple Change Feeds simultaneously on the same collection.
 
-    Delete operation its not considerated as change, if you want to handle delete you must add a delete flag property.
+    Delete operation is not considerated as change, if you want to handle delete you must add a delete flag property.
 
 See more at [Azure Cosmos DB Change Feed support doc](https://azure.microsoft.com/en-us/blog/introducing-change-feed-support-in-azure-documentdb/)
 
 ## About
 
-The Java code was built based on the C# library ChangeFeedProcessor [Link to the Repo](https://github.com/Azure/azure-documentdb-dotnet/tree/master/samples/ChangeFeedProcessor) after some customer request and was develop in a togheter effort with Azure Cosmos DB product team and CSE (Commercial Software Engineering) team.
+The Java code was built based on the C# library ChangeFeedProcessor [Link to the Repo](https://github.com/Azure/azure-documentdb-dotnet/tree/master/samples/ChangeFeedProcessor) after some customers request and was developed in a together effort with Azure Cosmos DB product team and CSE (Commercial Software Engineering) team.
 
 ## Understanding the code
 
-The architecture is basically the same of the C# library, we  have splited the code into its diffent responsability to allow better testing and understanding.
+The architecture is basically the same as of the C# library, we  have splited the code into its different responsibility to allow better testing and understanding.
 
 The code is divided into four main parts:
 
@@ -50,7 +50,7 @@ The code is divided into four main parts:
 
 1. ChangeFeedJob
 
-    It is the actual job that will be performed againt the partition in the colleciton, it basically query the data using the number of docs defined in ChangeFeedOptions. If the job is updated it waits for some time.
+    It is the actual job that will be performed against the partition in the colleciton, it basically queries the data using the number of docs defined in ChangeFeedOptions. If the job is updated it waits for some time.
 
 ## How to use
 
