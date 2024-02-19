@@ -26,7 +26,7 @@ See more at [Azure Cosmos DB Change Feed support doc](https://azure.microsoft.co
 
 ## About
 
-The Java code was built based on the C# library ChangeFeedProcessor [Link to the Repo](https://github.com/Azure/azure-documentdb-dotnet/tree/master/samples/ChangeFeedProcessor) after some customer request and was develop in a togheter effort with Azure Cosmos DB product team and CSE (Commercial Software Engineering) team.
+The Java code was built based on the C# library ChangeFeedProcessor [Link to the Repo](https://github.com/Azure/azure-documentdb-dotnet/tree/master/samples/ChangeFeedProcessor) after some customer request and was developed in collaboration with Azure Cosmos DB product team and CSE (Commercial Software Engineering) team.
 
 ## Understanding the code
 
